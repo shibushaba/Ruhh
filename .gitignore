@@ -1,2 +1,35 @@
-# Miscellaneous
-/.vscode/
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# Env / secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Android signing / local
+**/android/local.properties
+**/android/.gradle/
+**/android/app/google-services.json
+**/key.properties
+**/*.jks
+**/*.keystore
+
+# Coverage / misc
+coverage/
+*.log
+
+# Built packages (releases host APKs on GitHub Releases)
+**/*.apk
+**/*.aab
