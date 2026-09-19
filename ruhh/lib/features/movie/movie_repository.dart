@@ -40,32 +40,31 @@ class MovieRepository {
     }
   }
 
-  Future<List<MovieLocal>> all() => _isar.movieLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .sortByAddedAtDesc()
-      .findAll();
+  /// Loads this user's movies in memory (avoids fragile Isar filter combos).
+  Future<List<MovieLocal>> all() async {
+    final rows = await _isar.movieLocals.where().findAll();
+    final mine = rows.where((m) => m.userId == _userId).toList();
+    mine.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    return mine;
+  }
 
-  Future<List<MovieLocal>> byStatus(WatchStatus status) => _isar.movieLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .watchStatusEqualTo(status)
-      .sortByAddedAtDesc()
-      .findAll();
+  Future<List<MovieLocal>> byStatus(WatchStatus status) async {
+    final movies = await all();
+    return movies.where((m) => m.watchStatus == status).toList();
+  }
 
-  Future<List<MovieLocal>> favorites() => _isar.movieLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .favoriteEqualTo(true)
-      .findAll();
+  Future<List<MovieLocal>> favorites() async {
+    final movies = await all();
+    return movies.where((m) => m.favorite).toList();
+  }
 
-  Future<MovieLocal?> byTmdb(int tmdbId, String mediaType) =>
-      _isar.movieLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .tmdbIdEqualTo(tmdbId)
-          .mediaTypeEqualTo(mediaType)
-          .findFirst();
+  Future<MovieLocal?> byTmdb(int tmdbId, String mediaType) async {
+    final movies = await all();
+    for (final m in movies) {
+      if (m.tmdbId == tmdbId && m.mediaType == mediaType) return m;
+    }
+    return null;
+  }
 
   Future<MovieLibraryStats> stats() async {
     final all = await this.all();
@@ -163,12 +162,13 @@ class MovieRepository {
   Future<int> watchedThisMonth() async {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month);
-    return _isar.movieLocals
-        .filter()
-        .userIdEqualTo(_userId)
-        .watchStatusEqualTo(WatchStatus.watched)
-        .watchedAtGreaterThan(start.subtract(const Duration(days: 1)))
-        .count();
+    final movies = await all();
+    return movies
+        .where((m) =>
+            m.watchStatus == WatchStatus.watched &&
+            m.watchedAt != null &&
+            !m.watchedAt!.isBefore(start))
+        .length;
   }
 
   TmdbService get tmdb => _tmdb;
@@ -232,10 +232,7 @@ class MovieRepository {
   // --- Tracker (manual watchlist) ---
 
   Future<void> ensureTrackerDefaults() async {
-    var cats = await _isar.movieCategoryLocals
-        .filter()
-        .userIdEqualTo(_userId)
-        .findAll();
+    var cats = await _categoriesForUser();
     if (cats.isEmpty) {
       await _isar.writeTxn(() async {
         for (var i = 0; i < defaultMovieCategoryNames.length; i++) {
@@ -252,10 +249,7 @@ class MovieRepository {
           await _isar.movieCategoryLocals.put(c);
         }
       });
-      cats = await _isar.movieCategoryLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .findAll();
+      cats = await _categoriesForUser();
     }
     await _isar.writeTxn(() async {
       for (final c in cats) {
@@ -309,30 +303,35 @@ class MovieRepository {
     }
   }
 
-  Future<List<MovieCategoryLocal>> categoriesAll() => _isar.movieCategoryLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .sortBySortOrder()
-      .findAll();
+  Future<List<MovieCategoryLocal>> _categoriesForUser() async {
+    final rows = await _isar.movieCategoryLocals.where().findAll();
+    final mine = rows.where((c) => c.userId == _userId).toList();
+    mine.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return mine;
+  }
+
+  Future<List<MovieCategoryLocal>> categoriesAll() => _categoriesForUser();
 
   Future<List<MovieCategoryLocal>> categoriesActive() async {
     final all = await categoriesAll();
     return all.where((c) => !c.isArchived).toList();
   }
 
-  Future<MovieCategoryLocal?> categoryByRemoteId(String remoteId) =>
-      _isar.movieCategoryLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .remoteIdEqualTo(remoteId)
-          .findFirst();
+  Future<MovieCategoryLocal?> categoryByRemoteId(String remoteId) async {
+    final cats = await _categoriesForUser();
+    for (final c in cats) {
+      if (c.remoteId == remoteId) return c;
+    }
+    return null;
+  }
 
-  Future<MovieCategoryLocal?> categoryByName(String name) =>
-      _isar.movieCategoryLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .nameEqualTo(name)
-          .findFirst();
+  Future<MovieCategoryLocal?> categoryByName(String name) async {
+    final cats = await _categoriesForUser();
+    for (final c in cats) {
+      if (c.name == name) return c;
+    }
+    return null;
+  }
 
   Future<MovieCategoryLocal?> defaultCategory() => categoryByName('Other');
 
@@ -375,11 +374,10 @@ class MovieRepository {
     await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
   }
 
-  Future<int> movieCountForCategory(String categoryRemoteId) => _isar.movieLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .categoryRemoteIdEqualTo(categoryRemoteId)
-      .count();
+  Future<int> movieCountForCategory(String categoryRemoteId) async {
+    final movies = await all();
+    return movies.where((m) => m.categoryRemoteId == categoryRemoteId).length;
+  }
 
   Stream<List<MovieLocal>> watchWatchlist() async* {
     yield await watchlistMovies();
@@ -405,11 +403,13 @@ class MovieRepository {
     return sortWatchedMovies(movies.where(isMovieWatched).toList());
   }
 
-  Future<MovieLocal?> movieByRemoteId(String remoteId) => _isar.movieLocals
-      .filter()
-      .userIdEqualTo(_userId)
-      .remoteIdEqualTo(remoteId)
-      .findFirst();
+  Future<MovieLocal?> movieByRemoteId(String remoteId) async {
+    final movies = await all();
+    for (final m in movies) {
+      if (m.remoteId == remoteId) return m;
+    }
+    return null;
+  }
 
   Future<MovieLocal> saveTrackerMovie({
     String? remoteId,

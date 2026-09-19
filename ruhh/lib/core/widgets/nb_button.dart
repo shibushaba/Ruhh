@@ -21,13 +21,22 @@ class NBButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (primary && color == null) {
-      return RuhhPrimaryButton(
+    if (primary) {
+      Widget button = RuhhPrimaryButton(
         label: label,
         onPressed: onPressed,
         icon: icon,
         expand: expand,
       );
+      if (color != null) {
+        button = Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(primary: color),
+          ),
+          child: button,
+        );
+      }
+      return button;
     }
     return RuhhSecondaryButton(
       label: label,

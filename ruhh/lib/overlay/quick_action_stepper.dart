@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
@@ -54,9 +55,11 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
 
   List<MovieLocal> _movieSuggestions = [];
   Timer? _movieSearchDebounce;
+  StreamSubscription<dynamic>? _overlayResetSub;
 
   @override
   void dispose() {
+    _overlayResetSub?.cancel();
     ref.read(overlayQuickBackProvider.notifier).state =
         (visible: false, onBack: null);
     _amountCtrl.dispose();
@@ -69,14 +72,28 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
 
   RuhhTokens get _t => RuhhTokens.dark;
 
-  void _backToModulePicker() {
-    setState(() {
-      _step = 0;
-      _module = null;
-      _movieSuggestions = [];
-    });
+  /// Always start on the 4-module grid when the overlay opens.
+  void _resetToModulePicker({bool rebuild = true}) {
+    _step = 0;
+    _module = null;
+    _success = false;
+    _movieSuggestions = [];
+    _movieMode = _MovieOverlayMode.add;
+    _ledgerType = BudgetLedgerType.expense;
+    _budgetCategory = null;
+    _movieCategory = null;
+    _amountCtrl.clear();
+    _noteCtrl.clear();
+    _movieTitleCtrl.clear();
+    _movieSearchCtrl.clear();
+    _movieSearchDebounce?.cancel();
+    if (rebuild && mounted) {
+      setState(() {});
+    }
     _syncOverlayHeaderBack();
   }
+
+  void _backToModulePicker() => _resetToModulePicker();
 
   void _syncOverlayHeaderBack() {
     final visible = !_success && _step > 0;
@@ -89,6 +106,12 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
   @override
   void initState() {
     super.initState();
+    _resetToModulePicker(rebuild: false);
+    _overlayResetSub = FlutterOverlayWindow.overlayListener.listen((event) {
+      if (event == kOverlayResetEvent && mounted) {
+        _resetToModulePicker();
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncOverlayHeaderBack());
   }
 
@@ -895,6 +918,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     _syncOverlayHeaderBack();
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
+      _resetToModulePicker(rebuild: false);
       ref.read(overlayServiceProvider).close();
     });
   }

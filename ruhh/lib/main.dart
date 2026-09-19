@@ -11,6 +11,7 @@ import 'package:ruhh/core/services/home_widget_service.dart';
 import 'package:ruhh/core/services/smart_notification_scheduler.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/theme/ruhh_theme.dart';
 import 'package:ruhh/core/theme/ruhh_scroll_behavior.dart';
 import 'package:ruhh/core/widgets/nb_glass.dart';
@@ -33,14 +34,55 @@ class RuhhApp extends ConsumerStatefulWidget {
   ConsumerState<RuhhApp> createState() => _RuhhAppState();
 }
 
-class _RuhhAppState extends ConsumerState<RuhhApp> {
+class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
   GoRouter? _router;
   var _notificationsBootstrapped = false;
+  var _syncStartedForUser = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    stopPeriodicCloudSync();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      scheduleCloudSync(ref.read, delay: Duration.zero);
+    }
+  }
+
+  void _updateCloudSync(AuthState auth) {
+    if (auth.loading) return;
+    if (auth.isLoggedIn) {
+      if (!_syncStartedForUser) {
+        _syncStartedForUser = true;
+        startPeriodicCloudSync(ref.read);
+        scheduleCloudSync(ref.read, delay: const Duration(seconds: 1));
+      }
+    } else {
+      _syncStartedForUser = false;
+      stopPeriodicCloudSync();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     _router ??= AppRouter.create(ref);
-    ref.listen(authControllerProvider, (_, __) => _router?.refresh());
+    ref.listen(
+      authControllerProvider,
+      (prev, next) {
+        _router?.refresh();
+        _updateCloudSync(next);
+      },
+    );
     ref.listen(settingsControllerProvider, (_, __) => _router?.refresh());
     final auth = ref.watch(authControllerProvider);
     if (auth.isLoggedIn && !_notificationsBootstrapped) {

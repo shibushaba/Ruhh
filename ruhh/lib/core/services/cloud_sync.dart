@@ -10,6 +10,10 @@ import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 
 Timer? _cloudSyncDebounce;
+Timer? _cloudSyncPeriodic;
+
+/// Background sync interval (push local changes, then pull remote).
+const cloudSyncInterval = Duration(minutes: 2);
 
 typedef _RiverpodRead = T Function<T>(ProviderListenable<T> provider);
 
@@ -23,6 +27,20 @@ void scheduleCloudSync(
   _cloudSyncDebounce = Timer(delay, () {
     unawaited(runCloudSync(read));
   });
+}
+
+/// Runs every [cloudSyncInterval] while the app is logged in.
+void startPeriodicCloudSync(_RiverpodRead read) {
+  if (SupabaseService.client == null) return;
+  _cloudSyncPeriodic?.cancel();
+  _cloudSyncPeriodic = Timer.periodic(cloudSyncInterval, (_) {
+    unawaited(runCloudSync(read));
+  });
+}
+
+void stopPeriodicCloudSync() {
+  _cloudSyncPeriodic?.cancel();
+  _cloudSyncPeriodic = null;
 }
 
 Future<void> runCloudSync(_RiverpodRead read) async {

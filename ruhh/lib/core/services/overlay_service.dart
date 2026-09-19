@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Sent to the overlay isolate after [FlutterOverlayWindow.showOverlay] so UI resets.
+const kOverlayResetEvent = 'ruhh_overlay_reset';
+
 class OverlayService {
   Future<bool> isPermissionGranted() {
     if (!Platform.isAndroid) return Future.value(false);
@@ -41,6 +44,7 @@ class OverlayService {
       flag: OverlayFlag.focusPointer,
       visibility: NotificationVisibility.visibilityPublic,
     );
+    await FlutterOverlayWindow.shareData(kOverlayResetEvent);
     return true;
   }
 

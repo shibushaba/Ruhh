@@ -133,13 +133,13 @@ class SupabaseService {
     }
   }
 
-  static Future<void> push({
+  static Future<bool> push({
     required String userId,
     required String pinHash,
     required Map<String, dynamic> payload,
   }) async {
     final c = client;
-    if (c == null) return;
+    if (c == null) return false;
     try {
       await c.rpc(
         'ruhh_push',
@@ -149,8 +149,9 @@ class SupabaseService {
           'p_payload': payload,
         },
       );
+      return true;
     } catch (_) {
-      // Sync retried on next login.
+      return false;
     }
   }
 }

@@ -18,28 +18,181 @@ class SupabaseSyncService {
     final userId = user.supabaseId;
     if (userId == null || userId.isEmpty) return;
 
+    await _migrateLegacyUserIds(user, userId);
+
     final payload = await _exportPayload(user, userId);
-    await SupabaseService.push(userId: userId, pinHash: pinHash, payload: payload);
+    final pushed = await SupabaseService.push(
+      userId: userId,
+      pinHash: pinHash,
+      payload: payload,
+    );
+    if (!pushed) return;
 
     final remote = await SupabaseService.pull(userId: userId, pinHash: pinHash);
-    if (remote != null) {
-      await _importPayload(userId, remote);
+    if (remote == null) return;
+
+    final localCount = await _countLocalSyncedEntities(userId, user.id);
+    final remoteCount = _countRemoteEntities(remote);
+    final allowDeleteReconcile = !(localCount > 0 && remoteCount == 0);
+
+    await _importPayload(
+      userId,
+      remote,
+      allowDeleteReconcile: allowDeleteReconcile,
+      legacyIsarId: user.id,
+    );
+  }
+
+  static const _syncListKeys = [
+    'transactions',
+    'objectives',
+    'category_budget_limits',
+    'habits',
+    'habit_completions',
+    'prayer_logs',
+    'movies',
+  ];
+
+  bool _ownsUserId(String recordUserId, String canonical, Id legacyIsarId) {
+    return recordUserId == canonical || recordUserId == legacyIsarId.toString();
+  }
+
+  int _countRemoteEntities(Map<String, dynamic> remote) {
+    var n = 0;
+    for (final key in _syncListKeys) {
+      n += (remote[key] as List? ?? []).length;
     }
+    return n;
+  }
+
+  Future<int> _countLocalSyncedEntities(String userId, Id legacyIsarId) async {
+    final txs = await _transactionsForUser(userId, legacyIsarId);
+    final habits = await _habitsForUser(userId, legacyIsarId);
+    final completions = await _completionsForUser(userId, legacyIsarId);
+    final prayers = await _prayersForUser(userId, legacyIsarId);
+    final movies = await _moviesForUser(userId, legacyIsarId);
+    final objectives = await _objectivesForUser(userId, legacyIsarId);
+    final limits = await _categoryLimitsForUser(userId, legacyIsarId);
+    return txs.length +
+        habits.length +
+        completions.length +
+        prayers.length +
+        movies.length +
+        objectives.length +
+        limits.length;
+  }
+
+  Future<void> _migrateLegacyUserIds(UserLocal user, String canonical) async {
+    final legacy = user.id.toString();
+    if (legacy == canonical) return;
+
+    await _isar.writeTxn(() async {
+      for (final t in await _isar.transactionLocals.where().findAll()) {
+        if (t.userId == legacy) {
+          t.userId = canonical;
+          await _isar.transactionLocals.put(t);
+        }
+      }
+      for (final h in await _isar.habitLocals.where().findAll()) {
+        if (h.userId == legacy) {
+          h.userId = canonical;
+          await _isar.habitLocals.put(h);
+        }
+      }
+      for (final c in await _isar.habitCompletionLocals.where().findAll()) {
+        if (c.userId == legacy) {
+          c.userId = canonical;
+          await _isar.habitCompletionLocals.put(c);
+        }
+      }
+      for (final p in await _isar.prayerLogLocals.where().findAll()) {
+        if (p.userId == legacy) {
+          p.userId = canonical;
+          await _isar.prayerLogLocals.put(p);
+        }
+      }
+      for (final m in await _isar.movieLocals.where().findAll()) {
+        if (m.userId == legacy) {
+          m.userId = canonical;
+          await _isar.movieLocals.put(m);
+        }
+      }
+      for (final o in await _isar.objectiveLocals.where().findAll()) {
+        if (o.userId == legacy) {
+          o.userId = canonical;
+          await _isar.objectiveLocals.put(o);
+        }
+      }
+      for (final l in await _isar.categoryBudgetLimitLocals.where().findAll()) {
+        if (l.userId == legacy) {
+          l.userId = canonical;
+          await _isar.categoryBudgetLimitLocals.put(l);
+        }
+      }
+    });
+  }
+
+  Future<List<TransactionLocal>> _transactionsForUser(
+    String userId,
+    Id legacyIsarId,
+  ) async {
+    final all = await _isar.transactionLocals.where().findAll();
+    return all.where((t) => _ownsUserId(t.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<HabitLocal>> _habitsForUser(String userId, Id legacyIsarId) async {
+    final all = await _isar.habitLocals.where().findAll();
+    return all.where((h) => _ownsUserId(h.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<HabitCompletionLocal>> _completionsForUser(
+    String userId,
+    Id legacyIsarId,
+  ) async {
+    final all = await _isar.habitCompletionLocals.where().findAll();
+    return all.where((c) => _ownsUserId(c.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<PrayerLogLocal>> _prayersForUser(
+    String userId,
+    Id legacyIsarId,
+  ) async {
+    final all = await _isar.prayerLogLocals.where().findAll();
+    return all.where((p) => _ownsUserId(p.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<MovieLocal>> _moviesForUser(String userId, Id legacyIsarId) async {
+    final all = await _isar.movieLocals.where().findAll();
+    return all.where((m) => _ownsUserId(m.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<ObjectiveLocal>> _objectivesForUser(
+    String userId,
+    Id legacyIsarId,
+  ) async {
+    final all = await _isar.objectiveLocals.where().findAll();
+    return all.where((o) => _ownsUserId(o.userId, userId, legacyIsarId)).toList();
+  }
+
+  Future<List<CategoryBudgetLimitLocal>> _categoryLimitsForUser(
+    String userId,
+    Id legacyIsarId,
+  ) async {
+    final all = await _isar.categoryBudgetLimitLocals.where().findAll();
+    return all
+        .where((l) => _ownsUserId(l.userId, userId, legacyIsarId))
+        .toList();
   }
 
   Future<Map<String, dynamic>> _exportPayload(UserLocal user, String userId) async {
-    final txs = await _isar.transactionLocals.filter().userIdEqualTo(userId).findAll();
-    final habits = await _isar.habitLocals.filter().userIdEqualTo(userId).findAll();
-    final completions =
-        await _isar.habitCompletionLocals.filter().userIdEqualTo(userId).findAll();
-    final prayers = await _isar.prayerLogLocals.filter().userIdEqualTo(userId).findAll();
-    final movies = await _isar.movieLocals.filter().userIdEqualTo(userId).findAll();
-    final objectives =
-        await _isar.objectiveLocals.filter().userIdEqualTo(userId).findAll();
-    final categoryLimits = await _isar.categoryBudgetLimitLocals
-        .filter()
-        .userIdEqualTo(userId)
-        .findAll();
+    final legacyIsarId = user.id;
+    final txs = await _transactionsForUser(userId, legacyIsarId);
+    final habits = await _habitsForUser(userId, legacyIsarId);
+    final completions = await _completionsForUser(userId, legacyIsarId);
+    final prayers = await _prayersForUser(userId, legacyIsarId);
+    final movies = await _moviesForUser(userId, legacyIsarId);
+    final objectives = await _objectivesForUser(userId, legacyIsarId);
+    final categoryLimits = await _categoryLimitsForUser(userId, legacyIsarId);
 
     return {
       'preferences': {
@@ -56,7 +209,12 @@ class SupabaseSyncService {
     };
   }
 
-  Future<void> _importPayload(String userId, Map<String, dynamic> remote) async {
+  Future<void> _importPayload(
+    String userId,
+    Map<String, dynamic> remote, {
+    required bool allowDeleteReconcile,
+    required Id legacyIsarId,
+  }) async {
     await _isar.writeTxn(() async {
       final prefs = remote['preferences'];
       if (prefs is Map) {
@@ -120,12 +278,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'transactions',
-        locals: (await _isar.transactionLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _transactionsForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.transactionLocals.delete,
       );
@@ -155,12 +311,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'objectives',
-        locals: (await _isar.objectiveLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _objectivesForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.objectiveLocals.delete,
       );
@@ -182,12 +336,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'category_budget_limits',
-        locals: (await _isar.categoryBudgetLimitLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _categoryLimitsForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.categoryBudgetLimitLocals.delete,
       );
@@ -231,12 +383,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'habits',
-        locals: (await _isar.habitLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _habitsForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.habitLocals.delete,
       );
@@ -258,12 +408,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'habit_completions',
-        locals: (await _isar.habitCompletionLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _completionsForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.habitCompletionLocals.delete,
       );
@@ -285,12 +433,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'prayer_logs',
-        locals: (await _isar.prayerLogLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _prayersForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.prayerLogLocals.delete,
       );
@@ -326,12 +472,10 @@ class SupabaseSyncService {
       }
 
       await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
         remote: remote,
         listKey: 'movies',
-        locals: (await _isar.movieLocals
-                .filter()
-                .userIdEqualTo(userId)
-                .findAll())
+        locals: (await _moviesForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.movieLocals.delete,
       );
@@ -346,11 +490,13 @@ class SupabaseSyncService {
   }
 
   Future<void> _purgeLocalsMissingFromRemote({
+    required bool enabled,
     required Map<String, dynamic> remote,
     required String listKey,
     required Iterable<({String remoteId, Id id})> locals,
     required Future<bool> Function(Id id) deleteById,
   }) async {
+    if (!enabled) return;
     final remoteIds = _remoteIdsFromPayload(remote, listKey);
     for (final local in locals) {
       if (!remoteIds.contains(local.remoteId)) {

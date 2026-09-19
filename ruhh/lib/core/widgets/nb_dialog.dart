@@ -53,16 +53,29 @@ class _NBDialogActionsBar extends StatelessWidget {
             ),
           ),
         ],
-        const Spacer(),
-        for (var i = 0; i < primary.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          NBButton(
-            label: primary[i].label,
-            expand: false,
-            color: primary[i].destructive ? Colors.red.shade700 : NBColors.budget,
-            onPressed: primary[i].onPressed,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final a in primary)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 96),
+                    child: NBButton(
+                      label: a.label,
+                      expand: false,
+                      color: a.destructive ? Colors.red.shade700 : NBColors.budget,
+                      onPressed: a.onPressed,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ],
+        ),
       ],
     );
   }
