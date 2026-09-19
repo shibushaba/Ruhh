@@ -122,7 +122,7 @@ class BudgetBudgetsPage extends ConsumerWidget {
           ),
         ],
       ),
-      actions: [
+      actions: (dialogCtx) => [
         if (existing != null)
           NBDialogAction(
             label: 'Delete',
@@ -130,12 +130,12 @@ class BudgetBudgetsPage extends ConsumerWidget {
             onPressed: () async {
               await repo.deleteBudgetPeriod(existing.id);
               bumpBudgetRefresh(ref);
-              if (context.mounted) Navigator.pop(context);
+              if (dialogCtx.mounted) popNBDialog(dialogCtx);
             },
           ),
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -150,7 +150,7 @@ class BudgetBudgetsPage extends ConsumerWidget {
               colorValue: existing?.colorValue ?? NBColors.budget.toARGB32(),
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],
@@ -271,10 +271,10 @@ class _CategoryLimitsSection extends StatelessWidget {
           ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -288,7 +288,7 @@ class _CategoryLimitsSection extends StatelessWidget {
               limitAmount: lim,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],
@@ -313,19 +313,19 @@ class _CategoryLimitsSection extends StatelessWidget {
         label: 'Monthly limit',
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
-      actions: [
+      actions: (dialogCtx) => [
         NBDialogAction(
           label: 'Delete',
           destructive: true,
           onPressed: () async {
             await repo.deleteCategoryLimit(limit.id);
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -340,7 +340,7 @@ class _CategoryLimitsSection extends StatelessWidget {
               limitAmount: lim,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],

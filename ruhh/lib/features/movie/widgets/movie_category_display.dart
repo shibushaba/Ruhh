@@ -17,6 +17,12 @@ Color movieCategoryFill(Color accent, {double alpha = 0.14}) =>
 Color movieCategoryOnAccent(Color accent) =>
     accent.computeLuminance() > 0.55 ? Colors.black : Colors.white;
 
+String movieCategoryEmoji(MovieCategoryLocal cat) {
+  final e = cat.emoji.trim();
+  if (e.isNotEmpty) return e;
+  return movieCategoryEmojiForName(cat.name);
+}
+
 /// Emoji-only movie category chips (horizontal row).
 class MovieCategoryEmojiChipRow extends StatelessWidget {
   const MovieCategoryEmojiChipRow({
@@ -66,7 +72,7 @@ class MovieCategoryEmojiChipRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    movieCategoryEmojiForName(cat.name),
+                    movieCategoryEmoji(cat),
                     style: const TextStyle(fontSize: 22),
                   ),
                 ),

@@ -5,6 +5,7 @@ import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_pin_input.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -22,7 +23,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Log in')),
+      appBar: ruhhAppBar(context, title: 'Log in'),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [

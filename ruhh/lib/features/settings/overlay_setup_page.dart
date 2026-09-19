@@ -5,6 +5,7 @@ import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 
 class OverlaySetupPage extends ConsumerWidget {
   const OverlaySetupPage({super.key});
@@ -14,7 +15,7 @@ class OverlaySetupPage extends ConsumerWidget {
     final overlay = ref.watch(overlayServiceProvider);
     final supported = ref.watch(overlaySupportedProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Quick action')),
+      appBar: ruhhAppBar(context, title: 'Quick action'),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

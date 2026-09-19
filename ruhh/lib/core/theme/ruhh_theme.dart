@@ -144,23 +144,56 @@ class RuhhTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: Colors.transparent,
-        selectedColor: t.textPrimary,
-        labelStyle: buttonFont.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
+        selectedColor:
+            isDark ? PortfolioPalette.foreground : PortfolioPalette.inkLight,
+        disabledColor: t.textTertiary.withValues(alpha: 0.4),
+        showCheckmark: false,
         side: BorderSide(color: PortfolioPalette.borderHighlight),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(t.radiusChip),
+        ),
+        labelStyle: buttonFont.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          color: t.textPrimary,
+        ),
+        secondaryLabelStyle: buttonFont.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          color: isDark
+              ? PortfolioPalette.background
+              : PortfolioPalette.paperLight,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isDark
+                  ? PortfolioPalette.background
+                  : PortfolioPalette.paperLight;
+            }
+            if (states.contains(WidgetState.disabled)) {
+              return t.textTertiary;
+            }
+            return t.textPrimary;
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isDark
+                  ? PortfolioPalette.foreground
+                  : PortfolioPalette.inkLight;
+            }
+            return Colors.transparent;
+          }),
+          side: WidgetStatePropertyAll(
+            BorderSide(color: PortfolioPalette.borderHighlight),
+          ),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(t.radiusChip),
-              side: BorderSide(color: PortfolioPalette.borderHighlight),
             ),
           ),
         ),

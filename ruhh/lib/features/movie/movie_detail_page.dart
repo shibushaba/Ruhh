@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/tmdb_service.dart';
 import 'package:ruhh/features/movie/widgets/movie_log_sheet.dart';
@@ -81,14 +82,16 @@ class _MovieDetailPageState extends ConsumerState<MovieDetailPage> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Detail')),
+        backgroundColor: Colors.transparent,
+        appBar: ruhhAppBar(context, title: 'Detail'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null && _detail == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Detail')),
+        backgroundColor: Colors.transparent,
+        appBar: ruhhAppBar(context, title: 'Detail'),
         body: Center(child: Text(_error!)),
       );
     }
@@ -101,7 +104,8 @@ class _MovieDetailPageState extends ConsumerState<MovieDetailPage> {
     final release = TmdbService.releaseOf(_detail ?? {}) ?? _library?.releaseDate;
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      backgroundColor: Colors.transparent,
+      appBar: ruhhAppBar(context, title: title),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

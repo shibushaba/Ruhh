@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_pin_input.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/auth/username_availability.dart';
 
@@ -52,7 +53,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign up')),
+      appBar: ruhhAppBar(context, title: 'Sign up'),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [

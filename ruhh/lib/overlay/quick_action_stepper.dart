@@ -57,6 +57,8 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
 
   @override
   void dispose() {
+    ref.read(overlayQuickBackProvider.notifier).state =
+        (visible: false, onBack: null);
     _amountCtrl.dispose();
     _noteCtrl.dispose();
     _movieTitleCtrl.dispose();
@@ -66,6 +68,29 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
   }
 
   RuhhTokens get _t => RuhhTokens.dark;
+
+  void _backToModulePicker() {
+    setState(() {
+      _step = 0;
+      _module = null;
+      _movieSuggestions = [];
+    });
+    _syncOverlayHeaderBack();
+  }
+
+  void _syncOverlayHeaderBack() {
+    final visible = !_success && _step > 0;
+    ref.read(overlayQuickBackProvider.notifier).state = (
+      visible: visible,
+      onBack: visible ? _backToModulePicker : null,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncOverlayHeaderBack());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,10 +191,13 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
                     icon: _moduleIcon(m),
                     accent: _moduleColor(m),
                     pastel: _modulePastel(m),
-                    onTap: () => setState(() {
-                      _module = m;
-                      _step = 1;
-                    }),
+                    onTap: () {
+                      setState(() {
+                        _module = m;
+                        _step = 1;
+                      });
+                      _syncOverlayHeaderBack();
+                    },
                   ),
                 )
                 .toList(),
@@ -184,22 +212,6 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() {
-              _step = 0;
-              _module = null;
-              _movieSuggestions = [];
-            }),
-            icon: Icon(Icons.arrow_back_rounded,
-                size: 18, color: _t.textSecondary),
-            label: Text(
-              'Back',
-              style: TextStyle(color: _t.textSecondary),
-            ),
-          ),
-        ),
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -880,6 +892,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
 
   void _showSuccess() {
     setState(() => _success = true);
+    _syncOverlayHeaderBack();
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
       ref.read(overlayServiceProvider).close();

@@ -9,7 +9,8 @@ import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
 
-export 'package:ruhh/features/habit/tracker/habit_appearance.dart' show habitIconData;
+export 'package:ruhh/features/habit/tracker/habit_appearance.dart'
+    show habitIconChip, habitIconData, habitIconIsEmoji;
 
 class NBHabitTodayRing extends StatelessWidget {
   const NBHabitTodayRing({
@@ -97,7 +98,11 @@ class NBHabitTile extends StatelessWidget {
                 targetLabel: '/ $target ${habit.unitLabel}',
                 progress: progress,
                 accent: color,
-                trailingIcon: habitIconData(habit.icon),
+                trailingIcon: habitIconIsEmoji(habit.icon)
+                    ? null
+                    : habitIconData(habit.icon),
+                trailingEmoji:
+                    habitIconIsEmoji(habit.icon) ? habit.icon : null,
               ),
               const SizedBox(height: 12),
               NBGoalStepper(
@@ -115,8 +120,7 @@ class NBHabitTile extends StatelessWidget {
       child: RuhhSelectableRow(
         title: habit.name,
         subtitle: streak > 0 ? 'Streak $streak' : null,
-        icon: habitIconData(habit.icon),
-        accent: color,
+        leading: habitIconChip(habit.icon, color),
         selected: done,
         trailing: RuhhSelectionTrailing.check,
         onTap: onToggle,

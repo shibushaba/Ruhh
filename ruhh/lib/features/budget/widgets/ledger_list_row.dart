@@ -31,11 +31,15 @@ class LedgerListRow extends StatelessWidget {
     super.key,
     required this.tx,
     this.onTap,
+    this.onEdit,
+    this.onDelete,
     this.showSign = true,
   });
 
   final TransactionLocal tx;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final bool showSign;
 
   @override
@@ -127,6 +131,34 @@ class LedgerListRow extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onEdit != null || onDelete != null) ...[
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.more_vert, color: t.textSecondary),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        onEdit?.call();
+                      } else if (value == 'delete') {
+                        onDelete?.call();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit'),
+                        ),
+                      if (onDelete != null)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(color: NBMetrics.expenseRed),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

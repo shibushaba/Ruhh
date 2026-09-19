@@ -150,7 +150,7 @@ Future<void> editBudgetObjective(
         ),
       ],
     ),
-    actions: (_, __) => [
+    actions: (dialogCtx, __) => [
       if (existing != null)
         NBDialogAction(
           label: 'Delete',
@@ -158,12 +158,12 @@ Future<void> editBudgetObjective(
           onPressed: () async {
             await repo.deleteObjective(existing.id);
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       NBDialogAction(
         label: 'Cancel',
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => popNBDialog(dialogCtx),
       ),
       NBDialogAction(
         label: 'Save',
@@ -180,7 +180,7 @@ Future<void> editBudgetObjective(
             colorValue: existing?.colorValue,
           );
           bumpBudgetRefresh(ref);
-          if (context.mounted) Navigator.pop(context);
+          if (dialogCtx.mounted) popNBDialog(dialogCtx);
         },
       ),
     ],

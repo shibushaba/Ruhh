@@ -8,6 +8,77 @@ import 'package:ruhh/core/widgets/nb_fab_location.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 
+/// Parent route when the stack cannot pop (sibling GoRouter locations).
+String? ruhhParentRoute(String matchedLocation) {
+  if (matchedLocation == '/analytics') return '/home';
+  if (matchedLocation.startsWith('/settings/')) return '/settings';
+  return null;
+}
+
+bool ruhhShouldShowBack(
+  BuildContext context, {
+  bool moduleTabCanBack = false,
+}) {
+  if (moduleTabCanBack) return true;
+  if (context.canPop()) return true;
+  final loc = GoRouterState.of(context).matchedLocation;
+  return ruhhParentRoute(loc) != null;
+}
+
+void ruhhNavigateBack(
+  BuildContext context, {
+  VoidCallback? onModuleTabBack,
+}) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  if (onModuleTabBack != null) {
+    onModuleTabBack();
+    return;
+  }
+  final parent = ruhhParentRoute(GoRouterState.of(context).matchedLocation);
+  if (parent != null) {
+    context.go(parent);
+  }
+}
+
+/// Back control when this route can pop or has a known parent section.
+Widget? ruhhBackLeading(
+  BuildContext context, {
+  VoidCallback? onPressed,
+  VoidCallback? onModuleTabBack,
+}) {
+  final show = onPressed != null ||
+      ruhhShouldShowBack(context, moduleTabCanBack: onModuleTabBack != null);
+  if (!show) return null;
+  return IconButton(
+    onPressed: onPressed ?? () => ruhhNavigateBack(context, onModuleTabBack: onModuleTabBack),
+    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+    tooltip: 'Back',
+  );
+}
+
+/// App bar with portfolio styling and automatic back when [GoRouter] can pop.
+PreferredSizeWidget ruhhAppBar(
+  BuildContext context, {
+  required String title,
+  List<Widget>? actions,
+  PreferredSizeWidget? bottom,
+}) {
+  return AppBar(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    centerTitle: false,
+    automaticallyImplyLeading: false,
+    leading: ruhhBackLeading(context),
+    title: Text(title),
+    actions: actions,
+    bottom: bottom,
+  );
+}
+
 /// Standard module page chrome with soft header + optional module tabs.
 class NBModuleScaffold extends ConsumerWidget {
   const NBModuleScaffold({
@@ -20,6 +91,7 @@ class NBModuleScaffold extends ConsumerWidget {
     this.onModuleTab,
     this.floatingActionButton,
     this.showBackButton = false,
+    this.hideBackButton = false,
     this.wrapBody = true,
     @Deprecated('Unused') this.bottom,
     @Deprecated('Use moduleTabLabels') this.bottomNavigationBar,
@@ -38,6 +110,7 @@ class NBModuleScaffold extends ConsumerWidget {
   final bool wrapBody;
   final bool glassBackground;
   final bool showBackButton;
+  final bool hideBackButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,8 +118,16 @@ class NBModuleScaffold extends ConsumerWidget {
     final labels = moduleTabLabels;
     final tabIndex = moduleTabIndex ?? 0;
     final onTab = onModuleTab;
+    final tabCanBack =
+        labels != null && labels.length > 1 && tabIndex > 0 && onTab != null;
+
+    void onModuleTabBack() => onTab!(tabIndex - 1);
 
     Widget pageBody = wrapBody ? NBPageBody(child: body) : body;
+
+    final showBack = !hideBackButton &&
+        (showBackButton ||
+            ruhhShouldShowBack(context, moduleTabCanBack: tabCanBack));
 
     final trailing = <Widget>[
       if (ref.watch(overlaySupportedProvider))
@@ -70,10 +151,14 @@ class NBModuleScaffold extends ConsumerWidget {
             bottom: false,
             child: Row(
               children: [
-                if (showBackButton)
+                if (showBack)
                   IconButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () => ruhhNavigateBack(
+                      context,
+                      onModuleTabBack: tabCanBack ? onModuleTabBack : null,
+                    ),
                     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    tooltip: 'Back',
                   ),
                 Expanded(
                   child: RuhhScreenHeader(title: title, actions: trailing),

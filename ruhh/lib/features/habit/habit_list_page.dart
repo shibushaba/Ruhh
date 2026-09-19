@@ -6,7 +6,7 @@ import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
-import 'package:ruhh/features/habit/widgets/habit_tracker_widgets.dart';
+import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
 
 class HabitListPage extends ConsumerWidget {
   const HabitListPage({super.key});
@@ -97,12 +97,7 @@ class _HabitRow extends ConsumerWidget {
             ],
           ),
           child: ListTile(
-            leading: Container(
-              width: 36,
-              height: 36,
-              color: Color(habit.colorValue),
-              child: Icon(habitIconData(habit.icon), size: 20),
-            ),
+            leading: habitIconChip(habit.icon, Color(habit.colorValue), size: 36),
             title: Text(habit.name),
             subtitle: Text(
               '${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}',

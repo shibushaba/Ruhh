@@ -245,6 +245,7 @@ class MovieRepository {
             ..name = defaultMovieCategoryNames[i]
             ..colorValue = movieCategoryColorForName(defaultMovieCategoryNames[i])
                 .toARGB32()
+            ..emoji = movieCategoryEmojiForName(defaultMovieCategoryNames[i])
             ..isCustom = false
             ..isArchived = false
             ..sortOrder = i;
@@ -265,6 +266,11 @@ class MovieRepository {
             movieCategoryColorForName(c.name).toARGB32();
         if (c.colorValue != expected) {
           c.colorValue = expected;
+          await _isar.movieCategoryLocals.put(c);
+        }
+        final expectedEmoji = movieCategoryEmojiForName(c.name);
+        if (c.emoji.trim().isEmpty) {
+          c.emoji = expectedEmoji;
           await _isar.movieCategoryLocals.put(c);
         }
       }
@@ -333,6 +339,7 @@ class MovieRepository {
   Future<MovieCategoryLocal> createCategory({
     required String name,
     required Color color,
+    String? emoji,
     bool isCustom = true,
   }) async {
     final all = await categoriesActive();
@@ -341,6 +348,9 @@ class MovieRepository {
       ..userId = _userId
       ..name = name.trim()
       ..colorValue = color.toARGB32()
+      ..emoji = (emoji?.trim().isNotEmpty == true)
+          ? emoji!.trim()
+          : movieCategoryEmojiForName(name.trim())
       ..isCustom = isCustom
       ..isArchived = false
       ..sortOrder = all.length;
@@ -352,9 +362,11 @@ class MovieRepository {
     MovieCategoryLocal cat, {
     String? name,
     Color? color,
+    String? emoji,
   }) async {
     if (name != null) cat.name = name.trim();
     if (color != null) cat.colorValue = color.toARGB32();
+    if (emoji != null) cat.emoji = emoji.trim();
     await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
   }
 

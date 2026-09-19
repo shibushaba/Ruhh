@@ -7,6 +7,7 @@ import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
@@ -20,10 +21,7 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text('Settings'),
-      ),
+      appBar: ruhhAppBar(context, title: 'Settings'),
       body: NBPageBody(
         extraBottomPadding: false,
         child: ListView(

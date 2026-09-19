@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 
 class HabitSettingsPage extends ConsumerWidget {
@@ -11,7 +13,11 @@ class HabitSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(habitRefreshProvider);
     final repoAsync = ref.watch(habitRepositoryProvider);
-    return repoAsync.when(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: ruhhAppBar(context, title: 'Habit settings'),
+      body: NBPageBody(
+        child: repoAsync.when(
       data: (repo) => FutureBuilder(
         future: repo.archivedHabits(),
         builder: (context, snap) {
@@ -19,9 +25,7 @@ class HabitSettingsPage extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Habit settings',
-                  style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               const NBCard(
                 child: Text(
                   'Home screen widget: after you add habits, RUHH syncs today\'s '
@@ -69,6 +73,8 @@ class HabitSettingsPage extends ConsumerWidget {
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
+        ),
+      ),
     );
   }
 }

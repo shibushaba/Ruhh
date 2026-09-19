@@ -3,6 +3,12 @@ import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_glass.dart';
 
+/// Closes the modal opened by [showNBFormDialog] / [showNBStatefulFormDialog].
+/// Use the [BuildContext] from the dialog `actions` callback — not the page.
+void popNBDialog(BuildContext dialogContext) {
+  Navigator.of(dialogContext).pop();
+}
+
 class NBDialogAction {
   const NBDialogAction({
     required this.label,
@@ -17,8 +23,8 @@ class NBDialogAction {
   final bool primary;
 }
 
-const _kDialogInset = EdgeInsets.symmetric(horizontal: 20, vertical: 24);
-const _kDialogPadding = EdgeInsets.fromLTRB(20, 20, 20, 16);
+const _kDialogInset = EdgeInsets.symmetric(horizontal: 20, vertical: 40);
+const _kDialogPadding = EdgeInsets.fromLTRB(20, 20, 20, 20);
 
 class _NBDialogActionsBar extends StatelessWidget {
   const _NBDialogActionsBar({required this.actions});
@@ -27,31 +33,36 @@ class _NBDialogActionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.end,
-      spacing: 8,
-      runSpacing: 8,
+    final primary = actions.where((a) => a.primary).toList();
+    final secondary = actions.where((a) => !a.primary).toList();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        for (final action in actions)
-          if (action.primary)
-            NBButton(
-              label: action.label,
-              expand: false,
-              color: NBColors.budget,
-              onPressed: action.onPressed,
-            )
-          else
-            TextButton(
-              onPressed: action.onPressed,
-              child: Text(
-                action.label,
-                style: TextStyle(
-                  color: action.destructive
-                      ? Colors.red.shade700
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
+        for (var i = 0; i < secondary.length; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          TextButton(
+            onPressed: secondary[i].onPressed,
+            child: Text(
+              secondary[i].label,
+              style: TextStyle(
+                color: secondary[i].destructive
+                    ? Colors.red.shade700
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
+          ),
+        ],
+        const Spacer(),
+        for (var i = 0; i < primary.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          NBButton(
+            label: primary[i].label,
+            expand: false,
+            color: primary[i].destructive ? Colors.red.shade700 : NBColors.budget,
+            onPressed: primary[i].onPressed,
+          ),
+        ],
       ],
     );
   }
@@ -74,13 +85,17 @@ class NBFormDialogPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final maxDialogH = MediaQuery.sizeOf(context).height * 0.86;
+    final maxScrollH = MediaQuery.sizeOf(context).height * 0.48;
+
     return Dialog(
+      alignment: Alignment.center,
       backgroundColor: Colors.transparent,
       insetPadding: _kDialogInset,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 440,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+          maxHeight: maxDialogH,
         ),
         child: NBGlassPanel(
           elevated: true,
@@ -92,7 +107,8 @@ class NBFormDialogPanel extends StatelessWidget {
               Text(title, style: theme.textTheme.titleLarge),
               const SizedBox(height: 16),
               if (scrollable)
-                Flexible(
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxScrollH),
                   child: SingleChildScrollView(
                     child: content,
                   ),
@@ -100,6 +116,11 @@ class NBFormDialogPanel extends StatelessWidget {
               else
                 content,
               const SizedBox(height: 20),
+              Divider(
+                height: 1,
+                color: theme.dividerColor.withValues(alpha: 0.35),
+              ),
+              const SizedBox(height: 16),
               _NBDialogActionsBar(actions: actions),
             ],
           ),
@@ -114,16 +135,16 @@ Future<void> showNBFormDialog({
   required BuildContext context,
   required String title,
   required Widget content,
-  required List<NBDialogAction> actions,
+  required List<NBDialogAction> Function(BuildContext dialogContext) actions,
   bool scrollable = false,
 }) {
   return showDialog<void>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.45),
-    builder: (ctx) => NBFormDialogPanel(
+    builder: (dialogContext) => NBFormDialogPanel(
       title: title,
       content: content,
-      actions: actions,
+      actions: actions(dialogContext),
       scrollable: scrollable,
     ),
   );
@@ -145,12 +166,12 @@ Future<void> showNBStatefulFormDialog({
     barrierColor: Colors.black.withValues(alpha: 0.45),
     builder: (dialogContext) {
       return StatefulBuilder(
-        builder: (context, setState) {
+        builder: (statefulContext, setState) {
           return NBFormDialogPanel(
             title: title,
             scrollable: scrollable,
-            content: content(context, setState),
-            actions: actions(context, setState),
+            content: content(statefulContext, setState),
+            actions: actions(dialogContext, setState),
           );
         },
       );

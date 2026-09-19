@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
@@ -18,7 +19,7 @@ class OnboardingPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome')),
+      appBar: ruhhAppBar(context, title: 'Welcome'),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

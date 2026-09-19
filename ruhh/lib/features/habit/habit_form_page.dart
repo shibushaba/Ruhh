@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/widgets/habit_appearance_pickers.dart';
@@ -28,7 +30,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
   HabitKind _kind = HabitKind.positive;
   HabitInterval _interval = HabitInterval.daily;
   int _color = HabitRepository.presetColors().first;
-  String _icon = 'target';
+  String _icon = '🎯';
   final _weekdays = <int>{1, 2, 3, 4, 5};
   var _monthDay = 1;
   var _customEvery = 3;
@@ -125,19 +127,24 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const NBModuleScaffold(
+        title: 'Habit',
+        wrapBody: false,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
     final editing = _existing != null;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(editing ? 'Edit habit' : 'New habit'),
-      ),
+    return NBModuleScaffold(
+      title: editing ? 'Edit habit' : 'New habit',
+      wrapBody: false,
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          ruhhGlobalNavBottomInset(context) + 12,
+        ),
         children: [
           RuhhSoftCard(
             child: Column(
@@ -181,6 +188,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
                     return ChoiceChip(
                       label: Text(HabitRepository.intervalLabel(i)),
                       selected: _interval == i,
+                      showCheckmark: false,
                       onSelected: (_) => setState(() => _interval = i),
                     );
                   }).toList(),
@@ -195,6 +203,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
                       return FilterChip(
                         label: Text(labels[i]),
                         selected: _weekdays.contains(wd),
+                        showCheckmark: false,
                         onSelected: (v) => setState(() {
                           if (v) {
                             _weekdays.add(wd);
@@ -244,7 +253,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
                   onSelected: (c) => setState(() => _color = c),
                 ),
                 const SizedBox(height: 16),
-                Text('Icon', style: Theme.of(context).textTheme.titleSmall),
+                Text('Emoji', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
                 HabitIconPicker(
                   selected: _icon,

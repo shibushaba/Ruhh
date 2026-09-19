@@ -4,7 +4,6 @@ import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_dialog.dart';
-import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
 import 'package:ruhh/features/movie/widgets/movie_category_display.dart';
 import 'package:ruhh/features/movie/widgets/nb_star_rating.dart';
 
@@ -35,14 +34,11 @@ class MovieTrackerCard extends StatelessWidget {
     final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
     final accent = movieCategoryAccent(category);
-    final emoji = category != null
-        ? movieCategoryEmojiForName(category!.name)
-        : '🎬';
+    final emoji =
+        category != null ? movieCategoryEmoji(category!) : '🎬';
     final note = movie.trackerNote.trim();
 
-    final card = Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
+    final card = Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(t.radiusCardMedium),
         child: InkWell(
@@ -53,20 +49,20 @@ class MovieTrackerCard extends StatelessWidget {
               color: movieCategoryFill(accent, alpha: 0.16),
               borderRadius: BorderRadius.circular(t.radiusCardMedium),
               border: Border(
-                left: BorderSide(color: accent, width: 5),
+                left: BorderSide(color: accent, width: 4),
                 top: BorderSide(color: accent, width: 1.5),
                 right: BorderSide(color: accent, width: 1.5),
                 bottom: BorderSide(color: accent, width: 1.5),
               ),
             ),
             child: Padding(
-              padding: EdgeInsets.all(t.spaceCardPaddingCompact),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                         Container(
-                          width: 58,
-                          height: 86,
+                          width: 46,
+                          height: 68,
                           decoration: BoxDecoration(
                             color: accent,
                             borderRadius:
@@ -85,12 +81,12 @@ class MovieTrackerCard extends StatelessWidget {
                             children: [
                               Text(
                                 emoji,
-                                style: const TextStyle(fontSize: 28),
+                                style: const TextStyle(fontSize: 22),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,13 +94,13 @@ class MovieTrackerCard extends StatelessWidget {
                               Text(
                                 movie.title,
                                 style: t.cardTitle(theme).copyWith(
-                                      fontSize: 17,
+                                      fontSize: 15,
                                     ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (subtitle != null) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   subtitle!,
                                   style: t.caption(theme).copyWith(
@@ -116,15 +112,15 @@ class MovieTrackerCard extends StatelessWidget {
                                 ),
                               ],
                               if (note.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   note,
                                   style: t.caption(theme),
-                                  maxLines: 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   _CategoryPill(
@@ -135,7 +131,7 @@ class MovieTrackerCard extends StatelessWidget {
                                   NBStarRating(
                                     value: movie.priority,
                                     readOnly: true,
-                                    size: 18,
+                                    size: 16,
                                   ),
                                 ],
                               ),
@@ -147,48 +143,90 @@ class MovieTrackerCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
 
-    return Slidable(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Slidable(
       key: ValueKey(movie.remoteId),
       startActionPane: ActionPane(
         motion: const DrawerMotion(),
-        extentRatio: 0.28,
+        extentRatio: 0.14,
         children: [
-          SlidableAction(
-            onPressed: (_) => onMarkPrimary(),
+          _MovieSlidableIconAction(
+            onPressed: onMarkPrimary,
             backgroundColor: accent,
             foregroundColor: movieCategoryOnAccent(accent),
             icon: primarySwipeIcon,
-            label: primarySwipeLabel,
-            borderRadius: BorderRadius.circular(t.radiusCardMedium),
+            semanticsLabel: primarySwipeLabel,
+            borderRadius: BorderRadius.horizontal(
+              left: Radius.circular(t.radiusCardMedium),
+            ),
           ),
         ],
       ),
       endActionPane: ActionPane(
         motion: const DrawerMotion(),
-        extentRatio: 0.36,
+        extentRatio: 0.22,
         children: [
-          SlidableAction(
-            onPressed: (_) => onEdit(),
+          _MovieSlidableIconAction(
+            onPressed: onEdit,
             backgroundColor: t.surfaceSecondary,
             foregroundColor: t.textPrimary,
             icon: Icons.edit_outlined,
-            label: 'Edit',
-            borderRadius: BorderRadius.circular(t.radiusCardMedium),
+            semanticsLabel: 'Edit',
           ),
-          SlidableAction(
-            onPressed: (_) => onDelete(),
+          _MovieSlidableIconAction(
+            onPressed: onDelete,
             backgroundColor: const Color(0xFFEF4444),
             foregroundColor: Colors.white,
             icon: Icons.delete_outline,
-            label: 'Delete',
-            borderRadius: BorderRadius.circular(t.radiusCardMedium),
+            semanticsLabel: 'Delete',
+            borderRadius: BorderRadius.horizontal(
+              right: Radius.circular(t.radiusCardMedium),
+            ),
           ),
         ],
       ),
       child: card,
+      ),
+    );
+  }
+}
+
+class _MovieSlidableIconAction extends StatelessWidget {
+  const _MovieSlidableIconAction({
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.icon,
+    required this.semanticsLabel,
+    this.borderRadius = BorderRadius.zero,
+  });
+
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final IconData icon;
+  final String semanticsLabel;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSlidableAction(
+      onPressed: (_) => onPressed(),
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      borderRadius: borderRadius,
+      padding: EdgeInsets.zero,
+      flex: 1,
+      child: Semantics(
+        label: semanticsLabel,
+        button: true,
+        child: Center(
+          child: Icon(icon, size: 22),
+        ),
+      ),
     );
   }
 }
@@ -203,7 +241,7 @@ class _CategoryPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ruhh;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(t.radiusChip),

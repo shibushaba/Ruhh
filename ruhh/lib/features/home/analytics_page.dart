@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
@@ -17,15 +19,17 @@ class AnalyticsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Insights')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      backgroundColor: Colors.transparent,
+      appBar: ruhhAppBar(context, title: 'Insights'),
+      body: NBPageBody(
+        child: ListView(
+          children: [
           if (settings.budgetEnabled) _BudgetInsight(ref: ref),
           _HabitInsight(ref: ref),
           _PrayerInsight(ref: ref),
           _MovieInsight(ref: ref),
         ],
+        ),
       ),
     );
   }

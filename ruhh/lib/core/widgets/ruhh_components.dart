@@ -81,11 +81,15 @@ class RuhhIconChip extends StatelessWidget {
     required this.icon,
     required this.accent,
     this.size = 40,
+    this.emoji,
   });
 
   final IconData icon;
   final Color accent;
   final double size;
+
+  /// When set, shown instead of [icon] (emoji habits).
+  final String? emoji;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +102,9 @@ class RuhhIconChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(t.radiusChip),
       ),
       alignment: Alignment.center,
-      child: Icon(icon, size: 20, color: accent),
+      child: emoji != null && emoji!.isNotEmpty
+          ? Text(emoji!, style: const TextStyle(fontSize: 20))
+          : Icon(icon, size: 20, color: accent),
     );
   }
 }
@@ -115,6 +121,7 @@ class RuhhStatProgressCard extends StatelessWidget {
     this.accent,
     this.compact = false,
     this.trailingIcon,
+    this.trailingEmoji,
     this.subtitle,
     this.onTap,
     this.onAdd,
@@ -127,6 +134,7 @@ class RuhhStatProgressCard extends StatelessWidget {
   final Color? accent;
   final bool compact;
   final IconData? trailingIcon;
+  final String? trailingEmoji;
   final String? subtitle;
   final VoidCallback? onTap;
   final VoidCallback? onAdd;
@@ -157,7 +165,13 @@ class RuhhStatProgressCard extends StatelessWidget {
               ),
               if (onAdd != null)
                 _SectionAddButton(accent: barColor, onPressed: onAdd!),
-              if (trailingIcon != null)
+              if (trailingEmoji != null && trailingEmoji!.isNotEmpty)
+                RuhhIconChip(
+                  icon: Icons.circle_outlined,
+                  emoji: trailingEmoji,
+                  accent: barColor,
+                )
+              else if (trailingIcon != null)
                 RuhhIconChip(icon: trailingIcon!, accent: barColor),
             ],
           ),
@@ -353,8 +367,7 @@ class RuhhSelectableRow extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    required this.icon,
-    required this.accent,
+    required this.leading,
     required this.selected,
     this.trailing = RuhhSelectionTrailing.radio,
     this.onTap,
@@ -362,8 +375,7 @@ class RuhhSelectableRow extends StatelessWidget {
 
   final String title;
   final String? subtitle;
-  final IconData icon;
-  final Color accent;
+  final Widget leading;
   final bool selected;
   final RuhhSelectionTrailing trailing;
   final VoidCallback? onTap;
@@ -380,7 +392,7 @@ class RuhhSelectableRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: Row(
             children: [
-              RuhhIconChip(icon: icon, accent: accent),
+              leading,
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

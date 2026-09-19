@@ -8,6 +8,8 @@ import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/movie_watchlist_page.dart';
 import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
+import 'package:ruhh/features/budget/widgets/category_emoji_picker.dart';
+import 'package:ruhh/features/movie/widgets/movie_category_display.dart';
 import 'package:ruhh/features/movie/widgets/movie_color_picker.dart';
 
 class MovieCategoriesPage extends ConsumerWidget {
@@ -49,6 +51,7 @@ class MovieCategoriesPage extends ConsumerWidget {
     final nameCtrl = TextEditingController();
     final active = ref.read(movieCategoriesProvider).value ?? [];
     var color = movieCategoryPalette[active.length % movieCategoryPalette.length];
+    var emoji = kCategoryEmojiChoices.first;
     await showNBStatefulFormDialog(
       context: context,
       title: 'New category',
@@ -64,12 +67,19 @@ class MovieCategoriesPage extends ConsumerWidget {
             selected: color,
             onSelected: (c) => setLocal(() => color = c),
           ),
+          const SizedBox(height: 12),
+          Text('Emoji', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          CategoryEmojiPicker(
+            selected: emoji,
+            onSelected: (e) => setLocal(() => emoji = e),
+          ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -78,8 +88,8 @@ class MovieCategoriesPage extends ConsumerWidget {
             final name = nameCtrl.text.trim();
             if (name.isEmpty) return;
             final repo = await ref.read(movieRepositoryProvider.future);
-            await repo.createCategory(name: name, color: color);
-            if (context.mounted) Navigator.pop(context);
+            await repo.createCategory(name: name, color: color, emoji: emoji);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],
@@ -112,6 +122,11 @@ class _CategoryRow extends ConsumerWidget {
       ),
       child: Row(
         children: [
+          Text(
+            movieCategoryEmoji(category),
+            style: const TextStyle(fontSize: 22),
+          ),
+          const SizedBox(width: 8),
           Container(
             width: 28,
             height: 28,
@@ -140,6 +155,7 @@ class _CategoryRow extends ConsumerWidget {
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final nameCtrl = TextEditingController(text: category.name);
     var color = Color(category.colorValue);
+    var emoji = movieCategoryEmoji(category);
     await showNBStatefulFormDialog(
       context: context,
       title: 'Edit category',
@@ -155,12 +171,19 @@ class _CategoryRow extends ConsumerWidget {
             selected: color,
             onSelected: (c) => setLocal(() => color = c),
           ),
+          const SizedBox(height: 12),
+          Text('Emoji', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          CategoryEmojiPicker(
+            selected: emoji,
+            onSelected: (e) => setLocal(() => emoji = e),
+          ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -171,8 +194,9 @@ class _CategoryRow extends ConsumerWidget {
               category,
               name: nameCtrl.text,
               color: color,
+              emoji: emoji,
             );
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],

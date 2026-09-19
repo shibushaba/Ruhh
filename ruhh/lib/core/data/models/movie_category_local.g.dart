@@ -52,6 +52,11 @@ const MovieCategoryLocalSchema = CollectionSchema(
       id: 6,
       name: r'userId',
       type: IsarType.string,
+    ),
+    r'emoji': PropertySchema(
+      id: 7,
+      name: r'emoji',
+      type: IsarType.string,
     )
   },
   estimateSize: _movieCategoryLocalEstimateSize,
@@ -77,6 +82,7 @@ int _movieCategoryLocalEstimateSize(
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.remoteId.length * 3;
   bytesCount += 3 + object.userId.length * 3;
+  bytesCount += 3 + object.emoji.length * 3;
   return bytesCount;
 }
 
@@ -93,6 +99,7 @@ void _movieCategoryLocalSerialize(
   writer.writeString(offsets[4], object.remoteId);
   writer.writeLong(offsets[5], object.sortOrder);
   writer.writeString(offsets[6], object.userId);
+  writer.writeString(offsets[7], object.emoji);
 }
 
 MovieCategoryLocal _movieCategoryLocalDeserialize(
@@ -110,6 +117,7 @@ MovieCategoryLocal _movieCategoryLocalDeserialize(
   object.remoteId = reader.readString(offsets[4]);
   object.sortOrder = reader.readLong(offsets[5]);
   object.userId = reader.readString(offsets[6]);
+  object.emoji = reader.readString(offsets[7]);
   return object;
 }
 
@@ -133,6 +141,8 @@ P _movieCategoryLocalDeserializeProp<P>(
     case 5:
       return (reader.readLong(offset)) as P;
     case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1155,6 +1165,12 @@ extension MovieCategoryLocalQueryProperty
   QueryBuilder<MovieCategoryLocal, String, QQueryOperations> userIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'userId');
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, String, QQueryOperations> emojiProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'emoji');
     });
   }
 }

@@ -53,7 +53,7 @@ class HabitCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundColor: color.withValues(alpha: 0.5),
-                  child: Icon(habitIconData(habit.icon), color: NBColors.black),
+                  child: habitIconChip(habit.icon, color, size: 36),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

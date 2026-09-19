@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 
 class PrayerSettingsPage extends ConsumerStatefulWidget {
@@ -44,7 +46,11 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> {
   Widget build(BuildContext context) {
     ref.watch(prayerRefreshProvider);
     final repoAsync = ref.watch(prayerRepositoryProvider);
-    return repoAsync.when(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: ruhhAppBar(context, title: 'Prayer settings'),
+      body: NBPageBody(
+        child: repoAsync.when(
       data: (r) => FutureBuilder(
         future: Future.wait([
           r.hasSyncedTimes(),
@@ -66,9 +72,7 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Prayer settings',
-                  style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               NBCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,6 +182,8 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> {
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
+        ),
+      ),
     );
   }
 }

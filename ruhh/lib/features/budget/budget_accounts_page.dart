@@ -131,7 +131,7 @@ class BudgetAccountsPage extends ConsumerWidget {
           ),
         ],
       ),
-      actions: [
+      actions: (dialogCtx) => [
         if (existing != null)
           NBDialogAction(
             label: 'Delete',
@@ -139,12 +139,12 @@ class BudgetAccountsPage extends ConsumerWidget {
             onPressed: () async {
               await repo.deleteWallet(existing.id);
               bumpBudgetRefresh(ref);
-              if (context.mounted) Navigator.pop(context);
+              if (dialogCtx.mounted) popNBDialog(dialogCtx);
             },
           ),
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -159,7 +159,7 @@ class BudgetAccountsPage extends ConsumerWidget {
               colorValue: existing?.colorValue,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],
@@ -189,7 +189,7 @@ class BudgetAccountsPage extends ConsumerWidget {
           ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, setLocal) => [
         if (existing != null)
           NBDialogAction(
             label: 'Delete',
@@ -197,12 +197,12 @@ class BudgetAccountsPage extends ConsumerWidget {
             onPressed: () async {
               await repo.deleteCategory(existing.id);
               bumpBudgetRefresh(ref);
-              if (context.mounted) Navigator.pop(context);
+              if (dialogCtx.mounted) popNBDialog(dialogCtx);
             },
           ),
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -216,7 +216,7 @@ class BudgetAccountsPage extends ConsumerWidget {
               colorValue: existing?.colorValue,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],

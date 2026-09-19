@@ -10,6 +10,7 @@ import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/movie_watchlist_page.dart';
 import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
+import 'package:ruhh/features/budget/widgets/category_emoji_picker.dart';
 import 'package:ruhh/features/movie/widgets/movie_color_picker.dart';
 import 'package:ruhh/features/movie/widgets/nb_star_rating.dart';
 
@@ -80,6 +81,7 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
   Future<void> _newCategory(List<MovieCategoryLocal> active) async {
     final nameCtrl = TextEditingController();
     var color = movieCategoryPalette[active.length % movieCategoryPalette.length];
+    var emoji = '🎬';
     if (!mounted) return;
     await showNBStatefulFormDialog(
       context: context,
@@ -96,12 +98,19 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
             selected: color,
             onSelected: (c) => setLocal(() => color = c),
           ),
+          const SizedBox(height: 12),
+          Text('Emoji', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          CategoryEmojiPicker(
+            selected: emoji,
+            onSelected: (e) => setLocal(() => emoji = e),
+          ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Create',
@@ -110,11 +119,15 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
             final name = nameCtrl.text.trim();
             if (name.isEmpty) return;
             final repo = await ref.read(movieRepositoryProvider.future);
-            final cat = await repo.createCategory(name: name, color: color);
+            final cat = await repo.createCategory(
+              name: name,
+              color: color,
+              emoji: emoji,
+            );
             if (mounted) {
               setState(() => _categoryId = cat.remoteId);
             }
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],

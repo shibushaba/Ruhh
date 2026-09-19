@@ -119,6 +119,17 @@ class SupabaseSyncService {
         await _isar.transactionLocals.put(tx);
       }
 
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'transactions',
+        locals: (await _isar.transactionLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.transactionLocals.delete,
+      );
+
       for (final row in (remote['objectives'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
         final o = ObjectiveLocal()
@@ -143,6 +154,17 @@ class SupabaseSyncService {
         await _isar.objectiveLocals.put(o);
       }
 
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'objectives',
+        locals: (await _isar.objectiveLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.objectiveLocals.delete,
+      );
+
       for (final row in (remote['category_budget_limits'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
         final l = CategoryBudgetLimitLocal()
@@ -158,6 +180,17 @@ class SupabaseSyncService {
         if (existing != null) l.id = existing.id;
         await _isar.categoryBudgetLimitLocals.put(l);
       }
+
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'category_budget_limits',
+        locals: (await _isar.categoryBudgetLimitLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.categoryBudgetLimitLocals.delete,
+      );
 
       for (final row in (remote['habits'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
@@ -197,6 +230,17 @@ class SupabaseSyncService {
         await _isar.habitLocals.put(h);
       }
 
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'habits',
+        locals: (await _isar.habitLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.habitLocals.delete,
+      );
+
       for (final row in (remote['habit_completions'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
         final c = HabitCompletionLocal()
@@ -213,6 +257,17 @@ class SupabaseSyncService {
         await _isar.habitCompletionLocals.put(c);
       }
 
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'habit_completions',
+        locals: (await _isar.habitCompletionLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.habitCompletionLocals.delete,
+      );
+
       for (final row in (remote['prayer_logs'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
         final p = PrayerLogLocal()
@@ -228,6 +283,17 @@ class SupabaseSyncService {
         if (existing != null) p.id = existing.id;
         await _isar.prayerLogLocals.put(p);
       }
+
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'prayer_logs',
+        locals: (await _isar.prayerLogLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.prayerLogLocals.delete,
+      );
 
       for (final row in (remote['movies'] as List? ?? [])) {
         final m = row as Map<String, dynamic>;
@@ -258,7 +324,39 @@ class SupabaseSyncService {
         if (existing != null) mv.id = existing.id;
         await _isar.movieLocals.put(mv);
       }
+
+      await _purgeLocalsMissingFromRemote(
+        remote: remote,
+        listKey: 'movies',
+        locals: (await _isar.movieLocals
+                .filter()
+                .userIdEqualTo(userId)
+                .findAll())
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.movieLocals.delete,
+      );
     });
+  }
+
+  Set<String> _remoteIdsFromPayload(Map<String, dynamic> remote, String listKey) {
+    return {
+      for (final row in (remote[listKey] as List? ?? []))
+        (row as Map<String, dynamic>)['id'] as String,
+    };
+  }
+
+  Future<void> _purgeLocalsMissingFromRemote({
+    required Map<String, dynamic> remote,
+    required String listKey,
+    required Iterable<({String remoteId, Id id})> locals,
+    required Future<bool> Function(Id id) deleteById,
+  }) async {
+    final remoteIds = _remoteIdsFromPayload(remote, listKey);
+    for (final local in locals) {
+      if (!remoteIds.contains(local.remoteId)) {
+        await deleteById(local.id);
+      }
+    }
   }
 
   Map<String, dynamic> _transactionJson(TransactionLocal t) => {

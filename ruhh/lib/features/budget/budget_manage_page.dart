@@ -194,6 +194,16 @@ class BudgetManagePage extends ConsumerWidget {
           NBTextField(controller: name, label: 'Name'),
           const SizedBox(height: 12),
           Text(
+            'Color',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          CategoryColorPicker(
+            selected: colorValue,
+            onSelected: (v) => setLocal(() => colorValue = v),
+          ),
+          const SizedBox(height: 12),
+          Text(
             'Emoji',
             style: Theme.of(context).textTheme.titleMedium,
           ),
@@ -203,26 +213,18 @@ class BudgetManagePage extends ConsumerWidget {
             onSelected: (e) => setLocal(() => emoji = e),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Color',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          CategoryColorPicker(
-            selected: colorValue,
-            onSelected: (v) => setLocal(() => colorValue = v),
-          ),
           NBSwitchRow(
             label: 'Income category',
             value: income,
             onChanged: (v) => setLocal(() => income = v),
           ),
+          const SizedBox(height: 4),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -237,7 +239,7 @@ class BudgetManagePage extends ConsumerWidget {
               colorValue: colorValue,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],
@@ -291,10 +293,10 @@ class BudgetManagePage extends ConsumerWidget {
           ),
         ],
       ),
-      actions: (_, __) => [
+      actions: (dialogCtx, __) => [
         NBDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => popNBDialog(dialogCtx),
         ),
         NBDialogAction(
           label: 'Save',
@@ -309,7 +311,7 @@ class BudgetManagePage extends ConsumerWidget {
               rolloverEnabled: rollover,
             );
             bumpBudgetRefresh(ref);
-            if (context.mounted) Navigator.pop(context);
+            if (dialogCtx.mounted) popNBDialog(dialogCtx);
           },
         ),
       ],

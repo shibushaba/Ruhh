@@ -1,9 +1,9 @@
--- Movie manual tracker fields (category, priority, note)
+-- Ledger fields + full payload reconciliation (deletes sync when rows omitted from push).
 
-alter table public.movies
+alter table public.transactions
+  add column if not exists ledger_type text,
   add column if not exists category_remote_id text not null default '',
-  add column if not exists priority int not null default 3,
-  add column if not exists tracker_note text not null default '';
+  add column if not exists is_auto_generated boolean not null default false;
 
 create or replace function public.ruhh_push(p_user_id uuid, p_pin_hash text, p_payload jsonb)
 returns void
@@ -23,6 +23,55 @@ begin
     set preferences = coalesce(p_payload->'preferences', '{}'::jsonb)
     where id = p_user_id;
   end if;
+
+  delete from public.budget_objectives o
+  where o.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'objectives', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = o.id
+    );
+
+  delete from public.category_budget_limits l
+  where l.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'category_budget_limits', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = l.id
+    );
+
+  delete from public.transactions t
+  where t.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'transactions', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = t.id
+    );
+
+  delete from public.habit_completions c
+  where c.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'habit_completions', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = c.id
+    );
+
+  delete from public.habits h
+  where h.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'habits', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = h.id
+    );
+
+  delete from public.prayer_logs p
+  where p.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'prayer_logs', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = p.id
+    );
+
+  delete from public.movies m
+  where m.user_id = p_user_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_payload->'movies', '[]'::jsonb)) elem
+      where (elem->>'id')::uuid = m.id
+    );
 
   for row in select * from jsonb_array_elements(coalesce(p_payload->'objectives', '[]'::jsonb))
   loop
@@ -79,13 +128,14 @@ begin
   loop
     insert into public.transactions (
       id, user_id, amount, is_income, category, account, note, occurred_at, updated_at,
-      title, schedule_type, paid, recurrence, period_length, recurrence_end, objective_remote_id
+      title, schedule_type, paid, recurrence, period_length, recurrence_end, objective_remote_id,
+      ledger_type, category_remote_id, is_auto_generated
     ) values (
       (row->>'id')::uuid,
       p_user_id,
       (row->>'amount')::numeric,
       coalesce((row->>'is_income')::boolean, false),
-      row->>'category',
+      coalesce(nullif(row->>'category', ''), nullif(row->>'title', ''), 'Other'),
       coalesce(row->>'account', 'Cash'),
       coalesce(row->>'note', ''),
       (row->>'occurred_at')::timestamptz,
@@ -96,7 +146,10 @@ begin
       coalesce(row->>'recurrence', 'none'),
       coalesce((row->>'period_length')::int, 1),
       nullif(row->>'recurrence_end', '')::timestamptz,
-      nullif(row->>'objective_remote_id', '')
+      nullif(row->>'objective_remote_id', ''),
+      nullif(row->>'ledger_type', ''),
+      coalesce(row->>'category_remote_id', ''),
+      coalesce((row->>'is_auto_generated')::boolean, false)
     )
     on conflict (id) do update set
       amount = excluded.amount,
@@ -112,7 +165,10 @@ begin
       recurrence = excluded.recurrence,
       period_length = excluded.period_length,
       recurrence_end = excluded.recurrence_end,
-      objective_remote_id = excluded.objective_remote_id;
+      objective_remote_id = excluded.objective_remote_id,
+      ledger_type = excluded.ledger_type,
+      category_remote_id = excluded.category_remote_id,
+      is_auto_generated = excluded.is_auto_generated;
   end loop;
 
   for row in select * from jsonb_array_elements(coalesce(p_payload->'habits', '[]'::jsonb))

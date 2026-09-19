@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,8 +31,8 @@ class OverlayService {
     }
 
     await FlutterOverlayWindow.showOverlay(
-      height: WindowSize.matchParent,
-      width: WindowSize.matchParent,
+      height: WindowSize.fullCover,
+      width: WindowSize.fullCover,
       alignment: OverlayAlignment.center,
       enableDrag: false,
       positionGravity: PositionGravity.none,
@@ -53,3 +54,9 @@ final overlayServiceProvider = Provider<OverlayService>((ref) {
 final overlaySupportedProvider = Provider<bool>((ref) {
   return !kIsWeb && Platform.isAndroid;
 });
+
+/// Back affordance for the system overlay header (module picker ← module form).
+typedef OverlayQuickBack = ({bool visible, VoidCallback? onBack});
+
+final overlayQuickBackProvider =
+    StateProvider<OverlayQuickBack>((ref) => (visible: false, onBack: null));

@@ -9,6 +9,7 @@ class MovieCategoryLocal {
   late String userId;
   late String name;
   late int colorValue;
+  String emoji = '';
   bool isCustom = false;
   bool isArchived = false;
   late int sortOrder;

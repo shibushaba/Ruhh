@@ -5,6 +5,7 @@ import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
+import 'package:ruhh/core/widgets/nb_dialog.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
@@ -41,8 +42,26 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
     final repo = await ref.read(budgetRepositoryProvider.future);
     final tx = await repo.getTransaction(widget.transactionId!);
     if (tx == null || !mounted) return;
+    final cats = await repo.categories();
+    CategoryLocal? cat;
+    if (tx.categoryRemoteId.isNotEmpty) {
+      for (final c in cats) {
+        if (c.remoteId == tx.categoryRemoteId) {
+          cat = c;
+          break;
+        }
+      }
+    }
+    cat ??= () {
+      for (final c in cats) {
+        if (c.name == tx.category) return c;
+      }
+      return null;
+    }();
+    if (!mounted) return;
     setState(() {
       _existing = tx;
+      _category = cat;
       _type = tx.ledgerType == BudgetLedgerType.salary
           ? BudgetLedgerType.salary
           : tx.ledgerType;
@@ -185,6 +204,13 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
                       label: 'Delete',
                       color: NBMetrics.expenseRed,
                       onPressed: () async {
+                        final ok = await showNBConfirmDialog(
+                          context: context,
+                          title: 'Delete transaction?',
+                          message: 'This will be removed on all synced devices.',
+                          confirmLabel: 'Delete',
+                        );
+                        if (ok != true || !context.mounted) return;
                         await repo.deleteLedgerTransaction(_existing!.id);
                         bumpBudgetRefresh(ref);
                         if (context.mounted) context.pop();

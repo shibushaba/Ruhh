@@ -98,6 +98,7 @@ class _MovieLogSheetState extends ConsumerState<_MovieLogSheet> {
               return ChoiceChip(
                 label: Text(watchStatusLabel(s)),
                 selected: selected,
+                showCheckmark: false,
                 onSelected: (_) => setState(() => _status = s),
               );
             }).toList(),

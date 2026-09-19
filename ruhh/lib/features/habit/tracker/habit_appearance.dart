@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
 
 /// Accent palette for habit tiles, rings, and the create/edit form.
 const kHabitColorChoices = <Color>[
@@ -95,6 +96,79 @@ IconData habitIconData(String name) {
     if (option.$1 == name) return option.$2;
   }
   return Icons.star_outline;
+}
+
+final _legacyHabitIconEmoji = <String, String>{
+  'target': '🎯',
+  'star': '⭐',
+  'check': '✅',
+  'trophy': '🏆',
+  'water': '💧',
+  'coffee': '☕',
+  'food': '🍽️',
+  'nutrition': '🥗',
+  'book': '📚',
+  'school': '🎓',
+  'work': '💼',
+  'laptop': '💻',
+  'write': '✍️',
+  'code': '💻',
+  'run': '🏃',
+  'walk': '🚶',
+  'bike': '🚴',
+  'fitness': '🏋️',
+  'sport': '⚽',
+  'swim': '🏊',
+  'yoga': '🧘',
+  'meditate': '🧘',
+  'bed': '🛏️',
+  'heart': '❤️',
+  'pill': '💊',
+  'tooth': '🦷',
+  'brush': '🪥',
+  'shower': '🚿',
+  'clean': '🧹',
+  'home': '🏠',
+  'plant': '🌿',
+  'pet': '🐾',
+  'music': '🎵',
+  'movie': '🎬',
+  'game': '🎮',
+  'camera': '📷',
+  'chat': '💬',
+  'people': '👥',
+  'phone': '📱',
+  'alarm': '⏰',
+  'calendar': '📅',
+  'money': '💰',
+  'cart': '🛒',
+  'car': '🚗',
+  'flight': '✈️',
+  'lightbulb': '💡',
+  'volunteer': '🤝',
+  'language': '🗣️',
+  'moon': '🌙',
+  'sun': '☀️',
+};
+
+String habitLegacyIconToEmoji(String iconId) {
+  return _legacyHabitIconEmoji[iconId] ?? '🎯';
+}
+
+bool habitIconIsEmoji(String icon) {
+  if (icon.isEmpty) return false;
+  if (RegExp(r'^[a-z_]+$').hasMatch(icon)) return false;
+  return true;
+}
+
+Widget habitIconChip(String icon, Color accent, {double size = 40}) {
+  final emoji = habitIconIsEmoji(icon) ? icon : null;
+  return RuhhIconChip(
+    icon: habitIconIsEmoji(icon) ? Icons.circle_outlined : habitIconData(icon),
+    emoji: emoji,
+    accent: accent,
+    size: size,
+  );
 }
 
 Color habitColorCheckIcon(Color fill) {

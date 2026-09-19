@@ -42,6 +42,7 @@ Future<void> showVacationSheet(
                     return FilterChip(
                       label: Text(labels[i]),
                       selected: rest.contains(wd),
+                      showCheckmark: false,
                       onSelected: (v) => setState(() {
                         if (v) {
                           rest.add(wd);

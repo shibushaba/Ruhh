@@ -277,6 +277,11 @@ class _MovieCategoryFilterChip extends StatelessWidget {
                 label,
                 style: theme.labelLarge?.copyWith(
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? (accent.computeLuminance() > 0.55
+                          ? Colors.black
+                          : Colors.white)
+                      : theme.labelLarge?.color,
                 ),
               ),
             ],

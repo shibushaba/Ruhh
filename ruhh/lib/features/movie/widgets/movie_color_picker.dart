@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
+import 'package:ruhh/core/widgets/ruhh_color_picker.dart';
 
 class MovieColorPalettePicker extends StatelessWidget {
   const MovieColorPalettePicker({
@@ -14,26 +13,10 @@ class MovieColorPalettePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final c in movieCategoryPalette)
-          GestureDetector(
-            onTap: () => onSelected(c),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: c,
-                border: Border.all(
-                  color: selected == c ? NBColors.black : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-      ],
+    return RuhhColorPicker(
+      selectedArgb: selected.toARGB32(),
+      onSelected: (v) => onSelected(Color(v)),
+      inCard: true,
     );
   }
 }

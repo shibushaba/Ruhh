@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
+import 'package:ruhh/core/widgets/nb_dialog.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
+import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 import 'package:ruhh/features/budget/widgets/ledger_list_row.dart';
 
 /// Section 7.3 — filter by month and type.
@@ -24,6 +26,29 @@ class _BudgetTransactionsPageState extends ConsumerState<BudgetTransactionsPage>
     setState(() {
       _month = DateTime(_month.year, _month.month + delta);
     });
+  }
+
+  Future<void> _editTransaction(TransactionLocal tx) async {
+    await context.push('/budget/edit/${tx.id}');
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteTransaction(
+    BuildContext context,
+    BudgetRepository repo,
+    TransactionLocal tx,
+  ) async {
+    final ok = await showNBConfirmDialog(
+      context: context,
+      title: 'Delete transaction?',
+      message:
+          'Remove ${ledgerRowTitle(tx)} (${BudgetInr.format(tx.amount)})? This syncs to your account.',
+      confirmLabel: 'Delete',
+    );
+    if (ok != true || !context.mounted) return;
+    await repo.deleteLedgerTransaction(tx.id);
+    bumpBudgetRefresh(ref);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -99,7 +124,9 @@ class _BudgetTransactionsPageState extends ConsumerState<BudgetTransactionsPage>
                       final tx = txs[i];
                       return LedgerListRow(
                         tx: tx,
-                        onTap: () => context.push('/budget/edit/${tx.id}'),
+                        onTap: () => _editTransaction(tx),
+                        onEdit: () => _editTransaction(tx),
+                        onDelete: () => _deleteTransaction(context, repo, tx),
                       );
                     },
                   );
@@ -115,9 +142,11 @@ class _BudgetTransactionsPageState extends ConsumerState<BudgetTransactionsPage>
   }
 
   Widget _chip(String label, String id) {
+    final selected = _filter == id;
     return FilterChip(
       label: Text(label),
-      selected: _filter == id,
+      selected: selected,
+      showCheckmark: false,
       onSelected: (_) => setState(() => _filter = id),
     );
   }

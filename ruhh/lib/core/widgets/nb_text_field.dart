@@ -66,13 +66,17 @@ class NBChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = Theme.of(context).colorScheme.onSurface;
     final accent = color ?? NBColors.glassFill(Theme.of(context).brightness);
+    final fill = selected ? accent.withValues(alpha: 0.85) : Colors.transparent;
+    final labelColor = selected
+        ? (fill.computeLuminance() > 0.55 ? Colors.black : Colors.white)
+        : fg;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? accent.withValues(alpha: 0.85) : Colors.transparent,
+          color: fill,
           border: Border.all(
             color: selected ? accent : PortfolioPalette.borderHighlight,
             width: NBMetrics.borderWidth,
@@ -80,7 +84,13 @@ class NBChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(NBMetrics.radius),
           boxShadow: selected ? const [PortfolioPalette.shadowSticker] : null,
         ),
-        child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: labelColor,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
       ),
     );
   }
