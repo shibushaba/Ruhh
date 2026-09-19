@@ -23,39 +23,39 @@ const MovieCategoryLocalSchema = CollectionSchema(
       name: r'colorValue',
       type: IsarType.long,
     ),
-    r'isArchived': PropertySchema(
+    r'emoji': PropertySchema(
       id: 1,
+      name: r'emoji',
+      type: IsarType.string,
+    ),
+    r'isArchived': PropertySchema(
+      id: 2,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isCustom': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'isCustom',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'name',
       type: IsarType.string,
     ),
     r'remoteId': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'remoteId',
       type: IsarType.string,
     ),
     r'sortOrder': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'sortOrder',
       type: IsarType.long,
     ),
     r'userId': PropertySchema(
-      id: 6,
-      name: r'userId',
-      type: IsarType.string,
-    ),
-    r'emoji': PropertySchema(
       id: 7,
-      name: r'emoji',
+      name: r'userId',
       type: IsarType.string,
     )
   },
@@ -79,10 +79,10 @@ int _movieCategoryLocalEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.emoji.length * 3;
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.remoteId.length * 3;
   bytesCount += 3 + object.userId.length * 3;
-  bytesCount += 3 + object.emoji.length * 3;
   return bytesCount;
 }
 
@@ -93,13 +93,13 @@ void _movieCategoryLocalSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.colorValue);
-  writer.writeBool(offsets[1], object.isArchived);
-  writer.writeBool(offsets[2], object.isCustom);
-  writer.writeString(offsets[3], object.name);
-  writer.writeString(offsets[4], object.remoteId);
-  writer.writeLong(offsets[5], object.sortOrder);
-  writer.writeString(offsets[6], object.userId);
-  writer.writeString(offsets[7], object.emoji);
+  writer.writeString(offsets[1], object.emoji);
+  writer.writeBool(offsets[2], object.isArchived);
+  writer.writeBool(offsets[3], object.isCustom);
+  writer.writeString(offsets[4], object.name);
+  writer.writeString(offsets[5], object.remoteId);
+  writer.writeLong(offsets[6], object.sortOrder);
+  writer.writeString(offsets[7], object.userId);
 }
 
 MovieCategoryLocal _movieCategoryLocalDeserialize(
@@ -110,14 +110,14 @@ MovieCategoryLocal _movieCategoryLocalDeserialize(
 ) {
   final object = MovieCategoryLocal();
   object.colorValue = reader.readLong(offsets[0]);
+  object.emoji = reader.readString(offsets[1]);
   object.id = id;
-  object.isArchived = reader.readBool(offsets[1]);
-  object.isCustom = reader.readBool(offsets[2]);
-  object.name = reader.readString(offsets[3]);
-  object.remoteId = reader.readString(offsets[4]);
-  object.sortOrder = reader.readLong(offsets[5]);
-  object.userId = reader.readString(offsets[6]);
-  object.emoji = reader.readString(offsets[7]);
+  object.isArchived = reader.readBool(offsets[2]);
+  object.isCustom = reader.readBool(offsets[3]);
+  object.name = reader.readString(offsets[4]);
+  object.remoteId = reader.readString(offsets[5]);
+  object.sortOrder = reader.readLong(offsets[6]);
+  object.userId = reader.readString(offsets[7]);
   return object;
 }
 
@@ -131,17 +131,17 @@ P _movieCategoryLocalDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readLong(offset)) as P;
     case 7:
       return (reader.readString(offset)) as P;
     default:
@@ -297,6 +297,142 @@ extension MovieCategoryLocalQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'emoji',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'emoji',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'emoji',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'emoji',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterFilterCondition>
+      emojiIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'emoji',
+        value: '',
       ));
     });
   }
@@ -865,6 +1001,20 @@ extension MovieCategoryLocalQuerySortBy
   }
 
   QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterSortBy>
+      sortByEmoji() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'emoji', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterSortBy>
+      sortByEmojiDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'emoji', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterSortBy>
       sortByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isArchived', Sort.asc);
@@ -962,6 +1112,20 @@ extension MovieCategoryLocalQuerySortThenBy
       thenByColorValueDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'colorValue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterSortBy>
+      thenByEmoji() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'emoji', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QAfterSortBy>
+      thenByEmojiDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'emoji', Sort.desc);
     });
   }
 
@@ -1074,6 +1238,13 @@ extension MovieCategoryLocalQueryWhereDistinct
   }
 
   QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QDistinct>
+      distinctByEmoji({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'emoji', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MovieCategoryLocal, MovieCategoryLocal, QDistinct>
       distinctByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isArchived');
@@ -1130,6 +1301,12 @@ extension MovieCategoryLocalQueryProperty
     });
   }
 
+  QueryBuilder<MovieCategoryLocal, String, QQueryOperations> emojiProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'emoji');
+    });
+  }
+
   QueryBuilder<MovieCategoryLocal, bool, QQueryOperations>
       isArchivedProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -1165,12 +1342,6 @@ extension MovieCategoryLocalQueryProperty
   QueryBuilder<MovieCategoryLocal, String, QQueryOperations> userIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'userId');
-    });
-  }
-
-  QueryBuilder<MovieCategoryLocal, String, QQueryOperations> emojiProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'emoji');
     });
   }
 }

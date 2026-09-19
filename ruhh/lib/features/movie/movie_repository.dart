@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
@@ -42,10 +43,15 @@ class MovieRepository {
 
   /// Loads this user's movies in memory (avoids fragile Isar filter combos).
   Future<List<MovieLocal>> all() async {
-    final rows = await _isar.movieLocals.where().findAll();
-    final mine = rows.where((m) => m.userId == _userId).toList();
-    mine.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    return mine;
+    try {
+      final rows = await _isar.movieLocals.where().findAll();
+      final mine = rows.where((m) => m.userId == _userId).toList();
+      mine.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+      return mine;
+    } catch (e) {
+      await IsarService.repairMovieCollections(_isar);
+      return [];
+    }
   }
 
   Future<List<MovieLocal>> byStatus(WatchStatus status) async {
@@ -304,10 +310,15 @@ class MovieRepository {
   }
 
   Future<List<MovieCategoryLocal>> _categoriesForUser() async {
-    final rows = await _isar.movieCategoryLocals.where().findAll();
-    final mine = rows.where((c) => c.userId == _userId).toList();
-    mine.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    return mine;
+    try {
+      final rows = await _isar.movieCategoryLocals.where().findAll();
+      final mine = rows.where((c) => c.userId == _userId).toList();
+      mine.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      return mine;
+    } catch (e) {
+      await IsarService.repairMovieCollections(_isar);
+      return [];
+    }
   }
 
   Future<List<MovieCategoryLocal>> categoriesAll() => _categoriesForUser();
@@ -479,8 +490,9 @@ final movieRepositoryProvider = FutureProvider<MovieRepository>((ref) async {
     user.supabaseId ?? user.id.toString(),
     ref.watch(tmdbServiceProvider),
   );
-  await repo.ensureTrackerDefaults();
-  return repo;
+    await repo.ensureTrackerDefaults();
+    scheduleCloudSync(ref.read, delay: const Duration(seconds: 1));
+    return repo;
 });
 
 final movieRefreshProvider = StateProvider<int>((ref) => 0);

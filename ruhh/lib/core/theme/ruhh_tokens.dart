@@ -341,8 +341,16 @@ extension RuhhTokensContext on BuildContext {
   RuhhTokens get ruhh => Theme.of(this).extension<RuhhTokens>()!;
 }
 
+/// Floating nav pill + bottom margin (matches [RuhhFloatingNav] layout).
+const kRuhhFloatingNavBlockHeight = 16.0 + 60.0;
+
 /// Bottom inset so content clears the floating global nav.
 double ruhhGlobalNavBottomInset(BuildContext context) {
-  final bottom = MediaQuery.paddingOf(context).bottom;
-  return bottom + 16 + 56 + 16;
+  final safe = MediaQuery.paddingOf(context).bottom;
+  return safe + kRuhhFloatingNavBlockHeight + 12;
+}
+
+/// Distance from screen bottom to the FAB's bottom edge (above nav).
+double ruhhFabBottomClearance(double safeAreaBottom) {
+  return safeAreaBottom + kRuhhFloatingNavBlockHeight + 16;
 }
