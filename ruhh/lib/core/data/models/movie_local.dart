@@ -14,11 +14,19 @@ class MovieLocal {
   int? tmdbId;
   late String title;
   String? posterPath;
+  String? backdropPath;
 
   @Enumerated(EnumType.name)
   late WatchStatus watchStatus;
 
   late String mediaType;
   String? overview;
+  String? releaseDate;
+  double? voteAverage;
+  double? userRating;
+  late String userReview;
+  late bool liked;
+  late bool favorite;
+  DateTime? watchedAt;
   late DateTime addedAt;
 }

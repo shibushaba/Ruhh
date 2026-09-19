@@ -17,28 +17,38 @@ const UserLocalSchema = CollectionSchema(
   name: r'UserLocal',
   id: 5846211031786981232,
   properties: {
-    r'createdAt': PropertySchema(
+    r'budgetEnabled': PropertySchema(
       id: 0,
+      name: r'budgetEnabled',
+      type: IsarType.bool,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
+    r'onboardingComplete': PropertySchema(
+      id: 2,
+      name: r'onboardingComplete',
+      type: IsarType.bool,
+    ),
     r'pinHash': PropertySchema(
-      id: 1,
+      id: 3,
       name: r'pinHash',
       type: IsarType.string,
     ),
     r'pinSalt': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'pinSalt',
       type: IsarType.string,
     ),
     r'supabaseId': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'supabaseId',
       type: IsarType.string,
     ),
     r'username': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'username',
       type: IsarType.string,
     )
@@ -95,11 +105,13 @@ void _userLocalSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeString(offsets[1], object.pinHash);
-  writer.writeString(offsets[2], object.pinSalt);
-  writer.writeString(offsets[3], object.supabaseId);
-  writer.writeString(offsets[4], object.username);
+  writer.writeBool(offsets[0], object.budgetEnabled);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeBool(offsets[2], object.onboardingComplete);
+  writer.writeString(offsets[3], object.pinHash);
+  writer.writeString(offsets[4], object.pinSalt);
+  writer.writeString(offsets[5], object.supabaseId);
+  writer.writeString(offsets[6], object.username);
 }
 
 UserLocal _userLocalDeserialize(
@@ -109,12 +121,14 @@ UserLocal _userLocalDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = UserLocal();
-  object.createdAt = reader.readDateTime(offsets[0]);
+  object.budgetEnabled = reader.readBool(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.pinHash = reader.readString(offsets[1]);
-  object.pinSalt = reader.readString(offsets[2]);
-  object.supabaseId = reader.readStringOrNull(offsets[3]);
-  object.username = reader.readString(offsets[4]);
+  object.onboardingComplete = reader.readBool(offsets[2]);
+  object.pinHash = reader.readString(offsets[3]);
+  object.pinSalt = reader.readString(offsets[4]);
+  object.supabaseId = reader.readStringOrNull(offsets[5]);
+  object.username = reader.readString(offsets[6]);
   return object;
 }
 
@@ -126,14 +140,18 @@ P _userLocalDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -331,6 +349,16 @@ extension UserLocalQueryWhere
 
 extension UserLocalQueryFilter
     on QueryBuilder<UserLocal, UserLocal, QFilterCondition> {
+  QueryBuilder<UserLocal, UserLocal, QAfterFilterCondition>
+      budgetEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'budgetEnabled',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<UserLocal, UserLocal, QAfterFilterCondition> createdAtEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -434,6 +462,16 @@ extension UserLocalQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterFilterCondition>
+      onboardingCompleteEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'onboardingComplete',
+        value: value,
       ));
     });
   }
@@ -990,6 +1028,18 @@ extension UserLocalQueryLinks
     on QueryBuilder<UserLocal, UserLocal, QFilterCondition> {}
 
 extension UserLocalQuerySortBy on QueryBuilder<UserLocal, UserLocal, QSortBy> {
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> sortByBudgetEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'budgetEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> sortByBudgetEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'budgetEnabled', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserLocal, UserLocal, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -999,6 +1049,19 @@ extension UserLocalQuerySortBy on QueryBuilder<UserLocal, UserLocal, QSortBy> {
   QueryBuilder<UserLocal, UserLocal, QAfterSortBy> sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> sortByOnboardingComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'onboardingComplete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy>
+      sortByOnboardingCompleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'onboardingComplete', Sort.desc);
     });
   }
 
@@ -1053,6 +1116,18 @@ extension UserLocalQuerySortBy on QueryBuilder<UserLocal, UserLocal, QSortBy> {
 
 extension UserLocalQuerySortThenBy
     on QueryBuilder<UserLocal, UserLocal, QSortThenBy> {
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> thenByBudgetEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'budgetEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> thenByBudgetEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'budgetEnabled', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserLocal, UserLocal, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -1074,6 +1149,19 @@ extension UserLocalQuerySortThenBy
   QueryBuilder<UserLocal, UserLocal, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy> thenByOnboardingComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'onboardingComplete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QAfterSortBy>
+      thenByOnboardingCompleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'onboardingComplete', Sort.desc);
     });
   }
 
@@ -1128,9 +1216,21 @@ extension UserLocalQuerySortThenBy
 
 extension UserLocalQueryWhereDistinct
     on QueryBuilder<UserLocal, UserLocal, QDistinct> {
+  QueryBuilder<UserLocal, UserLocal, QDistinct> distinctByBudgetEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'budgetEnabled');
+    });
+  }
+
   QueryBuilder<UserLocal, UserLocal, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<UserLocal, UserLocal, QDistinct> distinctByOnboardingComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'onboardingComplete');
     });
   }
 
@@ -1171,9 +1271,21 @@ extension UserLocalQueryProperty
     });
   }
 
+  QueryBuilder<UserLocal, bool, QQueryOperations> budgetEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'budgetEnabled');
+    });
+  }
+
   QueryBuilder<UserLocal, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<UserLocal, bool, QQueryOperations> onboardingCompleteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'onboardingComplete');
     });
   }
 

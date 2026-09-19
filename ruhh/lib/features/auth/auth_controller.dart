@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:ruhh/core/session/session_providers.dart';
+import 'package:ruhh/features/settings/settings_controller.dart';
 
 class AuthState {
   const AuthState({this.username, this.loading = false});
@@ -135,6 +136,7 @@ class AuthController extends Notifier<AuthState> {
     try {
       final isar = await ref.read(isarProvider.future);
       await SupabaseSyncService(isar).syncUser(user, pinHash);
+      await ref.read(settingsControllerProvider.notifier).reloadForCurrentUser(force: true);
     } catch (_) {
       // Offline — retry on next login.
     }

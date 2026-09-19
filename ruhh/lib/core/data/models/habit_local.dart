@@ -2,6 +2,12 @@ import 'package:isar/isar.dart';
 
 part 'habit_local.g.dart';
 
+enum HabitKind { positive, negative, quantitative }
+
+enum HabitInterval { daily, weekly, monthly, weekdays, everyXDays }
+
+enum ScheduleUnit { days, weeks, months }
+
 @collection
 class HabitLocal {
   Id id = Isar.autoIncrement;
@@ -11,10 +17,35 @@ class HabitLocal {
 
   late String name;
   late int colorValue;
-  late String frequency;
+  late String icon;
+
+  @Enumerated(EnumType.name)
+  late HabitKind kind;
+
+  @Enumerated(EnumType.name)
+  late HabitInterval interval;
+
+  late int targetFrequency;
+  late List<int> scheduleWeekdays;
+  late int scheduleEvery;
+
+  @Enumerated(EnumType.name)
+  late ScheduleUnit scheduleUnit;
+
   late int targetPerDay;
+  late double incrementAmount;
+  late String unitLabel;
+  late String description;
+
+  /// Legacy field; mirrors [interval].name for sync.
+  late String frequency;
+
   int? reminderMinute;
+  late List<int> restDays;
+  late String vacationsJson;
+  late String remindersJson;
   late bool archived;
+  late int sortOrder;
   late DateTime createdAt;
 }
 

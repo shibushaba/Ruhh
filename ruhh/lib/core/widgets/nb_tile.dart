@@ -7,7 +7,7 @@ class NBTile extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
-    required this.color,
+    required this.accent,
     required this.icon,
     required this.onTap,
     this.disabled = false,
@@ -15,28 +15,63 @@ class NBTile extends StatelessWidget {
 
   final String title;
   final String subtitle;
-  final Color color;
+  final Color accent;
   final IconData icon;
   final VoidCallback? onTap;
   final bool disabled;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final fg = Theme.of(context).colorScheme.onSurface;
+
     return Opacity(
-      opacity: disabled ? 0.45 : 1,
+      opacity: disabled ? 0.5 : 1,
       child: NBCard(
-        color: disabled ? Colors.grey.shade400 : color,
-        onTap: onTap,
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32, color: NBColors.black),
-            const Spacer(),
-            Text(title, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 4),
-            Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-          ],
+        onTap: disabled ? null : onTap,
+        padding: EdgeInsets.zero,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 6,
+                decoration: BoxDecoration(
+                  color: disabled ? NBColors.mutedText(Theme.of(context).brightness) : accent,
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(NBMetrics.radius - 1),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: fg, width: 2),
+                          borderRadius: BorderRadius.circular(NBMetrics.radius),
+                        ),
+                        child: Icon(icon, size: 26, color: fg),
+                      ),
+                      const Spacer(),
+                      Text(title, style: theme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: theme.bodyMedium,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

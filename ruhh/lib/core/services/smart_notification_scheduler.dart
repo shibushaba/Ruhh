@@ -1,13 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ruhh/core/services/habit_notification_scheduler.dart';
 import 'package:ruhh/core/services/notification_service.dart';
+import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
 /// Schedules baseline reminders respecting enabled modules / toggles.
 class SmartNotificationScheduler {
-  SmartNotificationScheduler(this._notifications, this._settings);
+  SmartNotificationScheduler(
+    this._notifications,
+    this._settings,
+    this._habitScheduler,
+    this._habitRepo,
+  );
 
   final NotificationService _notifications;
   final ModuleSettings _settings;
+  final HabitNotificationScheduler _habitScheduler;
+  final HabitRepository _habitRepo;
 
   Future<void> refreshAll() async {
     if (_settings.notifyBudget && _settings.budgetEnabled) {
@@ -40,6 +49,11 @@ class SmartNotificationScheduler {
         payload: '/movie',
       );
     }
+    if (_settings.notifyHabit) {
+      await _habitScheduler.refreshAll(_habitRepo);
+    } else {
+      await _notifications.cancelRange(20000, 29999);
+    }
   }
 }
 
@@ -47,5 +61,12 @@ final smartNotificationSchedulerProvider =
     FutureProvider<SmartNotificationScheduler>((ref) async {
   final notifications = await ref.watch(notificationServiceProvider.future);
   final settings = ref.watch(settingsControllerProvider);
-  return SmartNotificationScheduler(notifications, settings);
+  final habitSched = await ref.watch(habitNotificationSchedulerProvider.future);
+  final habitRepo = await ref.watch(habitRepositoryProvider.future);
+  return SmartNotificationScheduler(
+    notifications,
+    settings,
+    habitSched,
+    habitRepo,
+  );
 });

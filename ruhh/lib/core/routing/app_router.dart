@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/auth/login_page.dart';
 import 'package:ruhh/features/auth/signup_page.dart';
 import 'package:ruhh/features/auth/welcome_auth_page.dart';
+import 'package:ruhh/features/budget/add_transaction_page.dart';
 import 'package:ruhh/features/budget/budget_page.dart';
+import 'package:ruhh/features/habit/habit_form_page.dart';
 import 'package:ruhh/features/habit/habit_page.dart';
 import 'package:ruhh/features/home/analytics_page.dart';
 import 'package:ruhh/features/home/home_page.dart';
 import 'package:ruhh/features/home/home_shell.dart';
+import 'package:ruhh/features/movie/movie_detail_page.dart';
 import 'package:ruhh/features/movie/movie_page.dart';
 import 'package:ruhh/features/onboarding/onboarding_page.dart';
 import 'package:ruhh/features/prayer/prayer_page.dart';
-import 'package:ruhh/features/prayer/prayer_stats_page.dart';
 import 'package:ruhh/features/settings/overlay_setup_page.dart';
 import 'package:ruhh/features/settings/settings_page.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
@@ -35,6 +36,10 @@ class AppRouter {
         if (!auth.isLoggedIn) {
           if (loc.startsWith('/auth')) return null;
           return '/auth/welcome';
+        }
+
+        if (!settings.loaded) {
+          return loc == '/splash' ? null : '/splash';
         }
 
         if (!settings.onboardingComplete && loc != '/onboarding') {
@@ -80,23 +85,83 @@ class AppRouter {
             ),
             GoRoute(
               path: '/budget',
-              builder: (_, __) => const BudgetPage(),
+              builder: (context, state) {
+                final tab =
+                    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+                return BudgetPage(initialTab: tab.clamp(0, 5));
+              },
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  builder: (_, state) => AddTransactionPage(
+                    objectiveRemoteId: state.uri.queryParameters['objective'],
+                  ),
+                ),
+                GoRoute(
+                  path: 'edit/:id',
+                  builder: (_, state) => AddTransactionPage(
+                    transactionId:
+                        int.tryParse(state.pathParameters['id'] ?? ''),
+                  ),
+                ),
+              ],
             ),
             GoRoute(
               path: '/habit',
-              builder: (_, __) => const HabitPage(),
+              builder: (context, state) {
+                final tab =
+                    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+                return HabitPage(initialTab: tab.clamp(0, 5));
+              },
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (_, __) => const HabitFormPage(),
+                ),
+                GoRoute(
+                  path: 'edit/:id',
+                  builder: (_, state) => HabitFormPage(
+                    remoteId: state.pathParameters['id'],
+                  ),
+                ),
+              ],
             ),
             GoRoute(
               path: '/prayer',
-              builder: (_, __) => const PrayerPage(),
-            ),
-            GoRoute(
-              path: '/prayer/stats',
-              builder: (_, __) => const PrayerStatsPage(),
+              builder: (context, state) {
+                final tab =
+                    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+                return PrayerPage(initialTab: tab.clamp(0, 2));
+              },
+              routes: [
+                GoRoute(
+                  path: 'stats',
+                  builder: (_, __) => const PrayerStatsRedirect(),
+                ),
+              ],
             ),
             GoRoute(
               path: '/movie',
-              builder: (_, __) => const MoviePage(),
+              builder: (context, state) {
+                final tab =
+                    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+                return MoviePage(initialTab: tab.clamp(0, 3));
+              },
+              routes: [
+                GoRoute(
+                  path: 'detail/:mediaType/:tmdbId',
+                  builder: (context, state) {
+                    final id = int.tryParse(state.pathParameters['tmdbId'] ?? '');
+                    final type = state.pathParameters['mediaType'] ?? 'movie';
+                    if (id == null) {
+                      return const Scaffold(
+                        body: Center(child: Text('Invalid id')),
+                      );
+                    }
+                    return MovieDetailPage(mediaType: type, tmdbId: id);
+                  },
+                ),
+              ],
             ),
             GoRoute(
               path: '/settings',
@@ -124,9 +189,7 @@ class SplashPage extends ConsumerWidget {
       body: Center(
         child: Text(
           'RUHH',
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                color: NBColors.prayer,
-              ),
+          style: Theme.of(context).textTheme.displayLarge,
         ),
       ),
     );

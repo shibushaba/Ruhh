@@ -1,12 +1,18 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/routing/app_router.dart';
 import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
+import 'package:ruhh/core/services/home_widget_service.dart';
 import 'package:ruhh/core/services/smart_notification_scheduler.dart';
+import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/theme/ruhh_theme.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 import 'package:ruhh/overlay/overlay_entry.dart';
@@ -38,7 +44,13 @@ class _RuhhAppState extends ConsumerState<RuhhApp> {
     final auth = ref.watch(authControllerProvider);
     if (auth.isLoggedIn && !_notificationsBootstrapped) {
       _notificationsBootstrapped = true;
-      ref.read(smartNotificationSchedulerProvider.future).then((s) => s.refreshAll());
+      if (!kIsWeb && Platform.isAndroid) {
+        ref.read(smartNotificationSchedulerProvider.future).then((s) async {
+          await s.refreshAll();
+          final repo = await ref.read(habitRepositoryProvider.future);
+          await HomeWidgetService.sync(repo);
+        });
+      }
     }
     final settings = ref.watch(settingsControllerProvider);
 
@@ -49,7 +61,9 @@ class _RuhhAppState extends ConsumerState<RuhhApp> {
       darkTheme: RuhhTheme.dark(),
       themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
       routerConfig: _router,
-      builder: (context, child) => child ?? const SizedBox.shrink(),
+      builder: (context, child) => NBGlassBackground(
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
@@ -70,15 +84,18 @@ void overlayTriggerMain() async {
   await overlay.showQuickAction();
 }
 
-class OverlayApp extends StatelessWidget {
+class OverlayApp extends ConsumerWidget {
   const OverlayApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(authControllerProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: RuhhTheme.dark(),
+      builder: (context, child) =>
+          NBGlassBackground(child: child ?? const SizedBox.shrink()),
       home: const OverlayEntryWidget(),
-      theme: RuhhTheme.light(),
     );
   }
 }

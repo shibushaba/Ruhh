@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ruhh/core/theme/nb_colors.dart';
 
 class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.child});
@@ -9,18 +10,15 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = GoRouterState.of(context).uri.path;
-    final showFab = loc == '/home';
     return Scaffold(
+      backgroundColor: NBColors.canvas(Theme.of(context).brightness),
       body: child,
-      floatingActionButton: showFab
-          ? null
-          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _indexFor(loc),
         onDestinationSelected: (i) => context.go(_pathFor(i)),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
     );

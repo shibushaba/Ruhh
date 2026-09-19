@@ -13,11 +13,27 @@ final sessionUsernameProvider = FutureProvider<String?>((ref) async {
 
 final isarProvider = FutureProvider<Isar>((ref) => IsarService.open());
 
+/// Resolves logged-in user from session prefs, with Isar fallbacks for overlay isolate.
+Future<UserLocal?> resolveCurrentUser(Isar isar) async {
+  final prefs = await SharedPreferences.getInstance();
+  final username = prefs.getString(ruhhSessionUsernameKey);
+  if (username != null && username.isNotEmpty) {
+    final match =
+        await isar.userLocals.filter().usernameEqualTo(username).findFirst();
+    if (match != null) return match;
+  }
+
+  final all = await isar.userLocals.where().findAll();
+  if (all.length == 1) return all.first;
+  if (all.isEmpty) return null;
+
+  all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return all.first;
+}
+
 final currentUserProvider = FutureProvider<UserLocal?>((ref) async {
-  final username = await ref.watch(sessionUsernameProvider.future);
-  if (username == null) return null;
   final isar = await ref.watch(isarProvider.future);
-  return isar.userLocals.filter().usernameEqualTo(username).findFirst();
+  return resolveCurrentUser(isar);
 });
 
 final activeUserIdProvider = FutureProvider<String>((ref) async {

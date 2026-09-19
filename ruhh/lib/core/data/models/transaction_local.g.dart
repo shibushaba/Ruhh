@@ -42,18 +42,54 @@ const TransactionLocalSchema = CollectionSchema(
       name: r'note',
       type: IsarType.string,
     ),
-    r'occurredAt': PropertySchema(
+    r'objectiveRemoteId': PropertySchema(
       id: 5,
+      name: r'objectiveRemoteId',
+      type: IsarType.string,
+    ),
+    r'occurredAt': PropertySchema(
+      id: 6,
       name: r'occurredAt',
       type: IsarType.dateTime,
     ),
+    r'paid': PropertySchema(
+      id: 7,
+      name: r'paid',
+      type: IsarType.bool,
+    ),
+    r'periodLength': PropertySchema(
+      id: 8,
+      name: r'periodLength',
+      type: IsarType.long,
+    ),
+    r'recurrence': PropertySchema(
+      id: 9,
+      name: r'recurrence',
+      type: IsarType.string,
+    ),
+    r'recurrenceEnd': PropertySchema(
+      id: 10,
+      name: r'recurrenceEnd',
+      type: IsarType.dateTime,
+    ),
     r'remoteId': PropertySchema(
-      id: 6,
+      id: 11,
       name: r'remoteId',
       type: IsarType.string,
     ),
+    r'scheduleType': PropertySchema(
+      id: 12,
+      name: r'scheduleType',
+      type: IsarType.string,
+      enumMap: _TransactionLocalscheduleTypeEnumValueMap,
+    ),
+    r'title': PropertySchema(
+      id: 13,
+      name: r'title',
+      type: IsarType.string,
+    ),
     r'userId': PropertySchema(
-      id: 7,
+      id: 14,
       name: r'userId',
       type: IsarType.string,
     )
@@ -81,7 +117,16 @@ int _transactionLocalEstimateSize(
   bytesCount += 3 + object.account.length * 3;
   bytesCount += 3 + object.category.length * 3;
   bytesCount += 3 + object.note.length * 3;
+  {
+    final value = object.objectiveRemoteId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.recurrence.length * 3;
   bytesCount += 3 + object.remoteId.length * 3;
+  bytesCount += 3 + object.scheduleType.name.length * 3;
+  bytesCount += 3 + object.title.length * 3;
   bytesCount += 3 + object.userId.length * 3;
   return bytesCount;
 }
@@ -97,9 +142,16 @@ void _transactionLocalSerialize(
   writer.writeString(offsets[2], object.category);
   writer.writeBool(offsets[3], object.isIncome);
   writer.writeString(offsets[4], object.note);
-  writer.writeDateTime(offsets[5], object.occurredAt);
-  writer.writeString(offsets[6], object.remoteId);
-  writer.writeString(offsets[7], object.userId);
+  writer.writeString(offsets[5], object.objectiveRemoteId);
+  writer.writeDateTime(offsets[6], object.occurredAt);
+  writer.writeBool(offsets[7], object.paid);
+  writer.writeLong(offsets[8], object.periodLength);
+  writer.writeString(offsets[9], object.recurrence);
+  writer.writeDateTime(offsets[10], object.recurrenceEnd);
+  writer.writeString(offsets[11], object.remoteId);
+  writer.writeString(offsets[12], object.scheduleType.name);
+  writer.writeString(offsets[13], object.title);
+  writer.writeString(offsets[14], object.userId);
 }
 
 TransactionLocal _transactionLocalDeserialize(
@@ -115,9 +167,18 @@ TransactionLocal _transactionLocalDeserialize(
   object.id = id;
   object.isIncome = reader.readBool(offsets[3]);
   object.note = reader.readString(offsets[4]);
-  object.occurredAt = reader.readDateTime(offsets[5]);
-  object.remoteId = reader.readString(offsets[6]);
-  object.userId = reader.readString(offsets[7]);
+  object.objectiveRemoteId = reader.readStringOrNull(offsets[5]);
+  object.occurredAt = reader.readDateTime(offsets[6]);
+  object.paid = reader.readBool(offsets[7]);
+  object.periodLength = reader.readLong(offsets[8]);
+  object.recurrence = reader.readString(offsets[9]);
+  object.recurrenceEnd = reader.readDateTimeOrNull(offsets[10]);
+  object.remoteId = reader.readString(offsets[11]);
+  object.scheduleType = _TransactionLocalscheduleTypeValueEnumMap[
+          reader.readStringOrNull(offsets[12])] ??
+      BudgetScheduleType.normal;
+  object.title = reader.readString(offsets[13]);
+  object.userId = reader.readString(offsets[14]);
   return object;
 }
 
@@ -139,15 +200,44 @@ P _transactionLocalDeserializeProp<P>(
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (_TransactionLocalscheduleTypeValueEnumMap[
+              reader.readStringOrNull(offset)] ??
+          BudgetScheduleType.normal) as P;
+    case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _TransactionLocalscheduleTypeEnumValueMap = {
+  r'normal': r'normal',
+  r'upcoming': r'upcoming',
+  r'subscription': r'subscription',
+  r'repetitive': r'repetitive',
+};
+const _TransactionLocalscheduleTypeValueEnumMap = {
+  r'normal': BudgetScheduleType.normal,
+  r'upcoming': BudgetScheduleType.upcoming,
+  r'subscription': BudgetScheduleType.subscription,
+  r'repetitive': BudgetScheduleType.repetitive,
+};
 
 Id _transactionLocalGetId(TransactionLocal object) {
   return object.id;
@@ -784,6 +874,160 @@ extension TransactionLocalQueryFilter
   }
 
   QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'objectiveRemoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'objectiveRemoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'objectiveRemoteId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'objectiveRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'objectiveRemoteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'objectiveRemoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      objectiveRemoteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'objectiveRemoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
       occurredAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -831,6 +1075,282 @@ extension TransactionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'occurredAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      paidEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paid',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      periodLengthEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'periodLength',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      periodLengthGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'periodLength',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      periodLengthLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'periodLength',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      periodLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'periodLength',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'recurrence',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'recurrence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'recurrence',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'recurrence',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'recurrence',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'recurrenceEnd',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'recurrenceEnd',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'recurrenceEnd',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'recurrenceEnd',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'recurrenceEnd',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      recurrenceEndBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'recurrenceEnd',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -970,6 +1490,278 @@ extension TransactionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeEqualTo(
+    BudgetScheduleType value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeGreaterThan(
+    BudgetScheduleType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeLessThan(
+    BudgetScheduleType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeBetween(
+    BudgetScheduleType lower,
+    BudgetScheduleType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'scheduleType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'scheduleType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'scheduleType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'scheduleType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      scheduleTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'scheduleType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'title',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'title',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'title',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'title',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterFilterCondition>
+      titleIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'title',
         value: '',
       ));
     });
@@ -1190,6 +1982,20 @@ extension TransactionLocalQuerySortBy
   }
 
   QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByObjectiveRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'objectiveRemoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByObjectiveRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'objectiveRemoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
       sortByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'occurredAt', Sort.asc);
@@ -1200,6 +2006,61 @@ extension TransactionLocalQuerySortBy
       sortByOccurredAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'occurredAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy> sortByPaid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByPaidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByPeriodLength() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'periodLength', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByPeriodLengthDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'periodLength', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByRecurrence() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrence', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByRecurrenceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrence', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByRecurrenceEnd() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrenceEnd', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByRecurrenceEndDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrenceEnd', Sort.desc);
     });
   }
 
@@ -1214,6 +2075,33 @@ extension TransactionLocalQuerySortBy
       sortByRemoteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByScheduleType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByScheduleTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy> sortByTitle() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'title', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      sortByTitleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 
@@ -1317,6 +2205,20 @@ extension TransactionLocalQuerySortThenBy
   }
 
   QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByObjectiveRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'objectiveRemoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByObjectiveRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'objectiveRemoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
       thenByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'occurredAt', Sort.asc);
@@ -1327,6 +2229,61 @@ extension TransactionLocalQuerySortThenBy
       thenByOccurredAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'occurredAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy> thenByPaid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByPaidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByPeriodLength() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'periodLength', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByPeriodLengthDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'periodLength', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByRecurrence() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrence', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByRecurrenceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrence', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByRecurrenceEnd() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrenceEnd', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByRecurrenceEndDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'recurrenceEnd', Sort.desc);
     });
   }
 
@@ -1341,6 +2298,33 @@ extension TransactionLocalQuerySortThenBy
       thenByRemoteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByScheduleType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByScheduleTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy> thenByTitle() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'title', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QAfterSortBy>
+      thenByTitleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 
@@ -1397,9 +2381,44 @@ extension TransactionLocalQueryWhereDistinct
   }
 
   QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
+      distinctByObjectiveRemoteId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'objectiveRemoteId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
       distinctByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'occurredAt');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct> distinctByPaid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'paid');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
+      distinctByPeriodLength() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'periodLength');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
+      distinctByRecurrence({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'recurrence', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
+      distinctByRecurrenceEnd() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'recurrenceEnd');
     });
   }
 
@@ -1407,6 +2426,20 @@ extension TransactionLocalQueryWhereDistinct
       distinctByRemoteId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct>
+      distinctByScheduleType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'scheduleType', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TransactionLocal, TransactionLocal, QDistinct> distinctByTitle(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'title', caseSensitive: caseSensitive);
     });
   }
 
@@ -1456,6 +2489,13 @@ extension TransactionLocalQueryProperty
     });
   }
 
+  QueryBuilder<TransactionLocal, String?, QQueryOperations>
+      objectiveRemoteIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'objectiveRemoteId');
+    });
+  }
+
   QueryBuilder<TransactionLocal, DateTime, QQueryOperations>
       occurredAtProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -1463,9 +2503,48 @@ extension TransactionLocalQueryProperty
     });
   }
 
+  QueryBuilder<TransactionLocal, bool, QQueryOperations> paidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'paid');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, int, QQueryOperations> periodLengthProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'periodLength');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, String, QQueryOperations>
+      recurrenceProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'recurrence');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, DateTime?, QQueryOperations>
+      recurrenceEndProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'recurrenceEnd');
+    });
+  }
+
   QueryBuilder<TransactionLocal, String, QQueryOperations> remoteIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'remoteId');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, BudgetScheduleType, QQueryOperations>
+      scheduleTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'scheduleType');
+    });
+  }
+
+  QueryBuilder<TransactionLocal, String, QQueryOperations> titleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'title');
     });
   }
 

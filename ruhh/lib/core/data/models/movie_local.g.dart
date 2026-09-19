@@ -22,46 +22,86 @@ const MovieLocalSchema = CollectionSchema(
       name: r'addedAt',
       type: IsarType.dateTime,
     ),
-    r'mediaType': PropertySchema(
+    r'backdropPath': PropertySchema(
       id: 1,
+      name: r'backdropPath',
+      type: IsarType.string,
+    ),
+    r'favorite': PropertySchema(
+      id: 2,
+      name: r'favorite',
+      type: IsarType.bool,
+    ),
+    r'liked': PropertySchema(
+      id: 3,
+      name: r'liked',
+      type: IsarType.bool,
+    ),
+    r'mediaType': PropertySchema(
+      id: 4,
       name: r'mediaType',
       type: IsarType.string,
     ),
     r'overview': PropertySchema(
-      id: 2,
+      id: 5,
       name: r'overview',
       type: IsarType.string,
     ),
     r'posterPath': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'posterPath',
       type: IsarType.string,
     ),
+    r'releaseDate': PropertySchema(
+      id: 7,
+      name: r'releaseDate',
+      type: IsarType.string,
+    ),
     r'remoteId': PropertySchema(
-      id: 4,
+      id: 8,
       name: r'remoteId',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 5,
+      id: 9,
       name: r'title',
       type: IsarType.string,
     ),
     r'tmdbId': PropertySchema(
-      id: 6,
+      id: 10,
       name: r'tmdbId',
       type: IsarType.long,
     ),
     r'userId': PropertySchema(
-      id: 7,
+      id: 11,
       name: r'userId',
       type: IsarType.string,
     ),
+    r'userRating': PropertySchema(
+      id: 12,
+      name: r'userRating',
+      type: IsarType.double,
+    ),
+    r'userReview': PropertySchema(
+      id: 13,
+      name: r'userReview',
+      type: IsarType.string,
+    ),
+    r'voteAverage': PropertySchema(
+      id: 14,
+      name: r'voteAverage',
+      type: IsarType.double,
+    ),
     r'watchStatus': PropertySchema(
-      id: 8,
+      id: 15,
       name: r'watchStatus',
       type: IsarType.string,
       enumMap: _MovieLocalwatchStatusEnumValueMap,
+    ),
+    r'watchedAt': PropertySchema(
+      id: 16,
+      name: r'watchedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _movieLocalEstimateSize,
@@ -84,6 +124,12 @@ int _movieLocalEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.backdropPath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.mediaType.length * 3;
   {
     final value = object.overview;
@@ -97,9 +143,16 @@ int _movieLocalEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.releaseDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.remoteId.length * 3;
   bytesCount += 3 + object.title.length * 3;
   bytesCount += 3 + object.userId.length * 3;
+  bytesCount += 3 + object.userReview.length * 3;
   bytesCount += 3 + object.watchStatus.name.length * 3;
   return bytesCount;
 }
@@ -111,14 +164,22 @@ void _movieLocalSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.addedAt);
-  writer.writeString(offsets[1], object.mediaType);
-  writer.writeString(offsets[2], object.overview);
-  writer.writeString(offsets[3], object.posterPath);
-  writer.writeString(offsets[4], object.remoteId);
-  writer.writeString(offsets[5], object.title);
-  writer.writeLong(offsets[6], object.tmdbId);
-  writer.writeString(offsets[7], object.userId);
-  writer.writeString(offsets[8], object.watchStatus.name);
+  writer.writeString(offsets[1], object.backdropPath);
+  writer.writeBool(offsets[2], object.favorite);
+  writer.writeBool(offsets[3], object.liked);
+  writer.writeString(offsets[4], object.mediaType);
+  writer.writeString(offsets[5], object.overview);
+  writer.writeString(offsets[6], object.posterPath);
+  writer.writeString(offsets[7], object.releaseDate);
+  writer.writeString(offsets[8], object.remoteId);
+  writer.writeString(offsets[9], object.title);
+  writer.writeLong(offsets[10], object.tmdbId);
+  writer.writeString(offsets[11], object.userId);
+  writer.writeDouble(offsets[12], object.userRating);
+  writer.writeString(offsets[13], object.userReview);
+  writer.writeDouble(offsets[14], object.voteAverage);
+  writer.writeString(offsets[15], object.watchStatus.name);
+  writer.writeDateTime(offsets[16], object.watchedAt);
 }
 
 MovieLocal _movieLocalDeserialize(
@@ -129,17 +190,25 @@ MovieLocal _movieLocalDeserialize(
 ) {
   final object = MovieLocal();
   object.addedAt = reader.readDateTime(offsets[0]);
+  object.backdropPath = reader.readStringOrNull(offsets[1]);
+  object.favorite = reader.readBool(offsets[2]);
   object.id = id;
-  object.mediaType = reader.readString(offsets[1]);
-  object.overview = reader.readStringOrNull(offsets[2]);
-  object.posterPath = reader.readStringOrNull(offsets[3]);
-  object.remoteId = reader.readString(offsets[4]);
-  object.title = reader.readString(offsets[5]);
-  object.tmdbId = reader.readLongOrNull(offsets[6]);
-  object.userId = reader.readString(offsets[7]);
-  object.watchStatus =
-      _MovieLocalwatchStatusValueEnumMap[reader.readStringOrNull(offsets[8])] ??
-          WatchStatus.wantToWatch;
+  object.liked = reader.readBool(offsets[3]);
+  object.mediaType = reader.readString(offsets[4]);
+  object.overview = reader.readStringOrNull(offsets[5]);
+  object.posterPath = reader.readStringOrNull(offsets[6]);
+  object.releaseDate = reader.readStringOrNull(offsets[7]);
+  object.remoteId = reader.readString(offsets[8]);
+  object.title = reader.readString(offsets[9]);
+  object.tmdbId = reader.readLongOrNull(offsets[10]);
+  object.userId = reader.readString(offsets[11]);
+  object.userRating = reader.readDoubleOrNull(offsets[12]);
+  object.userReview = reader.readString(offsets[13]);
+  object.voteAverage = reader.readDoubleOrNull(offsets[14]);
+  object.watchStatus = _MovieLocalwatchStatusValueEnumMap[
+          reader.readStringOrNull(offsets[15])] ??
+      WatchStatus.wantToWatch;
+  object.watchedAt = reader.readDateTimeOrNull(offsets[16]);
   return object;
 }
 
@@ -153,23 +222,39 @@ P _movieLocalDeserializeProp<P>(
     case 0:
       return (reader.readDateTime(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readLongOrNull(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 15:
       return (_MovieLocalwatchStatusValueEnumMap[
               reader.readStringOrNull(offset)] ??
           WatchStatus.wantToWatch) as P;
+    case 16:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -331,6 +416,170 @@ extension MovieLocalQueryFilter
     });
   }
 
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'backdropPath',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'backdropPath',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'backdropPath',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'backdropPath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'backdropPath',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backdropPath',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      backdropPathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'backdropPath',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> favoriteEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'favorite',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -380,6 +629,16 @@ extension MovieLocalQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> likedEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'liked',
+        value: value,
       ));
     });
   }
@@ -817,6 +1076,160 @@ extension MovieLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'posterPath',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'releaseDate',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'releaseDate',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'releaseDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'releaseDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'releaseDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'releaseDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      releaseDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'releaseDate',
         value: '',
       ));
     });
@@ -1289,6 +1702,307 @@ extension MovieLocalQueryFilter
   }
 
   QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userRatingIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'userRating',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userRatingIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'userRating',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> userRatingEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userRatingGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userRatingLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> userRatingBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userRating',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> userReviewEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> userReviewBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userReview',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userReview',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> userReviewMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userReview',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userReview',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      userReviewIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userReview',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'voteAverage',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'voteAverage',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'voteAverage',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'voteAverage',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'voteAverage',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      voteAverageBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'voteAverage',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
       watchStatusEqualTo(
     WatchStatus value, {
     bool caseSensitive = true,
@@ -1423,6 +2137,78 @@ extension MovieLocalQueryFilter
       ));
     });
   }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      watchedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'watchedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      watchedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'watchedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> watchedAtEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'watchedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition>
+      watchedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'watchedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> watchedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'watchedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterFilterCondition> watchedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'watchedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension MovieLocalQueryObject
@@ -1442,6 +2228,42 @@ extension MovieLocalQuerySortBy
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByAddedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'addedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByBackdropPath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdropPath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByBackdropPathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdropPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'favorite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByFavoriteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'favorite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByLiked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liked', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByLikedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liked', Sort.desc);
     });
   }
 
@@ -1478,6 +2300,18 @@ extension MovieLocalQuerySortBy
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByPosterPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'posterPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByReleaseDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'releaseDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByReleaseDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'releaseDate', Sort.desc);
     });
   }
 
@@ -1529,6 +2363,42 @@ extension MovieLocalQuerySortBy
     });
   }
 
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByUserRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userRating', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByUserRatingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userRating', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByUserReview() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userReview', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByUserReviewDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userReview', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByVoteAverage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voteAverage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByVoteAverageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voteAverage', Sort.desc);
+    });
+  }
+
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByWatchStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'watchStatus', Sort.asc);
@@ -1538,6 +2408,18 @@ extension MovieLocalQuerySortBy
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByWatchStatusDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'watchStatus', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByWatchedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'watchedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> sortByWatchedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'watchedAt', Sort.desc);
     });
   }
 }
@@ -1556,6 +2438,30 @@ extension MovieLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByBackdropPath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdropPath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByBackdropPathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backdropPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'favorite', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByFavoriteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'favorite', Sort.desc);
+    });
+  }
+
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1565,6 +2471,18 @@ extension MovieLocalQuerySortThenBy
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByLiked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liked', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByLikedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liked', Sort.desc);
     });
   }
 
@@ -1601,6 +2519,18 @@ extension MovieLocalQuerySortThenBy
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByPosterPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'posterPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByReleaseDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'releaseDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByReleaseDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'releaseDate', Sort.desc);
     });
   }
 
@@ -1652,6 +2582,42 @@ extension MovieLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByUserRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userRating', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByUserRatingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userRating', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByUserReview() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userReview', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByUserReviewDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userReview', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByVoteAverage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voteAverage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByVoteAverageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voteAverage', Sort.desc);
+    });
+  }
+
   QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByWatchStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'watchStatus', Sort.asc);
@@ -1663,6 +2629,18 @@ extension MovieLocalQuerySortThenBy
       return query.addSortBy(r'watchStatus', Sort.desc);
     });
   }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByWatchedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'watchedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QAfterSortBy> thenByWatchedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'watchedAt', Sort.desc);
+    });
+  }
 }
 
 extension MovieLocalQueryWhereDistinct
@@ -1670,6 +2648,25 @@ extension MovieLocalQueryWhereDistinct
   QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByAddedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'addedAt');
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByBackdropPath(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backdropPath', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByFavorite() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'favorite');
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByLiked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'liked');
     });
   }
 
@@ -1691,6 +2688,13 @@ extension MovieLocalQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'posterPath', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByReleaseDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'releaseDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -1721,10 +2725,35 @@ extension MovieLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByUserRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userRating');
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByUserReview(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userReview', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByVoteAverage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'voteAverage');
+    });
+  }
+
   QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByWatchStatus(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'watchStatus', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MovieLocal, MovieLocal, QDistinct> distinctByWatchedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'watchedAt');
     });
   }
 }
@@ -1743,6 +2772,24 @@ extension MovieLocalQueryProperty
     });
   }
 
+  QueryBuilder<MovieLocal, String?, QQueryOperations> backdropPathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backdropPath');
+    });
+  }
+
+  QueryBuilder<MovieLocal, bool, QQueryOperations> favoriteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'favorite');
+    });
+  }
+
+  QueryBuilder<MovieLocal, bool, QQueryOperations> likedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'liked');
+    });
+  }
+
   QueryBuilder<MovieLocal, String, QQueryOperations> mediaTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mediaType');
@@ -1758,6 +2805,12 @@ extension MovieLocalQueryProperty
   QueryBuilder<MovieLocal, String?, QQueryOperations> posterPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'posterPath');
+    });
+  }
+
+  QueryBuilder<MovieLocal, String?, QQueryOperations> releaseDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'releaseDate');
     });
   }
 
@@ -1785,10 +2838,34 @@ extension MovieLocalQueryProperty
     });
   }
 
+  QueryBuilder<MovieLocal, double?, QQueryOperations> userRatingProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userRating');
+    });
+  }
+
+  QueryBuilder<MovieLocal, String, QQueryOperations> userReviewProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userReview');
+    });
+  }
+
+  QueryBuilder<MovieLocal, double?, QQueryOperations> voteAverageProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'voteAverage');
+    });
+  }
+
   QueryBuilder<MovieLocal, WatchStatus, QQueryOperations>
       watchStatusProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'watchStatus');
+    });
+  }
+
+  QueryBuilder<MovieLocal, DateTime?, QQueryOperations> watchedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'watchedAt');
     });
   }
 }

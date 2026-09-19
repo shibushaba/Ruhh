@@ -15,4 +15,10 @@ class UserLocal {
   String? supabaseId;
 
   late DateTime createdAt;
+
+  /// Tracker onboarding completed for this account.
+  bool onboardingComplete = false;
+
+  /// Optional budget module enabled for this account.
+  bool budgetEnabled = false;
 }

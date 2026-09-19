@@ -8,92 +8,148 @@ class RuhhTheme {
 
   static ThemeData _base(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final bg = isDark ? NBColors.darkBg : NBColors.offWhite;
-    final fg = isDark ? NBColors.offWhite : NBColors.black;
+    final fg = isDark ? NBColors.white : NBColors.black;
+    final muted = NBColors.mutedText(brightness);
+    final surface = NBColors.surfaceFill(brightness);
+    final canvas = NBColors.canvas(brightness);
+
+    final base = GoogleFonts.interTextTheme().apply(
+      bodyColor: fg,
+      displayColor: fg,
+    );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: bg,
+      scaffoldBackgroundColor: canvas,
       colorScheme: ColorScheme(
         brightness: brightness,
-        primary: NBColors.prayer,
-        onPrimary: NBColors.black,
-        secondary: NBColors.habit,
+        primary: fg,
+        onPrimary: isDark ? NBColors.black : NBColors.white,
+        secondary: NBColors.movie,
         onSecondary: NBColors.black,
-        error: const Color(0xFFEF4444),
-        onError: NBColors.offWhite,
-        surface: bg,
+        surface: surface,
         onSurface: fg,
+        onSurfaceVariant: muted,
+        error: const Color(0xFFDC2626),
+        onError: NBColors.white,
       ),
-      textTheme: TextTheme(
-        displayLarge: GoogleFonts.spaceGrotesk(
+      textTheme: base.copyWith(
+        displayLarge: base.displayLarge?.copyWith(
           fontWeight: FontWeight.w800,
-          fontSize: 32,
-          color: fg,
+          fontSize: 28,
+          height: 1.15,
         ),
-        headlineMedium: GoogleFonts.spaceGrotesk(
+        headlineMedium: base.headlineMedium?.copyWith(
           fontWeight: FontWeight.w700,
-          fontSize: 24,
-          color: fg,
+          fontSize: 20,
+          height: 1.2,
         ),
-        titleLarge: GoogleFonts.spaceGrotesk(
+        titleLarge: base.titleLarge?.copyWith(
           fontWeight: FontWeight.w700,
           fontSize: 18,
-          color: fg,
+          height: 1.25,
         ),
-        bodyLarge: GoogleFonts.spaceGrotesk(
+        titleMedium: base.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          height: 1.3,
+        ),
+        bodyLarge: base.bodyLarge?.copyWith(
           fontWeight: FontWeight.w500,
           fontSize: 16,
-          color: fg,
+          height: 1.45,
         ),
-        bodyMedium: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w500,
+        bodyMedium: base.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w400,
           fontSize: 14,
-          color: fg,
+          height: 1.45,
+          color: muted,
         ),
-        labelLarge: GoogleFonts.spaceGrotesk(
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
-          color: fg,
+        labelLarge: base.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          letterSpacing: 0.2,
+        ),
+        labelSmall: base.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          letterSpacing: 0.4,
+          color: muted,
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: canvas,
         foregroundColor: fg,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        titleSpacing: 20,
+        titleTextStyle: base.titleLarge?.copyWith(
           fontWeight: FontWeight.w800,
-          fontSize: 22,
+          fontSize: 20,
           color: fg,
         ),
       ),
-      dividerColor: NBColors.black,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        elevation: 0,
+        height: 64,
+        indicatorColor: fg.withValues(alpha: isDark ? 0.15 : 0.08),
+        labelTextStyle: WidgetStatePropertyAll(
+          base.labelLarge?.copyWith(fontSize: 12),
+        ),
+        iconTheme: WidgetStatePropertyAll(IconThemeData(color: fg, size: 22)),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: fg,
+        unselectedLabelColor: muted,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: NBColors.glassBorder(brightness),
+        labelStyle: base.labelLarge,
+        unselectedLabelStyle: base.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+      ),
+      dividerColor: NBColors.glassBorder(brightness).withValues(alpha: 0.35),
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+        titleTextStyle: base.titleMedium,
+        subtitleTextStyle: base.bodyMedium,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        fillColor: surface,
+        hintStyle: base.bodyMedium,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: const BorderSide(
-            color: NBColors.black,
-            width: NBMetrics.borderWidth,
-          ),
+          borderSide: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: const BorderSide(
-            color: NBColors.black,
-            width: NBMetrics.borderWidth,
-          ),
+          borderSide: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: const BorderSide(
-            color: NBColors.black,
-            width: NBMetrics.borderWidth,
-          ),
+          borderSide: BorderSide(color: fg, width: NBMetrics.borderWidth),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: fg,
+        foregroundColor: isDark ? NBColors.black : NBColors.white,
+        elevation: 0,
+        extendedTextStyle: base.labelLarge?.copyWith(
+          color: isDark ? NBColors.black : NBColors.white,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NBMetrics.radius),
+          side: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: fg,
+        contentTextStyle: base.bodyMedium?.copyWith(
+          color: isDark ? NBColors.black : NBColors.white,
         ),
       ),
     );

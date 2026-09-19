@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
@@ -9,7 +10,6 @@ import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
-import 'package:ruhh/features/settings/settings_controller.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 
@@ -48,46 +48,63 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       data: (user) {
         if (user == null) {
           return Text(
-            'Log in to RUHH first, then open Quick Action again.',
-            style: Theme.of(context).textTheme.bodyLarge,
+            'Open RUHH and sign in once, then try Quick again.',
+            style: Theme.of(context).textTheme.bodyMedium,
           );
         }
-        return _buildContent(context);
+        return _buildContent(context, user);
       },
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, UserLocal user) {
     if (_success) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, size: 48, color: NBColors.budget),
+          Icon(Icons.check_circle_outline,
+              size: 40, color: Theme.of(context).colorScheme.onSurface),
           const SizedBox(height: 8),
-          Text('Saved!', style: Theme.of(context).textTheme.headlineMedium),
+          Text('Saved', style: Theme.of(context).textTheme.titleLarge),
         ],
       );
     }
 
-    if (_step == 0) return _pickModule();
-    return _moduleAction();
+    if (_step == 0) return _pickModule(user);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() {
+              _step = 0;
+              _module = null;
+            }),
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Back'),
+          ),
+        ),
+        _moduleAction(),
+      ],
+    );
   }
 
-  Widget _pickModule() {
-    final settings = ref.watch(settingsControllerProvider);
+  Widget _pickModule(UserLocal user) {
     final modules = <QuickModule>[
       QuickModule.habit,
       QuickModule.prayer,
       QuickModule.movie,
-      if (settings.budgetEnabled) QuickModule.budget,
+      if (user.budgetEnabled) QuickModule.budget,
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Quick action', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
+        Text('Pick module', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -169,10 +186,10 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
               Text(habit.name, style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 8),
               NBButton(
-                label: 'Mark done',
+                label: 'Check in',
                 color: NBColors.habit,
                 onPressed: () async {
-                  await r.markDone(habit);
+                  await r.toggleToday(habit);
                   _showSuccess();
                 },
               ),
@@ -221,20 +238,20 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
               const SizedBox(height: 8),
               NBButton(
                 expand: false,
-                label: 'Missed',
+                label: 'Late alone',
                 color: NBColors.offWhite,
                 onPressed: () async {
-                  await r.setStatus(prayer, PrayerStatus.missed);
+                  await r.setStatus(prayer, PrayerStatus.lateAlone);
                   _showSuccess();
                 },
               ),
               const SizedBox(height: 8),
               NBButton(
                 expand: false,
-                label: 'Mark as Qadha',
+                label: 'Missed',
                 color: NBColors.offWhite,
                 onPressed: () async {
-                  await r.setStatus(prayer, PrayerStatus.qadha);
+                  await r.setStatus(prayer, PrayerStatus.missed);
                   _showSuccess();
                 },
               ),
@@ -258,7 +275,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
           spacing: 6,
           children: WatchStatus.values
               .map((s) => NBChip(
-                    label: s.name,
+                    label: watchStatusLabel(s),
                     selected: _watchStatus == s,
                     color: NBColors.movie,
                     onTap: () => setState(() => _watchStatus = s),

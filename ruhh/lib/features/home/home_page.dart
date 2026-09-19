@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_tile.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
@@ -14,8 +15,10 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     final habitRepo = ref.watch(habitRepositoryProvider);
+    final canvas = NBColors.canvas(Theme.of(context).brightness);
 
     return Scaffold(
+      backgroundColor: canvas,
       appBar: AppBar(
         title: const Text('RUHH'),
         actions: [
@@ -23,12 +26,13 @@ class HomePage extends ConsumerWidget {
             data: (repo) => FutureBuilder<int>(
               future: _bestStreak(repo),
               builder: (context, snap) {
-                final value = snap.data ?? 0;
-                return TextButton(
-                  onPressed: () => context.push('/analytics'),
-                  child: Text(
-                    '$value',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Center(
+                    child: NBStreakBadge(
+                      value: snap.data ?? 0,
+                      onTap: () => context.push('/analytics'),
+                    ),
                   ),
                 );
               },
@@ -38,61 +42,76 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.95,
-          ),
+      body: NBPageBody(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (settings.budgetEnabled)
-              NBTile(
-                title: 'Budget',
-                subtitle: 'Log expenses',
-                color: NBColors.budget,
-                icon: Icons.account_balance_wallet,
-                onTap: () => context.push('/budget'),
-              )
-            else
-              NBTile(
-                title: 'Budget',
-                subtitle: 'Tap to enable',
-                color: Colors.grey.shade400,
-                icon: Icons.account_balance_wallet,
-                disabled: true,
-                onTap: () => context.push('/settings'),
+            Text(
+              'Your trackers',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Open a module to log or review progress.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.92,
+                ),
+                children: [
+                  if (settings.budgetEnabled)
+                    NBTile(
+                      title: 'Budget',
+                      subtitle: 'Log expenses',
+                      accent: NBColors.budget,
+                      icon: Icons.account_balance_wallet,
+                      onTap: () => context.push('/budget'),
+                    )
+                  else
+                    NBTile(
+                      title: 'Budget',
+                      subtitle: 'Enable in Settings',
+                      accent: NBColors.mutedText(Theme.of(context).brightness),
+                      icon: Icons.account_balance_wallet,
+                      disabled: true,
+                      onTap: () => context.push('/settings'),
+                    ),
+                  NBTile(
+                    title: 'Habit',
+                    subtitle: 'Daily streaks',
+                    accent: NBColors.habit,
+                    icon: Icons.bolt,
+                    onTap: () => context.push('/habit'),
+                  ),
+                  NBTile(
+                    title: 'Prayer',
+                    subtitle: 'Salah tracker',
+                    accent: NBColors.prayer,
+                    icon: Icons.mosque,
+                    onTap: () => context.push('/prayer'),
+                  ),
+                  NBTile(
+                    title: 'Movie',
+                    subtitle: 'Watchlists',
+                    accent: NBColors.movie,
+                    icon: Icons.movie,
+                    onTap: () => context.push('/movie'),
+                  ),
+                ],
               ),
-            NBTile(
-              title: 'Habit',
-              subtitle: 'Daily streaks',
-              color: NBColors.habit,
-              icon: Icons.bolt,
-              onTap: () => context.push('/habit'),
-            ),
-            NBTile(
-              title: 'Prayer',
-              subtitle: 'Salah tracker',
-              color: NBColors.prayer,
-              icon: Icons.mosque,
-              onTap: () => context.push('/prayer'),
-            ),
-            NBTile(
-              title: 'Movie',
-              subtitle: 'Watchlists',
-              color: NBColors.movie,
-              icon: Icons.movie,
-              onTap: () => context.push('/movie'),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final ok =
-              await ref.read(overlayServiceProvider).showQuickAction();
+          final ok = await ref.read(overlayServiceProvider).showQuickAction();
           if (!context.mounted) return;
           if (!ok) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -110,13 +129,5 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Future<int> _bestStreak(HabitRepository repo) async {
-    final habits = await repo.activeHabits();
-    var best = 0;
-    for (final h in habits) {
-      final s = await repo.streakFor(h);
-      if (s > best) best = s;
-    }
-    return best;
-  }
+  Future<int> _bestStreak(HabitRepository repo) => repo.bestStreakAmongActive();
 }

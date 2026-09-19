@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:isar/isar.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/session/session_providers.dart';
+import 'package:ruhh/core/services/supabase_sync_service.dart';
+import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
 class OnboardingPage extends ConsumerWidget {
@@ -63,6 +68,18 @@ class OnboardingPage extends ConsumerWidget {
                 await ref
                     .read(settingsControllerProvider.notifier)
                     .setOnboardingComplete(true);
+                final username = ref.read(authControllerProvider).username;
+                if (username != null) {
+                  final isar = await ref.read(isarProvider.future);
+                  final user = await isar.userLocals
+                      .filter()
+                      .usernameEqualTo(username)
+                      .findFirst();
+                  if (user != null) {
+                    await SupabaseSyncService(isar)
+                        .syncUser(user, user.pinHash);
+                  }
+                }
                 if (context.mounted) context.go('/home');
               },
             ),

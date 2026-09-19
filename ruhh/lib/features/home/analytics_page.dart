@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
@@ -39,9 +40,17 @@ class _BudgetInsight extends StatelessWidget {
     final repo = ref.watch(budgetRepositoryProvider);
     return repo.when(
       data: (r) => FutureBuilder(
-        future: r.spentThisMonth(),
+        future: Future.wait([r.spentThisMonth(), r.budgets()]),
         builder: (context, snap) {
-          final spent = snap.data ?? 0;
+          if (!snap.hasData) {
+            return const SizedBox.shrink();
+          }
+          final spent = snap.data![0] as double;
+          final budgets = snap.data![1] as List<BudgetPeriodLocal>;
+          final limit =
+              budgets.isEmpty ? 2000.0 : budgets.first.limitAmount;
+          final progress =
+              limit <= 0 ? 0.0 : (spent / limit).clamp(0.0, 1.0);
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: NBCard(
@@ -50,10 +59,12 @@ class _BudgetInsight extends StatelessWidget {
                 children: [
                   Text('Spent this month',
                       style: Theme.of(context).textTheme.titleLarge),
-                  Text('\$${spent.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.headlineMedium),
+                  Text(
+                    '\$${spent.toStringAsFixed(0)} / \$${limit.toStringAsFixed(0)}',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
                   const SizedBox(height: 8),
-                  const NBProgressBar(progress: 0.35, color: NBColors.budget),
+                  NBProgressBar(progress: progress, color: NBColors.budget),
                   const SizedBox(height: 8),
                   Text('Tip: log expenses nightly to stay on track.'),
                 ],
@@ -104,17 +115,17 @@ class _PrayerInsight extends StatelessWidget {
     final repo = ref.watch(prayerRepositoryProvider);
     return repo.when(
       data: (r) => FutureBuilder(
-        future: r.qadhaCount(),
+        future: r.missedCount(),
         builder: (context, snap) {
-          final q = snap.data ?? 0;
+          final missed = snap.data ?? 0;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: NBCard(
               color: NBColors.prayer.withValues(alpha: 0.35),
               child: Text(
-                q == 0
-                    ? 'No pending Qadha — great consistency.'
-                    : '$q missed prayers logged — plan makeup time.',
+                missed == 0
+                    ? 'No missed prayers logged — keep it up.'
+                    : '$missed missed prayers logged in your history.',
               ),
             ),
           );

@@ -20,3 +20,19 @@ class PrayerLogLocal {
   @Enumerated(EnumType.name)
   late PrayerStatus status;
 }
+
+@collection
+class PrayerTimeLocal {
+  Id id = Isar.autoIncrement;
+
+  late String userId;
+  late DateTime day;
+
+  @Enumerated(EnumType.name)
+  late PrayerName prayer;
+
+  /// Display time HH:mm (from Aladhan or adhan fallback).
+  late String time;
+
+  String? hijriDate;
+}

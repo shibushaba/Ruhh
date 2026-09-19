@@ -1,7 +1,9 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
+import 'package:ruhh/core/data/models/focus_session_local.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
+import 'package:ruhh/core/data/models/todo_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
@@ -22,11 +24,16 @@ class IsarService {
         TransactionLocalSchema,
         HabitLocalSchema,
         HabitCompletionLocalSchema,
+        TodoLocalSchema,
+        FocusSessionLocalSchema,
         PrayerLogLocalSchema,
+        PrayerTimeLocalSchema,
         MovieLocalSchema,
         WalletLocalSchema,
         CategoryLocalSchema,
         BudgetPeriodLocalSchema,
+        ObjectiveLocalSchema,
+        CategoryBudgetLimitLocalSchema,
       ],
       directory: dir.path,
       name: 'ruhh',

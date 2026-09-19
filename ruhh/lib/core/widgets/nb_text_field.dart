@@ -27,7 +27,7 @@ class NBTextField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label != null) ...[
-          Text(label!, style: Theme.of(context).textTheme.titleLarge),
+          Text(label!, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
         ],
         TextField(
@@ -52,30 +52,33 @@ class NBChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.color = NBColors.prayer,
+    this.color,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final fg = Theme.of(context).colorScheme.onSurface;
+    final accent = color ?? NBColors.glassFill(Theme.of(context).brightness);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color : Colors.transparent,
-          border: Border.all(color: NBColors.black, width: NBMetrics.borderWidth),
+          color: selected ? accent.withValues(alpha: 0.85) : Colors.transparent,
+          border: Border.all(color: fg, width: NBMetrics.borderWidth),
           borderRadius: BorderRadius.circular(NBMetrics.radius),
           boxShadow: selected
               ? const [
                   BoxShadow(
                     color: NBColors.shadow,
                     offset: NBMetrics.shadowOffset,
+                    blurRadius: 0,
                   ),
                 ]
               : null,
