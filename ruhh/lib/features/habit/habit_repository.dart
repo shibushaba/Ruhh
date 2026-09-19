@@ -3,10 +3,14 @@ import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/habit_reminder.dart';
 import 'package:ruhh/core/data/models/vacation_period.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/habit/habit_extensions.dart';
 import 'package:ruhh/features/habit/habit_logic.dart';
+import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
+import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
+import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
 import 'package:uuid/uuid.dart';
 
 class HabitRepository {
@@ -88,7 +92,10 @@ class HabitRepository {
       ..remindersJson = '[]'
       ..archived = false
       ..sortOrder = active.length
-      ..createdAt = DateTime.now();
+      ..createdAt = DateTime.now()
+      ..scheduleStartDateKey = habitDateKey(DateTime.now())
+      ..scheduleMonthDays =
+          interval == HabitInterval.monthly ? [1] : const [];
     await _isar.writeTxn(() => _isar.habitLocals.put(habit));
     await _afterWrite();
   }
@@ -319,16 +326,7 @@ class HabitRepository {
     return best;
   }
 
-  static List<int> presetColors() => [
-        0xFFF97316,
-        0xFF22C55E,
-        0xFF14B8A6,
-        0xFFA855F7,
-        0xFF3B82F6,
-        0xFFEC4899,
-        0xFFEAB308,
-        0xFFEF4444,
-      ];
+  static List<int> presetColors() => habitPresetColorValues();
 
   static String kindLabel(HabitKind k) => switch (k) {
         HabitKind.positive => 'Build',
@@ -343,17 +341,224 @@ class HabitRepository {
         HabitInterval.weekdays => 'Specific days',
         HabitInterval.everyXDays => 'Every X days',
       };
+
+  String get todayKey => habitDateKey(DateTime.now());
+
+  Stream<void> watchHabitLogs() {
+    return _isar.habitLogLocals
+        .watchLazy(fireImmediately: false)
+        .map((_) {});
+  }
+
+  Future<void> ensureTodayLogs() async {
+    final habits = await activeHabits();
+    final key = todayKey;
+    for (final h in habits) {
+      if (!isDue(h, key)) continue;
+      await _ensureLog(h, key);
+    }
+  }
+
+  Future<Map<String, Map<String, HabitLogView>>> allLogViews() async {
+    final rows = await _isar.habitLogLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .findAll();
+    final map = <String, Map<String, HabitLogView>>{};
+    for (final row in rows) {
+      map.putIfAbsent(row.habitRemoteId, () => {});
+      map[row.habitRemoteId]![row.dateKey] = _viewFromLocal(row);
+    }
+    return map;
+  }
+
+  Future<Map<String, HabitLogView>> logsForHabit(HabitLocal habit) async {
+    final rows = await _isar.habitLogLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .habitRemoteIdEqualTo(habit.remoteId)
+        .findAll();
+    return {
+      for (final r in rows) r.dateKey: finalizeLog(_viewFromLocal(r), todayKey: todayKey),
+    };
+  }
+
+  HabitLogView _viewFromLocal(HabitLogLocal row) => HabitLogView(
+        dateKey: row.dateKey,
+        status: row.status,
+        currentValue: row.currentValue,
+      );
+
+  Future<HabitLogLocal> _ensureLog(HabitLocal habit, String dateKey) async {
+    if (!isDue(habit, dateKey)) {
+      throw StateError('Not due');
+    }
+    final existing = await _logLocal(habit.remoteId, dateKey);
+    if (existing != null) return existing;
+    return _isar.writeTxn(() async {
+      final again = await _logLocal(habit.remoteId, dateKey);
+      if (again != null) return again;
+      await _migrateCompletionToLog(habit, dateKey);
+      final migrated = await _logLocal(habit.remoteId, dateKey);
+      if (migrated != null) return migrated;
+      final row = HabitLogLocal()
+        ..remoteId = const Uuid().v4()
+        ..userId = _userId
+        ..habitRemoteId = habit.remoteId
+        ..dateKey = dateKey
+        ..status = HabitLogStatus.pending
+        ..currentValue = isHabitGoal(habit) ? 0 : null;
+      await _isar.habitLogLocals.put(row);
+      return row;
+    });
+  }
+
+  Future<HabitLogLocal?> _logLocal(String habitId, String dateKey) =>
+      _isar.habitLogLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .habitRemoteIdEqualTo(habitId)
+          .dateKeyEqualTo(dateKey)
+          .findFirst();
+
+  Future<void> _migrateCompletionToLog(
+    HabitLocal habit,
+    String dateKey,
+  ) async {
+    final day = parseHabitDateKey(dateKey);
+    final c = await _isar.habitCompletionLocals
+        .filter()
+        .habitRemoteIdEqualTo(habit.remoteId)
+        .userIdEqualTo(_userId)
+        .dayEqualTo(HabitLogic.dayOnly(day))
+        .findFirst();
+    if (c == null) return;
+    final target = habitGoalTarget(habit);
+    final completed = isHabitGoal(habit)
+        ? c.value >= target
+        : c.value >= 1;
+    final row = HabitLogLocal()
+      ..remoteId = const Uuid().v4()
+      ..userId = _userId
+      ..habitRemoteId = habit.remoteId
+      ..dateKey = dateKey
+      ..currentValue = isHabitGoal(habit) ? c.value : null
+      ..status = completed ? HabitLogStatus.completed : HabitLogStatus.pending;
+    await _isar.habitLogLocals.put(row);
+  }
+
+  Future<void> _persistLog(HabitLocal habit, HabitLogLocal row) async {
+    await _isar.writeTxn(() => _isar.habitLogLocals.put(row));
+    await _syncCompletion(habit, row);
+    await _afterWrite();
+  }
+
+  Future<void> _syncCompletion(HabitLocal habit, HabitLogLocal row) async {
+    final day = parseHabitDateKey(row.dateKey);
+    if (row.status == HabitLogStatus.completed) {
+      final v = isHabitGoal(habit)
+          ? (row.currentValue ?? habitGoalTarget(habit))
+          : 1.0;
+      await _setValue(habit, day, v);
+    } else if (row.status == HabitLogStatus.pending &&
+        isHabitGoal(habit) &&
+        (row.currentValue ?? 0) > 0) {
+      await _setValue(habit, day, row.currentValue!);
+    } else if (row.status == HabitLogStatus.excused ||
+        row.status == HabitLogStatus.missed ||
+        (row.status == HabitLogStatus.pending &&
+            (row.currentValue ?? 0) == 0)) {
+      await _setValue(habit, day, null);
+    }
+  }
+
+  Future<HabitLogView> toggleSimple(HabitLocal habit, String dateKey) async {
+    final row = await _ensureLog(habit, dateKey);
+    final isToday = dateKey == todayKey;
+    if (isToday) {
+      row.status = row.status == HabitLogStatus.completed
+          ? HabitLogStatus.pending
+          : HabitLogStatus.completed;
+    } else {
+      row.status = row.status == HabitLogStatus.completed
+          ? HabitLogStatus.missed
+          : HabitLogStatus.completed;
+    }
+    if (row.status == HabitLogStatus.completed && isHabitGoal(habit)) {
+      row.currentValue = habitGoalTarget(habit);
+    }
+    await _persistLog(habit, row);
+    return finalizeLog(_viewFromLocal(row), todayKey: todayKey);
+  }
+
+  Future<HabitLogView> stepGoal(
+    HabitLocal habit,
+    String dateKey,
+    double delta,
+  ) async {
+    final row = await _ensureLog(habit, dateKey);
+    final next = (row.currentValue ?? 0) + delta;
+    row.currentValue = next < 0 ? 0 : next;
+    if (row.currentValue! >= habitGoalTarget(habit)) {
+      row.status = HabitLogStatus.completed;
+      row.currentValue = row.currentValue!.clamp(0, habitGoalTarget(habit));
+    } else {
+      row.status = HabitLogStatus.pending;
+    }
+    await _persistLog(habit, row);
+    return finalizeLog(_viewFromLocal(row), todayKey: todayKey);
+  }
+
+  Future<HabitLogView> setExcused(
+    HabitLocal habit,
+    String dateKey,
+    bool excused,
+  ) async {
+    final row = await _ensureLog(habit, dateKey);
+    row.status = excused ? HabitLogStatus.excused : HabitLogStatus.pending;
+    await _persistLog(habit, row);
+    return finalizeLog(_viewFromLocal(row), todayKey: todayKey);
+  }
+
+  Future<({int done, int total, double ratio})> trackerTodayScore() async {
+    final habits = await activeHabits();
+    final logs = await allLogViews();
+    return todayScore(habits, logs, todayKey);
+  }
+
+  Future<int> trackerStreak(HabitLocal habit) async {
+    final logs = await logsForHabit(habit);
+    return currentStreakForHabit(habit, logs, todayKey);
+  }
+
+  Future<int> trackerLongestStreak(HabitLocal habit) async {
+    final logs = await logsForHabit(habit);
+    return longestStreakForHabit(habit, logs, todayKey);
+  }
 }
 
 final habitRepositoryProvider = FutureProvider<HabitRepository>((ref) async {
   final isar = await ref.watch(isarProvider.future);
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) throw StateError('No user');
-  return HabitRepository(isar, user.supabaseId ?? user.id.toString());
+  final repo = HabitRepository(isar, user.supabaseId ?? user.id.toString());
+  await repo.ensureTodayLogs();
+  return repo;
+});
+
+final habitLogViewsProvider =
+    StreamProvider<Map<String, Map<String, HabitLogView>>>((ref) async* {
+  ref.watch(habitRefreshProvider);
+  final repo = await ref.watch(habitRepositoryProvider.future);
+  yield await repo.allLogViews();
+  await for (final _ in repo.watchHabitLogs()) {
+    yield await repo.allLogViews();
+  }
 });
 
 final habitRefreshProvider = StateProvider<int>((ref) => 0);
 
 void bumpHabitRefresh(WidgetRef ref) {
   ref.read(habitRefreshProvider.notifier).state++;
+  scheduleCloudSyncFromWidget(ref);
 }

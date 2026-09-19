@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/widgets/nb_button.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
+
+class NBDialogAction {
+  const NBDialogAction({
+    required this.label,
+    required this.onPressed,
+    this.destructive = false,
+    this.primary = false,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool destructive;
+  final bool primary;
+}
+
+const _kDialogInset = EdgeInsets.symmetric(horizontal: 20, vertical: 24);
+const _kDialogPadding = EdgeInsets.fromLTRB(20, 20, 20, 16);
+
+class _NBDialogActionsBar extends StatelessWidget {
+  const _NBDialogActionsBar({required this.actions});
+
+  final List<NBDialogAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.end,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final action in actions)
+          if (action.primary)
+            NBButton(
+              label: action.label,
+              expand: false,
+              color: NBColors.budget,
+              onPressed: action.onPressed,
+            )
+          else
+            TextButton(
+              onPressed: action.onPressed,
+              child: Text(
+                action.label,
+                style: TextStyle(
+                  color: action.destructive
+                      ? Colors.red.shade700
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+class NBFormDialogPanel extends StatelessWidget {
+  const NBFormDialogPanel({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.actions,
+    this.scrollable = false,
+  });
+
+  final String title;
+  final Widget content;
+  final List<NBDialogAction> actions;
+  final bool scrollable;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: _kDialogInset,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 440,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+        ),
+        child: NBGlassPanel(
+          elevated: true,
+          padding: _kDialogPadding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(title, style: theme.textTheme.titleLarge),
+              const SizedBox(height: 16),
+              if (scrollable)
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: content,
+                  ),
+                )
+              else
+                content,
+              const SizedBox(height: 20),
+              _NBDialogActionsBar(actions: actions),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Form-style modal with labels above fields (vector panel, full width).
+Future<void> showNBFormDialog({
+  required BuildContext context,
+  required String title,
+  required Widget content,
+  required List<NBDialogAction> actions,
+  bool scrollable = false,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (ctx) => NBFormDialogPanel(
+      title: title,
+      content: content,
+      actions: actions,
+      scrollable: scrollable,
+    ),
+  );
+}
+
+/// Stateful form dialog — use for dropdowns, toggles, and segmented controls.
+Future<void> showNBStatefulFormDialog({
+  required BuildContext context,
+  required String title,
+  required Widget Function(BuildContext context, StateSetter setState) content,
+  required List<NBDialogAction> Function(
+    BuildContext context,
+    StateSetter setState,
+  ) actions,
+  bool scrollable = false,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return NBFormDialogPanel(
+            title: title,
+            scrollable: scrollable,
+            content: content(context, setState),
+            actions: actions(context, setState),
+          );
+        },
+      );
+    },
+  );
+}
+
+/// Confirmation alert with the same shell as form dialogs.
+Future<bool?> showNBConfirmDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  String confirmLabel = 'OK',
+  String cancelLabel = 'Cancel',
+  bool destructive = false,
+}) {
+  return showDialog<bool>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (ctx) {
+      return NBFormDialogPanel(
+        title: title,
+        content: Text(
+          message,
+          style: Theme.of(ctx).textTheme.bodyLarge,
+        ),
+        actions: [
+          NBDialogAction(
+            label: cancelLabel,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
+          NBDialogAction(
+            label: confirmLabel,
+            primary: !destructive,
+            destructive: destructive,
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      );
+    },
+  );
+}

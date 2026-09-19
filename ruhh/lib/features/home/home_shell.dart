@@ -1,36 +1,141 @@
 import 'package:flutter/material.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
 
-class HomeShell extends StatelessWidget {
-  const HomeShell({super.key, required this.child});
+import 'package:ruhh/core/icons/app_icons.dart';
 
-  final Widget child;
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
+
+import 'package:ruhh/core/widgets/ruhh_components.dart';
+
+
+
+class HomeShell extends ConsumerWidget {
+
+  const HomeShell({super.key, required this.navigationShell});
+
+
+
+  final StatefulNavigationShell navigationShell;
+
+
+
+  static final _destinations = [
+
+    RuhhNavDestination(
+
+      icon: AppIcons.home(),
+
+      selectedIcon: AppIcons.home(filled: true),
+
+      path: '/home',
+
+    ),
+
+    RuhhNavDestination(
+
+      icon: AppIcons.wallet(),
+
+      selectedIcon: AppIcons.wallet(filled: true),
+
+      path: '/budget',
+
+    ),
+
+    RuhhNavDestination(
+
+      icon: AppIcons.habit(),
+
+      selectedIcon: AppIcons.habit(filled: true),
+
+      path: '/habit',
+
+    ),
+
+    RuhhNavDestination(
+
+      icon: AppIcons.prayer(),
+
+      selectedIcon: AppIcons.prayer(filled: true),
+
+      path: '/prayer',
+
+    ),
+
+    RuhhNavDestination(
+
+      icon: AppIcons.movie(),
+
+      selectedIcon: AppIcons.movie(filled: true),
+
+      path: '/movie',
+
+    ),
+
+  ];
+
+
 
   @override
-  Widget build(BuildContext context) {
-    final loc = GoRouterState.of(context).uri.path;
+
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final index = navigationShell.currentIndex;
+
+
+
     return Scaffold(
-      backgroundColor: NBColors.canvas(Theme.of(context).brightness),
-      body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _indexFor(loc),
-        onDestinationSelected: (i) => context.go(_pathFor(i)),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+
+      backgroundColor: Colors.transparent,
+
+      body: Stack(
+
+        fit: StackFit.expand,
+
+        children: [
+
+          navigationShell,
+
+          Positioned(
+
+            left: 0,
+
+            right: 0,
+
+            bottom: 0,
+
+            child: RuhhFloatingNav(
+
+              selectedIndex: index,
+
+              destinations: _destinations,
+
+              onSelected: (i) {
+
+                navigationShell.goBranch(
+
+                  i,
+
+                  initialLocation: i == navigationShell.currentIndex,
+
+                );
+
+              },
+
+            ),
+
+          ),
+
         ],
+
       ),
+
     );
+
   }
 
-  int _indexFor(String path) {
-    if (path.startsWith('/settings')) return 1;
-    return 0;
-  }
-
-  String _pathFor(int index) => switch (index) {
-        0 => '/home',
-        _ => '/settings',
-      };
 }
+
+

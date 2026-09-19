@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
 
 class NBTile extends StatelessWidget {
   const NBTile({
@@ -22,56 +22,33 @@ class NBTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    final fg = Theme.of(context).colorScheme.onSurface;
-
+    final t = context.ruhh;
+    final color = disabled ? t.textTertiary : accent;
     return Opacity(
-      opacity: disabled ? 0.5 : 1,
-      child: NBCard(
+      opacity: disabled ? 0.55 : 1,
+      child: RuhhSoftCard(
+        radius: t.radiusCardMedium,
         onTap: disabled ? null : onTap,
-        padding: EdgeInsets.zero,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  color: disabled ? NBColors.mutedText(Theme.of(context).brightness) : accent,
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(NBMetrics.radius - 1),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: fg, width: 2),
-                          borderRadius: BorderRadius.circular(NBMetrics.radius),
-                        ),
-                        child: Icon(icon, size: 26, color: fg),
-                      ),
-                      const Spacer(),
-                      Text(title, style: theme.titleLarge),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: theme.bodyMedium,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        padding: EdgeInsets.all(t.spaceCardPaddingCompact),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RuhhIconChip(icon: icon, accent: color),
+            const Spacer(),
+            Text(
+              title,
+              style: t.cardTitle(Theme.of(context).textTheme),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: t.caption(Theme.of(context).textTheme),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ruhh/core/data/models/habit_local.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
-import 'package:ruhh/features/habit/data/aggregated_habit_stats.dart';
+import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_stat_card.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
-import 'package:ruhh/features/habit/widgets/habit_heatmap_strip.dart';
-import 'package:ruhh/features/habit/widgets/habit_stat_charts.dart';
+import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
+import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
+import 'package:ruhh/features/habit/widgets/habit_tracker_widgets.dart';
 
 class HabitStatsPage extends ConsumerWidget {
   const HabitStatsPage({super.key});
@@ -14,117 +15,115 @@ class HabitStatsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(habitRefreshProvider);
     final repoAsync = ref.watch(habitRepositoryProvider);
+    final logsAsync = ref.watch(habitLogViewsProvider);
+
     return repoAsync.when(
-      data: (repo) => StreamBuilder(
-        stream: repo.watchActiveHabits(),
-        builder: (context, snap) {
-          final habits = snap.data ?? [];
-          if (habits.isEmpty) {
-            return const Center(child: Text('Add habits to see statistics.'));
-          }
-          return FutureBuilder(
-            future: AggregatedHabitStats.compute(repo),
-            builder: (context, aggSnap) {
-              final agg = aggSnap.data;
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Text('Statistics',
-                      style: Theme.of(context).textTheme.headlineMedium),
-                  if (agg != null) ...[
-                    const SizedBox(height: 12),
-                    HabitStatSummaryCards(
-                      total: agg.total,
-                      bestStreak: agg.bestStreak,
-                      consistency: agg.consistency,
-                      perfectDays: agg.perfectDays,
-                    ),
-                    const SizedBox(height: 16),
-                    NBCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('By weekday',
-                              style: Theme.of(context).textTheme.titleMedium),
-                          HabitWeekdayChart(counts: agg.weekday),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    NBCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Streak trend (90d)',
-                              style: Theme.of(context).textTheme.titleMedium),
-                          HabitStreakLineChart(series: agg.streakSeries),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  Text('Per habit',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  ...habits.map(
-                    (h) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: FutureBuilder(
-                        future: Future.wait([
-                          repo.streakFor(h),
-                          repo.consistencyFor(h),
-                          repo.completionsMap(
-                            h,
-                            since: DateTime.now()
-                                .subtract(const Duration(days: 30)),
-                          ),
-                        ]),
-                        builder: (context, s) {
-                          if (!s.hasData) {
-                            return const NBCard(
-                              child: LinearProgressIndicator(),
-                            );
-                          }
-                          final streak = s.data![0] as int;
-                          final consistency = s.data![1] as int;
-                          final map = s.data![2] as Map<DateTime, double>;
-                          return NBCard(
-                            color: Color(h.colorValue).withValues(alpha: 0.3),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(h.name,
-                                    style:
-                                        Theme.of(context).textTheme.titleLarge),
-                                Text(
-                                  'Streak $streak · Consistency $consistency%',
-                                ),
-                                Text(
-                                  '${HabitRepository.intervalLabel(h.interval)} · ${HabitRepository.kindLabel(h.kind)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                const SizedBox(height: 10),
-                                HabitHeatmapStrip(
-                                  habit: h,
-                                  byDay: map,
-                                  days: 30,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 80),
-                ],
-              );
-            },
-          );
-        },
-      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
+      data: (repo) => logsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (allLogs) => StreamBuilder(
+          stream: repo.watchActiveHabits(),
+          builder: (context, snap) {
+            final habits = snap.data ?? [];
+            if (habits.isEmpty) {
+              return const NBEmptyState(message: 'Add habits to see stats.');
+            }
+            final todayKey = repo.todayKey;
+            final now = DateTime.now();
+            final monthStart = habitDateKey(DateTime(now.year, now.month, 1));
+
+            String? bestName;
+            String? worstName;
+            var bestRate = -1.0;
+            var worstRate = 2.0;
+            for (final h in habits) {
+              final logs = allLogs[h.remoteId] ?? {};
+              final rate = completionRateForPeriod(
+                h,
+                logs,
+                monthStart,
+                todayKey,
+                todayKey,
+              );
+              if (rate > bestRate) {
+                bestRate = rate;
+                bestName = h.name;
+              }
+              if (rate < worstRate) {
+                worstRate = rate;
+                worstName = h.name;
+              }
+            }
+
+            final milestones = <String>[];
+            for (final h in habits) {
+              final logs = allLogs[h.remoteId] ?? {};
+              final streak = currentStreakForHabit(h, logs, todayKey);
+              final m = streakMilestone(streak);
+              if (m != null) milestones.add('${h.name}: $m days');
+            }
+
+            return NBPageBody(
+              child: ListView(
+                children: [
+                  Text('Overview', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Text('Last 12 weeks (all habits)',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120,
+                    child: GridView.builder(
+                      scrollDirection: Axis.horizontal,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 2,
+                        crossAxisSpacing: 2,
+                      ),
+                      itemCount: 7 * 12,
+                      itemBuilder: (context, i) {
+                        final day = DateTime.now().subtract(
+                          Duration(days: (7 * 12 - 1) - i),
+                        );
+                        final key = habitDateKey(day);
+                        final intensity = dayScoreOn(
+                          habits,
+                          allLogs,
+                          key,
+                          todayKey,
+                        );
+                        return NBHeatmapCell(intensity: intensity);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (bestName != null)
+                    NBStatCard(
+                      label: 'Best this month',
+                      value: bestName!,
+                      accent: const Color(0xFF22C55E),
+                    ),
+                  const SizedBox(height: 8),
+                  if (worstName != null)
+                    NBStatCard(
+                      label: 'Needs attention',
+                      value: worstName!,
+                      accent: NBMetrics.expenseRed,
+                    ),
+                  if (milestones.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text('Milestones',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    ...milestones.map((m) => Text('🎉 $m')),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

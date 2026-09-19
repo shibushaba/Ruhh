@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,6 +56,7 @@ class SettingsController extends Notifier<ModuleSettings> {
   static const _legacyBudgetKey = 'mod_budget';
   static const _legacyOnboardingKey = 'onboarding_done';
   static const _darkKey = 'dark_mode';
+  static const _glassThemeKey = 'theme_glass_v2';
   static const _nBudget = 'notify_budget';
   static const _nHabit = 'notify_habit';
   static const _nPrayer = 'notify_prayer';
@@ -80,7 +82,7 @@ class SettingsController extends Notifier<ModuleSettings> {
       budgetEnabled: false,
       onboardingComplete: false,
       loaded: false,
-      darkMode: false,
+      darkMode: true,
       notifyBudget: true,
       notifyHabit: true,
       notifyPrayer: true,
@@ -98,11 +100,16 @@ class SettingsController extends Notifier<ModuleSettings> {
     final p = await SharedPreferences.getInstance();
     if (generation != _loadGeneration) return;
 
+    if (!p.containsKey(_glassThemeKey)) {
+      await p.setBool(_darkKey, true);
+      await p.setBool(_glassThemeKey, true);
+    }
+
     final device = ModuleSettings(
       budgetEnabled: false,
       onboardingComplete: false,
       loaded: false,
-      darkMode: p.getBool(_darkKey) ?? false,
+      darkMode: p.getBool(_darkKey) ?? true,
       notifyBudget: p.getBool(_nBudget) ?? true,
       notifyHabit: p.getBool(_nHabit) ?? true,
       notifyPrayer: p.getBool(_nPrayer) ?? true,
@@ -161,6 +168,7 @@ class SettingsController extends Notifier<ModuleSettings> {
     await isar.writeTxn(() async {
       await isar.userLocals.put(user);
     });
+    scheduleCloudSyncFromNotifier(ref);
   }
 
   Future<void> setBudgetEnabled(bool value) async {

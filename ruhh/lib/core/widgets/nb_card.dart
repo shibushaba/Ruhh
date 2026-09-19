@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_glass.dart';
 
 class NBCard extends StatelessWidget {
@@ -20,14 +20,17 @@ class NBCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final fill = color ?? NBColors.surfaceFill(brightness);
+    final t = context.ruhh;
+    final fill = color ?? t.surfacePrimary;
 
     final panel = NBGlassPanel(
       padding: padding,
       elevated: elevated,
       color: fill,
-      child: child,
+      child: Material(
+        color: Colors.transparent,
+        child: child,
+      ),
     );
 
     if (onTap == null) return panel;
@@ -35,7 +38,7 @@ class NBCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(NBMetrics.radius),
+        borderRadius: BorderRadius.circular(t.radiusCardLarge),
         child: panel,
       ),
     );

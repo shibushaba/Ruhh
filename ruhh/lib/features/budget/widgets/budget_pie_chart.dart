@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 
 class BudgetPieChart extends StatelessWidget {
-  const BudgetPieChart({super.key, required this.byCategory});
+  const BudgetPieChart({
+    super.key,
+    required this.byCategory,
+    this.onSliceTap,
+  });
 
   final Map<String, double> byCategory;
+  final void Function(String categoryLabel)? onSliceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +36,17 @@ class BudgetPieChart extends StatelessWidget {
         PieChartData(
           sectionsSpace: 2,
           centerSpaceRadius: 36,
+          pieTouchData: PieTouchData(
+            touchCallback: (event, response) {
+              if (onSliceTap == null || response?.touchedSection == null) {
+                return;
+              }
+              final i = response!.touchedSection!.touchedSectionIndex;
+              if (i >= 0 && i < entries.length) {
+                onSliceTap!(entries[i].key);
+              }
+            },
+          ),
           sections: [
             for (var i = 0; i < entries.length; i++)
               PieChartSectionData(

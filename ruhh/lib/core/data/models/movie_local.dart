@@ -29,4 +29,12 @@ class MovieLocal {
   late bool favorite;
   DateTime? watchedAt;
   late DateTime addedAt;
+
+  /// 1–5 watch priority (5 = highest). Section 4.
+  int priority = 3;
+
+  String categoryRemoteId = '';
+
+  /// Tracker note (separate from TMDB review text when used).
+  String trackerNote = '';
 }

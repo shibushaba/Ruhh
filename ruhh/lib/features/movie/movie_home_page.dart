@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/features/movie/movie_navigation.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/widgets/movie_carousel.dart';
@@ -73,11 +73,11 @@ class _MovieHomePageState extends ConsumerState<MovieHomePage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: NBCard(
-            color: NBColors.movie.withValues(alpha: 0.25),
+      return NBPageBody(
+        child: Center(
+          child: NBGlassPanel(
+            elevated: true,
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

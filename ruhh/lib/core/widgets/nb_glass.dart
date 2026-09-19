@@ -1,7 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/portfolio_palette.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 
-/// Flat neo-brutal panel: solid fill + crisp border (readable on all screens).
+/// Desk grid + paper panels — matches shabas.vercel.app scrapbook layout.
+class NBGlassBackground extends StatelessWidget {
+  const NBGlassBackground({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gridColor =
+        isDark ? PortfolioPalette.gridLineDark : PortfolioPalette.gridLineLight;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: isDark ? PortfolioPalette.deskDark : PortfolioPalette.deskLight,
+            gradient: isDark ? PortfolioPalette.deskGradientDark : null,
+          ),
+        ),
+        if (isDark)
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: PortfolioPalette.deskGradientAccentDark,
+            ),
+          ),
+        CustomPaint(
+          painter: PortfolioGridPainter(lineColor: gridColor),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+BoxDecoration glassDecoration(
+  BuildContext context, {
+  BorderRadius? borderRadius,
+  Color? tint,
+  bool elevated = true,
+}) {
+  return vectorPanelDecoration(
+    context,
+    borderRadius: borderRadius,
+    tint: tint,
+    elevated: elevated,
+  );
+}
+
+BoxDecoration vectorPanelDecoration(
+  BuildContext context, {
+  BorderRadius? borderRadius,
+  Color? tint,
+  bool elevated = true,
+}) {
+  final t = context.ruhh;
+  final radius = borderRadius ?? BorderRadius.circular(t.radiusCardLarge);
+  return BoxDecoration(
+    color: tint ?? t.surfacePrimary,
+    borderRadius: radius,
+    border: Border.all(color: PortfolioPalette.borderHighlight, width: 1),
+    boxShadow: elevated && t.shadowCard.isNotEmpty ? t.shadowCard : null,
+  );
+}
+
+class NBGlassSurface extends StatelessWidget {
+  const NBGlassSurface({
+    super.key,
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.borderRadius,
+    this.expand = false,
+    this.accent,
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+  final BorderRadius? borderRadius;
+  final bool expand;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    final radius = borderRadius ?? BorderRadius.circular(t.radiusCardMedium);
+    Widget panel = DecoratedBox(
+      decoration: vectorPanelDecoration(
+        context,
+        borderRadius: radius,
+        tint: accent ?? t.surfacePrimary,
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+    if (!expand) return panel;
+    return SizedBox(width: double.infinity, height: double.infinity, child: panel);
+  }
+}
+
 class NBGlassPanel extends StatelessWidget {
   const NBGlassPanel({
     super.key,
@@ -10,7 +108,7 @@ class NBGlassPanel extends StatelessWidget {
     this.borderRadius,
     this.expand = false,
     this.color,
-    this.elevated = false,
+    this.elevated = true,
   });
 
   final Widget child;
@@ -22,47 +120,18 @@ class NBGlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final radius = borderRadius ?? BorderRadius.circular(NBMetrics.radius);
-    final borderColor = NBColors.glassBorder(brightness);
-    final fill = color ?? NBColors.surfaceFill(brightness);
-
-    Widget panel = Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: fill,
+    final t = context.ruhh;
+    final radius = borderRadius ?? BorderRadius.circular(t.radiusCardLarge);
+    Widget panel = DecoratedBox(
+      decoration: vectorPanelDecoration(
+        context,
         borderRadius: radius,
-        border: Border.all(color: borderColor, width: NBMetrics.borderWidth),
-        boxShadow: elevated
-            ? const [
-                BoxShadow(
-                  color: NBColors.shadow,
-                  offset: NBMetrics.shadowOffset,
-                  blurRadius: 0,
-                ),
-              ]
-            : null,
+        tint: color ?? t.surfacePrimary,
+        elevated: elevated,
       ),
-      child: child,
+      child: Padding(padding: padding, child: child),
     );
-
     if (!expand) return panel;
     return SizedBox(width: double.infinity, child: panel);
-  }
-}
-
-/// App-wide canvas (single gradient layer from [MaterialApp.builder]).
-class NBGlassBackground extends StatelessWidget {
-  const NBGlassBackground({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return ColoredBox(
-      color: NBColors.canvas(brightness),
-      child: child,
-    );
   }
 }

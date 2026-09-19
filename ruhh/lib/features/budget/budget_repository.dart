@@ -3,10 +3,18 @@ import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/features/budget/budget_defaults.dart';
+import 'package:ruhh/features/budget/widgets/category_display.dart';
 import 'package:ruhh/features/budget/budget_schedule.dart';
+import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
+import 'package:ruhh/features/budget/ledger/budget_category_ids.dart';
+import 'package:ruhh/features/budget/ledger/budget_month_key.dart';
+import 'package:ruhh/features/budget/ledger/budget_salary_engine.dart';
 import 'package:uuid/uuid.dart';
+
+part 'budget_repository_ledger.dart';
 
 class MonthRange {
   MonthRange(this.start, this.end);
@@ -31,45 +39,69 @@ class BudgetRepository {
 
   final Isar _isar;
   final String _userId;
+
+  Isar get isar => _isar;
+  String get userId => _userId;
   static const _uuid = Uuid();
+
+  String newRemoteId() => _uuid.v4();
 
   Future<void> ensureDefaults() async {
     final walletCount =
         await _isar.walletLocals.filter().userIdEqualTo(_userId).count();
-    if (walletCount > 0) return;
-    await _isar.writeTxn(() async {
-      await _isar.walletLocals.put(
-        WalletLocal()
-          ..remoteId = _uuid.v4()
-          ..userId = _userId
-          ..name = 'Cash'
-          ..currency = 'USD'
-          ..colorValue = NBColors.budget.toARGB32()
-          ..sortOrder = 0
-          ..openingBalance = 0,
-      );
-      for (final c in cashewDefaultCategories) {
-        await _isar.categoryLocals.put(
-          CategoryLocal()
+    if (walletCount == 0) {
+      await _isar.writeTxn(() async {
+        await _isar.walletLocals.put(
+          WalletLocal()
             ..remoteId = _uuid.v4()
             ..userId = _userId
-            ..name = c.name
-            ..isIncome = c.isIncome
-            ..colorValue = c.color.toARGB32()
-            ..sortOrder = c.sortOrder,
+            ..name = 'Cash'
+            ..currency = 'INR'
+            ..colorValue = NBColors.budget.toARGB32()
+            ..sortOrder = 0
+            ..openingBalance = 0,
         );
+      });
+    }
+    final catCount =
+        await _isar.categoryLocals.filter().userIdEqualTo(_userId).count();
+    if (catCount == 0) {
+      await _isar.writeTxn(() async {
+        for (final c in indianDefaultCategories) {
+          await _isar.categoryLocals.put(
+            CategoryLocal()
+              ..remoteId = c.remoteId
+              ..userId = _userId
+              ..name = c.name
+              ..isIncome = c.isIncome
+              ..colorValue = c.color.toARGB32()
+              ..sortOrder = c.sortOrder
+              ..iconKey = c.iconKey
+              ..emoji = defaultCategoryEmoji(c.name)
+              ..isCustom = false
+              ..isArchived = false,
+          );
+        }
+      });
+    }
+    await migrateLedgerFields();
+    await ensureMonthlySalary();
+    await backfillCategoryEmojis();
+  }
+
+  Future<void> backfillCategoryEmojis() async {
+    await _isar.writeTxn(() async {
+      final cats = await _isar.categoryLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .findAll();
+      for (final c in cats) {
+        if (c.emoji.trim().isNotEmpty) continue;
+        final emoji = defaultCategoryEmoji(c.name);
+        if (emoji.isEmpty) continue;
+        c.emoji = emoji;
+        await _isar.categoryLocals.put(c);
       }
-      await _isar.budgetPeriodLocals.put(
-        BudgetPeriodLocal()
-          ..remoteId = _uuid.v4()
-          ..userId = _userId
-          ..name = 'Monthly spending'
-          ..limitAmount = 2000
-          ..period = 'monthly'
-          ..startsAt = DateTime(DateTime.now().year, DateTime.now().month)
-          ..colorValue = NBColors.budget.toARGB32()
-          ..archived = false,
-      );
     });
   }
 
@@ -237,11 +269,14 @@ class BudgetRepository {
         .accountEqualTo(wallet.name)
         .findAll();
     var balance = wallet.openingBalance;
+    if (!balance.isFinite) balance = 0;
     for (final t in txs) {
       if (!transactionCountsInLedger(t)) continue;
-      balance += t.isIncome ? t.amount : -t.amount;
+      final amount = t.amount;
+      if (!amount.isFinite) continue;
+      balance += t.isIncome ? amount : -amount;
     }
-    return balance;
+    return balance.isFinite ? balance : 0;
   }
 
   Future<List<WalletBalance>> allWalletBalances() async {
@@ -350,6 +385,7 @@ class BudgetRepository {
     required bool isIncome,
     int? colorValue,
     int? sortOrder,
+    String? emoji,
   }) async {
     await _isar.writeTxn(() async {
       CategoryLocal c;
@@ -358,23 +394,34 @@ class BudgetRepository {
         c.name = name;
         c.isIncome = isIncome;
         if (colorValue != null) c.colorValue = colorValue;
+        if (emoji != null) c.emoji = emoji;
       } else {
         final count =
             await _isar.categoryLocals.filter().userIdEqualTo(_userId).count();
         c = CategoryLocal()
-          ..remoteId = _uuid.v4()
+          ..remoteId = newRemoteId()
           ..userId = _userId
           ..name = name
           ..isIncome = isIncome
           ..colorValue = colorValue ?? NBColors.budget.toARGB32()
-          ..sortOrder = sortOrder ?? count;
+          ..sortOrder = sortOrder ?? count
+          ..isCustom = true
+          ..iconKey = 'label'
+          ..emoji = (emoji != null && emoji.trim().isNotEmpty)
+              ? emoji.trim()
+              : defaultCategoryEmoji(name);
       }
       await _isar.categoryLocals.put(c);
     });
   }
 
   Future<void> deleteCategory(Id id) async {
-    await _isar.writeTxn(() => _isar.categoryLocals.delete(id));
+    await _isar.writeTxn(() async {
+      final c = await _isar.categoryLocals.get(id);
+      if (c == null) return;
+      c.isArchived = true;
+      await _isar.categoryLocals.put(c);
+    });
   }
 
   Future<void> upsertBudgetPeriod({
@@ -567,6 +614,7 @@ final budgetRepositoryProvider = FutureProvider<BudgetRepository>((ref) async {
   if (user == null) throw StateError('No user');
   final repo = BudgetRepository(isar, user.supabaseId ?? user.id.toString());
   await repo.ensureDefaults();
+  await repo.ensureMonthlySalary();
   return repo;
 });
 
@@ -575,4 +623,5 @@ final budgetRefreshProvider = StateProvider<int>((ref) => 0);
 
 void bumpBudgetRefresh(WidgetRef ref) {
   ref.read(budgetRefreshProvider.notifier).state++;
+  scheduleCloudSyncFromWidget(ref);
 }

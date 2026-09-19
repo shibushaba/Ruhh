@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:ruhh/core/session/session_providers.dart';
+import 'package:ruhh/features/auth/username_availability.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
 class AuthState {
@@ -38,24 +39,33 @@ class AuthController extends Notifier<AuthState> {
     return const AuthState(loading: true);
   }
 
+  /// Restores session from disk — no timeout; user stays logged in until [logout].
   Future<void> _loadSession() async {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString(ruhhSessionUsernameKey);
     state = AuthState(username: username, loading: false);
   }
 
-  Future<bool> isUsernameAvailable(String username) async {
+  Future<UsernameAvailability> checkUsernameAvailability(String username) async {
     final trimmed = username.trim().toLowerCase();
-    if (trimmed.length < 3) return false;
+    if (trimmed.length < 3) {
+      return UsernameAvailability.tooShort;
+    }
 
     final isar = await ref.read(isarProvider.future);
     final localTaken = await isar.userLocals
         .filter()
         .usernameEqualTo(trimmed)
         .findFirst();
-    if (localTaken != null) return false;
+    if (localTaken != null) return UsernameAvailability.taken;
 
-    return SupabaseService.isUsernameAvailable(trimmed);
+    return SupabaseService.checkUsernameAvailability(trimmed);
+  }
+
+  Future<bool> isUsernameAvailable(String username) async {
+    final result = await checkUsernameAvailability(username);
+    return result == UsernameAvailability.available ||
+        result == UsernameAvailability.offlineAvailable;
   }
 
   Future<String?> signUp(String username, String pin) async {
@@ -82,12 +92,18 @@ class AuthController extends Notifier<AuthState> {
       await isar.userLocals.put(user);
     });
 
-    await SupabaseService.registerUser(
+    final registered = await SupabaseService.registerUser(
       id: remoteId,
       username: trimmed,
       pinHash: hash,
       pinSalt: salt,
     );
+    if (SupabaseService.client != null && !registered) {
+      await isar.writeTxn(() async {
+        await isar.userLocals.delete(user.id);
+      });
+      return 'Could not save account to the cloud. Check your connection and try again.';
+    }
 
     await _persistSession(trimmed);
     state = AuthState(username: trimmed);
@@ -145,7 +161,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(ruhhSessionUsernameKey);
-    state = const AuthState();
+    state = const AuthState(loading: false);
   }
 
   Future<void> _persistSession(String username) async {

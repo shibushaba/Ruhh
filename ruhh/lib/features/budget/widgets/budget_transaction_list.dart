@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/features/budget/budget_format.dart';
 import 'package:ruhh/features/budget/budget_schedule.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/features/budget/widgets/budget_ui.dart';
 
 class BudgetTransactionList extends StatelessWidget {
   const BudgetTransactionList({
@@ -22,13 +23,13 @@ class BudgetTransactionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (transactions.isEmpty) {
-      return const NBCard(child: Text('No transactions in this period.'));
+      return const BudgetEmptyCard(
+        message: 'No transactions in this period.',
+      );
     }
     if (!groupByDay) {
       return Column(
-        children: transactions
-            .map((t) => _tile(context, t))
-            .toList(),
+        children: transactions.map((t) => _tile(context, t)).toList(),
       );
     }
     final grouped = <String, List<TransactionLocal>>{};
@@ -55,34 +56,32 @@ class BudgetTransactionList extends StatelessWidget {
 
   Widget _tile(BuildContext context, TransactionLocal t) {
     final label = t.title.isNotEmpty ? t.title : t.category;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: NBCard(
-        child: ListTile(
-          onTap: onTap == null ? null : () => onTap!(t),
-          title: Text(label),
-          subtitle: Text(
-            '${t.account} · ${t.note}${t.scheduleType != BudgetScheduleType.normal ? ' · ${scheduleTypeLabel(t.scheduleType)}' : ''}',
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${t.isIncome ? '+' : '-'}\$${t.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: t.isIncome ? Colors.green.shade800 : NBColors.budget,
+    final amount = BudgetFormat.sanitize(t.amount);
+    final signed = t.isIncome ? amount : -amount;
+    return BudgetListRow(
+      title: label,
+      subtitle:
+          '${t.account} · ${t.note}${t.scheduleType != BudgetScheduleType.normal ? ' · ${scheduleTypeLabel(t.scheduleType)}' : ''}',
+      accent: t.isIncome ? const Color(0xFF2E7D32) : NBColors.budget,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            BudgetFormat.money(signed, showSign: true),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: t.isIncome ? const Color(0xFF2E7D32) : null,
                 ),
-              ),
-              if (onDelete != null)
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => onDelete!(t),
-                ),
-            ],
           ),
-        ),
+          if (onDelete != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.delete_outline, size: 20),
+              onPressed: () => onDelete!(t),
+            ),
+        ],
       ),
+      onTap: onTap == null ? null : () => onTap!(t),
     );
   }
 }

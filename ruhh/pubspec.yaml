@@ -32,6 +32,13 @@ dependencies:
   home_widget: ^0.10.0
   fl_chart: ^0.70.2
   math_expressions: ^2.6.0
+  flutter_slidable: ^3.1.2
+  table_calendar: ^3.2.0
+  flutter_animate: ^4.5.2
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
+  confetti: ^0.8.0
+  lottie: ^3.6.1
   neubrutalism_ui:
     path: ../UI
 
@@ -55,3 +62,13 @@ flutter:
   assets:
     - .env
     - assets/icon/app_icon.png
+  fonts:
+    - family: PhosphorRegular
+      fonts:
+        - asset: assets/fonts/Phosphor.ttf
+    - family: PhosphorFill
+      fonts:
+        - asset: assets/fonts/Phosphor-Fill.ttf
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/fonts/Phosphor-Duotone.ttf

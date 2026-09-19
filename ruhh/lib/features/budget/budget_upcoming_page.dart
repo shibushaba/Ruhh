@@ -5,9 +5,12 @@ import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/features/budget/budget_format.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/budget_schedule.dart';
+import 'package:ruhh/features/budget/widgets/budget_ui.dart';
 
 class BudgetUpcomingPage extends ConsumerWidget {
   const BudgetUpcomingPage({super.key});
@@ -25,42 +28,53 @@ class BudgetUpcomingPage extends ConsumerWidget {
           }
           final upcoming = snap.data![0] as List<TransactionLocal>;
           final overdue = snap.data![1] as List<TransactionLocal>;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Upcoming & recurring',
-                  style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              Text(
-                'Mark paid when it posts, or skip to move the next due date.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (overdue.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text('Overdue',
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: Colors.red.shade800)),
-                ...overdue.map((t) => _ScheduledTile(
-                      tx: t,
-                      repo: repo,
-                      ref: ref,
-                      overdue: true,
-                    )),
+          return NBPageBody(
+            child: ListView(
+              children: [
+                NBSection(
+                  title: 'Upcoming & recurring',
+                  subtitle:
+                      'Mark paid when it posts, or skip to move the next due date.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (overdue.isNotEmpty) ...[
+                        Text('Overdue',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.red.shade800)),
+                        const SizedBox(height: 8),
+                        ...overdue.map((t) => _ScheduledTile(
+                              tx: t,
+                              repo: repo,
+                              ref: ref,
+                              overdue: true,
+                            )),
+                        const SizedBox(height: 16),
+                      ],
+                      Text('Scheduled',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      if (upcoming
+                          .where((t) => !isTransactionOverdue(t))
+                          .isEmpty)
+                        const BudgetEmptyCard(
+                          message:
+                              'Nothing scheduled — add a repeating or upcoming transaction.',
+                        ),
+                      ...upcoming
+                          .where((t) => !isTransactionOverdue(t))
+                          .map((t) => _ScheduledTile(
+                                tx: t,
+                                repo: repo,
+                                ref: ref,
+                                overdue: false,
+                              )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 72),
               ],
-              const SizedBox(height: 16),
-              Text('Scheduled', style: Theme.of(context).textTheme.titleLarge),
-              if (upcoming.where((t) => !isTransactionOverdue(t)).isEmpty)
-                const NBCard(child: Text('Nothing scheduled — add a repeating or upcoming transaction.')),
-              ...upcoming
-                  .where((t) => !isTransactionOverdue(t))
-                  .map((t) => _ScheduledTile(
-                        tx: t,
-                        repo: repo,
-                        ref: ref,
-                        overdue: false,
-                      )),
-              const SizedBox(height: 80),
-            ],
+            ),
           );
         },
       ),
@@ -86,12 +100,12 @@ class _ScheduledTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final due = DateFormat.yMMMd().format(tx.occurredAt);
+    final signed = tx.isIncome ? tx.amount : -tx.amount;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: NBCard(
-        color: overdue
-            ? Colors.red.withValues(alpha: 0.15)
-            : NBColors.budget.withValues(alpha: 0.12),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: NBGlassSurface(
+        accent: overdue ? Colors.red.shade700 : NBColors.budget,
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -104,17 +118,21 @@ class _ScheduledTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${tx.isIncome ? '+' : '-'}\$${tx.amount.toStringAsFixed(2)}',
+                  BudgetFormat.money(signed, showSign: true),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             Text(
               '${scheduleTypeLabel(tx.scheduleType)} · Due $due · ${tx.account}',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             if (tx.recurrence != 'none')
-              Text('Every ${tx.periodLength} ${tx.recurrence}'),
-            const SizedBox(height: 8),
+              Text(
+                'Every ${tx.periodLength} ${tx.recurrence}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -138,7 +156,7 @@ class _ScheduledTile extends StatelessWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(Icons.edit_outlined),
                   onPressed: () => context.push('/budget/edit/${tx.id}'),
                 ),
               ],

@@ -3,8 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_dialog.dart';
+import 'package:ruhh/core/widgets/nb_form_fields.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/nb_scaffold.dart';
+import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/features/budget/budget_format.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
+import 'package:ruhh/features/budget/widgets/budget_ui.dart';
 
 class BudgetAccountsPage extends ConsumerWidget {
   const BudgetAccountsPage({super.key});
@@ -22,56 +28,71 @@ class BudgetAccountsPage extends ConsumerWidget {
           }
           final wallets = snap.data![0] as List<WalletLocal>;
           final cats = snap.data![1] as List<CategoryLocal>;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Accounts', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              ...wallets.map(
-                (w) => NBCard(
-                  child: ListTile(
-                    title: Text(w.name),
-                    subtitle: Text('${w.currency} · opening \$${w.openingBalance.toStringAsFixed(0)}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _editWallet(context, ref, repo, w),
-                    ),
-                  ),
-                ),
-              ),
-              NBButton(
-                label: 'Add wallet',
-                color: NBColors.budget,
-                onPressed: () => _editWallet(context, ref, repo, null),
-              ),
-              const SizedBox(height: 24),
-              Text('Categories', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              ...cats.map(
-                (c) => NBCard(
-                  color: Color(c.colorValue).withValues(alpha: 0.25),
-                  child: ListTile(
-                    title: Text(c.name),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(c.isIncome ? 'Income' : 'Expense'),
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _editCategory(context, ref, repo, c),
+          return NBPageBody(
+            child: ListView(
+              children: [
+                NBSection(
+                  title: 'Wallets',
+                  subtitle: 'Cash and accounts that hold your balance.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (wallets.isEmpty)
+                        const BudgetEmptyCard(
+                          message: 'No wallets yet — add one to start tracking.',
                         ),
-                      ],
-                    ),
+                      ...wallets.map(
+                        (w) => BudgetListRow(
+                          title: w.name,
+                          subtitle:
+                              '${w.currency} · opening ${BudgetFormat.money(BudgetFormat.sanitize(w.openingBalance), decimals: 0)}',
+                          accent: NBColors.budget,
+                          onEdit: () => _editWallet(context, ref, repo, w),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      NBButton(
+                        label: 'Add wallet',
+                        color: NBColors.budget,
+                        onPressed: () => _editWallet(context, ref, repo, null),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              NBButton(
-                label: 'Add category',
-                color: NBColors.budget,
-                onPressed: () => _editCategory(context, ref, repo, null),
-              ),
-              const SizedBox(height: 80),
-            ],
+                const SizedBox(height: NBLayout.sectionGap),
+                NBSection(
+                  title: 'Categories',
+                  subtitle: 'Tag expenses and income consistently.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (cats.isEmpty)
+                        const BudgetEmptyCard(
+                          message: 'No categories — add expense and income tags.',
+                        ),
+                      ...cats.map(
+                        (c) => BudgetListRow(
+                          title: c.name,
+                          subtitle: c.isIncome ? 'Income' : 'Expense',
+                          accent: Color(c.colorValue),
+                          trailing: NBStatusChip(
+                            label: c.isIncome ? 'Income' : 'Expense',
+                          ),
+                          onEdit: () => _editCategory(context, ref, repo, c),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      NBButton(
+                        label: 'Add category',
+                        color: NBColors.budget,
+                        onPressed: () => _editCategory(context, ref, repo, null),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 72),
+              ],
+            ),
           );
         },
       ),
@@ -89,52 +110,59 @@ class BudgetAccountsPage extends ConsumerWidget {
     final name = TextEditingController(text: existing?.name ?? '');
     final cur = TextEditingController(text: existing?.currency ?? 'USD');
     final open = TextEditingController(
-      text: existing?.openingBalance.toStringAsFixed(0) ?? '0',
+      text: existing != null
+          ? BudgetFormat.sanitize(existing.openingBalance).toStringAsFixed(0)
+          : '0',
     );
-    await showDialog<void>(
+    await showNBFormDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(existing == null ? 'Add wallet' : 'Edit wallet'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-            TextField(controller: cur, decoration: const InputDecoration(labelText: 'Currency')),
-            TextField(
-              controller: open,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Opening balance'),
-            ),
-          ],
-        ),
-        actions: [
-          if (existing != null)
-            TextButton(
-              onPressed: () async {
-                await repo.deleteWallet(existing.id);
-                bumpBudgetRefresh(ref);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () async {
-              if (name.text.trim().isEmpty) return;
-              await repo.upsertWallet(
-                id: existing?.id,
-                name: name.text.trim(),
-                currency: cur.text.trim(),
-                openingBalance: double.tryParse(open.text) ?? 0,
-                colorValue: existing?.colorValue,
-              );
-              bumpBudgetRefresh(ref);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
+      title: existing == null ? 'Add wallet' : 'Edit wallet',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NBTextField(controller: name, label: 'Name'),
+          const SizedBox(height: 12),
+          NBTextField(controller: cur, label: 'Currency'),
+          const SizedBox(height: 12),
+          NBTextField(
+            controller: open,
+            label: 'Opening balance',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
         ],
       ),
+      actions: [
+        if (existing != null)
+          NBDialogAction(
+            label: 'Delete',
+            destructive: true,
+            onPressed: () async {
+              await repo.deleteWallet(existing.id);
+              bumpBudgetRefresh(ref);
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+        NBDialogAction(
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        NBDialogAction(
+          label: 'Save',
+          primary: true,
+          onPressed: () async {
+            if (name.text.trim().isEmpty) return;
+            await repo.upsertWallet(
+              id: existing?.id,
+              name: name.text.trim(),
+              currency: cur.text.trim(),
+              openingBalance: double.tryParse(open.text) ?? 0,
+              colorValue: existing?.colorValue,
+            );
+            bumpBudgetRefresh(ref);
+            if (context.mounted) Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -146,50 +174,52 @@ class BudgetAccountsPage extends ConsumerWidget {
   ) async {
     final name = TextEditingController(text: existing?.name ?? '');
     var income = existing?.isIncome ?? false;
-    await showDialog<void>(
+    await showNBStatefulFormDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: Text(existing == null ? 'Add category' : 'Edit category'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-              SwitchListTile(
-                title: const Text('Income category'),
-                value: income,
-                onChanged: (v) => setLocal(() => income = v),
-              ),
-            ],
+      title: existing == null ? 'Add category' : 'Edit category',
+      content: (_, setLocal) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NBTextField(controller: name, label: 'Name'),
+          NBSwitchRow(
+            label: 'Income category',
+            value: income,
+            onChanged: (v) => setLocal(() => income = v),
           ),
-          actions: [
-            if (existing != null)
-              TextButton(
-                onPressed: () async {
-                  await repo.deleteCategory(existing.id);
-                  bumpBudgetRefresh(ref);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            TextButton(
-              onPressed: () async {
-                if (name.text.trim().isEmpty) return;
-                await repo.upsertCategory(
-                  id: existing?.id,
-                  name: name.text.trim(),
-                  isIncome: income,
-                  colorValue: existing?.colorValue,
-                );
-                bumpBudgetRefresh(ref);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+        ],
       ),
+      actions: (_, __) => [
+        if (existing != null)
+          NBDialogAction(
+            label: 'Delete',
+            destructive: true,
+            onPressed: () async {
+              await repo.deleteCategory(existing.id);
+              bumpBudgetRefresh(ref);
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+        NBDialogAction(
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        NBDialogAction(
+          label: 'Save',
+          primary: true,
+          onPressed: () async {
+            if (name.text.trim().isEmpty) return;
+            await repo.upsertCategory(
+              id: existing?.id,
+              name: name.text.trim(),
+              isIncome: income,
+              colorValue: existing?.colorValue,
+            );
+            bumpBudgetRefresh(ref);
+            if (context.mounted) Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ruhh/core/icons/app_icons.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
-import 'package:ruhh/features/movie/movie_discover_page.dart';
-import 'package:ruhh/features/movie/movie_home_page.dart';
-import 'package:ruhh/features/movie/movie_library_page.dart';
-import 'package:ruhh/features/movie/movie_search_page.dart';
+import 'package:ruhh/features/movie/movie_watchlist_page.dart';
 
 final movieTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -23,7 +23,7 @@ class _MoviePageState extends ConsumerState<MoviePage> {
   @override
   void initState() {
     super.initState();
-    final tab = widget.initialTab.clamp(0, 3);
+    final tab = widget.initialTab.clamp(0, 1);
     _pages = PageController(initialPage: tab);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(movieTabIndexProvider.notifier).state = tab;
@@ -49,29 +49,33 @@ class _MoviePageState extends ConsumerState<MoviePage> {
       }
     });
     final index = ref.watch(movieTabIndexProvider);
+    final t = context.ruhh;
 
     return NBModuleScaffold(
       title: 'Movies',
+      wrapBody: false,
+      moduleTabLabels: const ['Watchlist', 'Watched'],
+      moduleTabIndex: index,
+      onModuleTab: _onTab,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add movie',
+        onPressed: () => context.push('/movie/add'),
+        child: Icon(AppIcons.plus(filled: true)),
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Categories',
+          icon: Icon(AppIcons.slidersHorizontal()),
+          onPressed: () => context.push('/movie/categories'),
+        ),
+      ],
       body: PageView(
         controller: _pages,
         onPageChanged: (i) =>
             ref.read(movieTabIndexProvider.notifier).state = i,
         children: const [
-          MovieHomePage(),
-          MovieDiscoverPage(),
-          MovieSearchPage(),
-          MovieLibraryPage(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: _onTab,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), label: 'Discover'),
-          NavigationDestination(icon: Icon(Icons.search), label: 'Search'),
-          NavigationDestination(icon: Icon(Icons.collections_bookmark_outlined), label: 'Library'),
+          MovieWatchlistPage(),
+          MovieWatchedPage(),
         ],
       ),
     );

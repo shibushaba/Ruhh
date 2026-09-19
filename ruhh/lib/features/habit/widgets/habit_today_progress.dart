@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
 
 class HabitTodayProgress extends StatelessWidget {
   const HabitTodayProgress({
@@ -20,8 +20,9 @@ class HabitTodayProgress extends StatelessWidget {
     final date = DateFormat('EEEE, d MMM').format(DateTime.now());
     final allDone = total > 0 && done == total;
 
-    return NBCard(
-      color: NBColors.habit.withValues(alpha: 0.25),
+    return NBGlassSurface(
+      accent: NBColors.habit,
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Expanded(

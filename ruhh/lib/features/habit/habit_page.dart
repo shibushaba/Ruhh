@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/icons/app_icons.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
-import 'package:ruhh/features/focus/focus_page.dart';
 import 'package:ruhh/features/habit/habit_home_page.dart';
+import 'package:ruhh/features/habit/habit_list_page.dart';
 import 'package:ruhh/features/habit/habit_settings_page.dart';
 import 'package:ruhh/features/habit/habit_stats_page.dart';
-import 'package:ruhh/features/island/island_page.dart';
-import 'package:ruhh/features/todo/todos_page.dart';
 
 final habitTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -27,7 +26,7 @@ class _HabitPageState extends ConsumerState<HabitPage> {
   @override
   void initState() {
     super.initState();
-    final tab = widget.initialTab.clamp(0, 5);
+    final tab = widget.initialTab.clamp(0, 2);
     _pages = PageController(initialPage: tab);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(habitTabIndexProvider.notifier).state = tab;
@@ -53,40 +52,37 @@ class _HabitPageState extends ConsumerState<HabitPage> {
       }
     });
     final index = ref.watch(habitTabIndexProvider);
+    final t = context.ruhh;
 
     return NBModuleScaffold(
       title: 'Habits',
-      floatingActionButton: index == 0
-          ? FloatingActionButton(
-              backgroundColor: NBColors.habit,
-              onPressed: () => context.push('/habit/new'),
-              child: const Icon(Icons.add, color: NBColors.black),
-            )
-          : null,
+      wrapBody: false,
+      moduleTabLabels: const ['Today', 'Habits', 'Stats'],
+      moduleTabIndex: index,
+      onModuleTab: _onTab,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'New habit',
+        onPressed: () => context.push('/habit/new'),
+        child: Icon(AppIcons.plus(filled: true)),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const HabitSettingsPage(),
+            ),
+          ),
+        ),
+      ],
       body: PageView(
         controller: _pages,
         onPageChanged: (i) =>
             ref.read(habitTabIndexProvider.notifier).state = i,
         children: const [
           HabitHomePage(),
-          TodosPage(),
-          FocusPage(),
+          HabitListPage(),
           HabitStatsPage(),
-          IslandPage(),
-          HabitSettingsPage(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: _onTab,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.today_outlined), label: 'Today'),
-          NavigationDestination(icon: Icon(Icons.checklist), label: 'Todos'),
-          NavigationDestination(icon: Icon(Icons.timer_outlined), label: 'Focus'),
-          NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Stats'),
-          NavigationDestination(icon: Icon(Icons.landscape_outlined), label: 'Island'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
         ],
       ),
     );

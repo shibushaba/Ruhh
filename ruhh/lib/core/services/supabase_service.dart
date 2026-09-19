@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ruhh/features/auth/username_availability.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseAuthProfile {
@@ -42,27 +43,44 @@ class SupabaseService {
       _initialized ? Supabase.instance.client : null;
 
   static Future<bool> isUsernameAvailable(String username) async {
+    final result = await checkUsernameAvailability(username);
+    return result == UsernameAvailability.available ||
+        result == UsernameAvailability.offlineAvailable;
+  }
+
+  /// Live signup check: local Isar + Supabase RPC.
+  static Future<UsernameAvailability> checkUsernameAvailability(
+    String username,
+  ) async {
+    final trimmed = username.trim().toLowerCase();
+    if (trimmed.length < 3) {
+      return UsernameAvailability.tooShort;
+    }
     final c = client;
-    if (c == null) return true;
+    if (c == null) {
+      return UsernameAvailability.offlineAvailable;
+    }
     try {
       final available = await c.rpc<bool>(
         'ruhh_is_username_available',
-        params: {'p_username': username},
+        params: {'p_username': trimmed},
       );
-      return available ?? true;
+      if (available == true) return UsernameAvailability.available;
+      return UsernameAvailability.taken;
     } catch (_) {
-      return true;
+      return UsernameAvailability.checkFailed;
     }
   }
 
-  static Future<void> registerUser({
+  /// Returns true when user row exists on Supabase (or offline skip).
+  static Future<bool> registerUser({
     required String id,
     required String username,
     required String pinHash,
     required String pinSalt,
   }) async {
     final c = client;
-    if (c == null) return;
+    if (c == null) return true;
     try {
       await c.rpc(
         'ruhh_register_user',
@@ -73,8 +91,9 @@ class SupabaseService {
           'p_pin_salt': pinSalt,
         },
       );
+      return true;
     } catch (_) {
-      // Offline-first: local auth still works.
+      return false;
     }
   }
 

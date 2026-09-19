@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/prayer/aladhan_prayer_service.dart';
+import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
+import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -398,17 +401,197 @@ class PrayerRepository {
     if (s == PrayerStatus.onTimeAlone) return const Color(0xFF1eb4eb);
     return Colors.grey;
   }
+
+  // --- Daily tracker (Section 4–6) ---
+
+  String get todayKey => dateKeyFrom(DateTime.now());
+
+  Stream<void> watchDailyTracker() {
+    return _isar.dailyPrayerLogLocals
+        .watchLazy(fireImmediately: false)
+        .map((_) {});
+  }
+
+  Future<void> ensureTodayLog() async {
+    await _ensureLocal(todayKey);
+  }
+
+  Future<Map<String, DailyPrayerLog>> allDailyLogsMap() async {
+    final locals = await _isar.dailyPrayerLogLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .findAll();
+    return {
+      for (final l in locals) l.dateKey: finalizePastDay(fromLocal(l), todayKey: todayKey),
+    };
+  }
+
+  Future<DailyPrayerLog> dailyLogFor(String dateKey) async {
+    final local = await _localFor(dateKey);
+    if (local == null) {
+      if (dateKey.compareTo(todayKey) < 0) {
+        return syntheticMissedDay(dateKey);
+      }
+      final ensured = await _ensureLocal(dateKey);
+      return fromLocal(ensured);
+    }
+    return finalizePastDay(fromLocal(local), todayKey: todayKey);
+  }
+
+  Future<DailyPrayerLog> toggleTrackerPrayer(
+    String dateKey,
+    PrayerName prayer,
+  ) async {
+    final local = await _ensureLocal(dateKey);
+    var log = finalizePastDay(fromLocal(local), todayKey: todayKey);
+    final isToday = dateKey == todayKey;
+    var status = log.statuses[prayer]!;
+    if (isToday) {
+      status = status == TrackerPrayerStatus.prayed
+          ? TrackerPrayerStatus.unmarked
+          : TrackerPrayerStatus.prayed;
+    } else {
+      status = status == TrackerPrayerStatus.prayed
+          ? TrackerPrayerStatus.missed
+          : TrackerPrayerStatus.prayed;
+    }
+    final next = Map<PrayerName, TrackerPrayerStatus>.from(log.statuses)
+      ..[prayer] = status;
+    log = log.copyWith(statuses: next);
+    applyToLocal(log, local);
+    await _isar.writeTxn(() => _isar.dailyPrayerLogLocals.put(local));
+    return finalizePastDay(log, todayKey: todayKey);
+  }
+
+  Future<DailyPrayerLog> setExcusedDay(String dateKey, bool excused) async {
+    final local = await _ensureLocal(dateKey);
+    var log = fromLocal(local).copyWith(isExcusedDay: excused);
+    applyToLocal(log, local);
+    await _isar.writeTxn(() => _isar.dailyPrayerLogLocals.put(local));
+    return finalizePastDay(log, todayKey: todayKey);
+  }
+
+  Future<DailyPrayerLogLocal> _ensureLocal(String dateKey) async {
+    final existing = await _localFor(dateKey);
+    if (existing != null) return existing;
+
+    return _isar.writeTxn(() async {
+      final again = await _isar.dailyPrayerLogLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .dateKeyEqualTo(dateKey)
+          .findFirst();
+      if (again != null) return again;
+
+      final legacy = await logsForDay(parseDateKey(dateKey));
+      if (legacy.isNotEmpty) {
+        final statuses = emptyStatuses();
+        for (final p in prayerOrder) {
+          final s = legacy[p]?.status ?? PrayerStatus.none;
+          statuses[p] = switch (s) {
+            PrayerStatus.withGroup ||
+            PrayerStatus.onTimeAlone ||
+            PrayerStatus.lateAlone ||
+            PrayerStatus.qadha =>
+              TrackerPrayerStatus.prayed,
+            PrayerStatus.missed => TrackerPrayerStatus.missed,
+            PrayerStatus.none => TrackerPrayerStatus.unmarked,
+          };
+        }
+        final local = DailyPrayerLogLocal()
+          ..remoteId = const Uuid().v4()
+          ..userId = _userId
+          ..dateKey = dateKey;
+        applyToLocal(
+          DailyPrayerLog(
+            id: local.remoteId,
+            dateKey: dateKey,
+            statuses: statuses,
+          ),
+          local,
+        );
+        await _isar.dailyPrayerLogLocals.put(local);
+        return local;
+      }
+
+      final local = DailyPrayerLogLocal()
+        ..remoteId = const Uuid().v4()
+        ..userId = _userId
+        ..dateKey = dateKey
+        ..isExcusedDay = false;
+      for (final p in prayerOrder) {
+        _setTrackerStatus(local, p, TrackerPrayerStatus.unmarked);
+      }
+      await _isar.dailyPrayerLogLocals.put(local);
+      return local;
+    });
+  }
+
+  Future<DailyPrayerLogLocal?> _localFor(String dateKey) =>
+      _isar.dailyPrayerLogLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .dateKeyEqualTo(dateKey)
+          .findFirst();
+
+  void _setTrackerStatus(
+    DailyPrayerLogLocal local,
+    PrayerName prayer,
+    TrackerPrayerStatus status,
+  ) {
+    switch (prayer) {
+      case PrayerName.fajr:
+        local.fajr = status;
+      case PrayerName.dhuhr:
+        local.dhuhr = status;
+      case PrayerName.asr:
+        local.asr = status;
+      case PrayerName.maghrib:
+        local.maghrib = status;
+      case PrayerName.isha:
+        local.isha = status;
+    }
+  }
+
+  PrayerSummary computeSummary(Map<String, DailyPrayerLog> logs) {
+    return PrayerSummary(
+      currentStreak: currentStreak(logs, todayKey),
+      longestStreak: longestStreak(logs, todayKey),
+    );
+  }
+}
+
+class PrayerSummary {
+  const PrayerSummary({
+    required this.currentStreak,
+    required this.longestStreak,
+  });
+
+  final int currentStreak;
+  final int longestStreak;
 }
 
 final prayerRepositoryProvider = FutureProvider<PrayerRepository>((ref) async {
   final isar = await ref.watch(isarProvider.future);
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) throw StateError('No user');
-  return PrayerRepository(isar, user.supabaseId ?? user.id.toString());
+  final repo = PrayerRepository(isar, user.supabaseId ?? user.id.toString());
+  await repo.ensureTodayLog();
+  return repo;
+});
+
+final dailyPrayerLogsProvider = StreamProvider<Map<String, DailyPrayerLog>>((ref) async* {
+  ref.watch(prayerRefreshProvider);
+  final repo = await ref.watch(prayerRepositoryProvider.future);
+  yield await repo.allDailyLogsMap();
+  await for (final _ in repo.watchDailyTracker()) {
+    yield await repo.allDailyLogsMap();
+  }
 });
 
 final prayerRefreshProvider = StateProvider<int>((ref) => 0);
 
 void bumpPrayerRefresh(WidgetRef ref) {
   ref.read(prayerRefreshProvider.notifier).state++;
+  scheduleCloudSyncFromWidget(ref);
 }

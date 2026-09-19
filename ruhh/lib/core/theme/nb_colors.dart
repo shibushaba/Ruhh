@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Monochrome neo-brutal palette — high contrast for legibility.
+/// Legacy NB* names — portfolio-aligned surfaces.
 abstract final class NBColors {
   static const black = Color(0xFF0A0A0A);
-  static const shadow = Color(0xFF0A0A0A);
-  static const white = Color(0xFFFFFFFF);
-  static const offWhite = Color(0xFFE8E8E8);
-  static const darkBg = Color(0xFF0F0F0F);
-  static const darkSurface = Color(0xFF1C1C1C);
+  static const white = Color(0xFFF5F5F5);
+  static const shadow = Color(0x80000000);
+  static const offWhite = white;
 
-  static const budget = Color(0xFFE0E0E0);
-  static const habit = Color(0xFFCFCFCF);
-  static const prayer = Color(0xFFB8B8B8);
-  static const movie = Color(0xFF9E9E9E);
+  static const budget = Color(0xFF38BDF8);
+  static const habit = Color(0xFF4ADE80);
+  static const prayer = Color(0xFFA78BFA);
+  static const movie = Color(0xFFFB7185);
 
   static Color canvas(Brightness brightness) =>
-      brightness == Brightness.dark ? darkBg : offWhite;
+      brightness == Brightness.dark
+          ? const Color(0xFF050505)
+          : const Color(0xFFEBEBEB);
 
   static Color glassFill(Brightness brightness) => surfaceFill(brightness);
 
   static Color surfaceFill(Brightness brightness) =>
-      brightness == Brightness.dark ? darkSurface : white;
+      brightness == Brightness.dark ? const Color(0xFF0A0A0A) : white;
 
   static Color mutedText(Brightness brightness) =>
       brightness == Brightness.dark
-          ? const Color(0xFFB0B0B0)
-          : const Color(0xFF404040);
+          ? const Color(0xFFAAAAAA)
+          : const Color(0xFF666666);
 
   static Color moduleAccent(Color moduleTint) => moduleTint;
 
@@ -36,7 +36,11 @@ abstract final class NBColors {
 }
 
 abstract final class NBMetrics {
-  static const borderWidth = 2.0;
-  static const radius = 8.0;
-  static const shadowOffset = Offset(3, 3);
+  static const borderWidth = 1.0;
+  static const radius = 0.0;
+
+  static const incomeGreen = Color(0xFF22C55E);
+  static const expenseRed = Color(0xFFEF4444);
+  static const warningAmber = Color(0xFFF59E0B);
+  static const shadowOffset = Offset.zero;
 }

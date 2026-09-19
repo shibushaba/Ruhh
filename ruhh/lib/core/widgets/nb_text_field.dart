@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/portfolio_palette.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 
 class NBTextField extends StatelessWidget {
   const NBTextField({
@@ -71,17 +73,12 @@ class NBChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? accent.withValues(alpha: 0.85) : Colors.transparent,
-          border: Border.all(color: fg, width: NBMetrics.borderWidth),
+          border: Border.all(
+            color: selected ? accent : PortfolioPalette.borderHighlight,
+            width: NBMetrics.borderWidth,
+          ),
           borderRadius: BorderRadius.circular(NBMetrics.radius),
-          boxShadow: selected
-              ? const [
-                  BoxShadow(
-                    color: NBColors.shadow,
-                    offset: NBMetrics.shadowOffset,
-                    blurRadius: 0,
-                  ),
-                ]
-              : null,
+          boxShadow: selected ? const [PortfolioPalette.shadowSticker] : null,
         ),
         child: Text(label, style: Theme.of(context).textTheme.labelLarge),
       ),
@@ -101,25 +98,15 @@ class NBProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.ruhh;
     final clamped = progress.clamp(0.0, 1.0);
-    return Container(
-      height: 18,
-      decoration: BoxDecoration(
-        border: Border.all(color: NBColors.black, width: NBMetrics.borderWidth),
-        borderRadius: BorderRadius.circular(NBMetrics.radius),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: clamped,
-          child: Container(
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(NBMetrics.radius - 1),
-            ),
-          ),
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(t.radiusButton),
+      child: LinearProgressIndicator(
+        value: clamped,
+        minHeight: 6,
+        backgroundColor: t.divider,
+        color: color,
       ),
     );
   }

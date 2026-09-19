@@ -94,44 +94,54 @@ const HabitLocalSchema = CollectionSchema(
       name: r'scheduleEvery',
       type: IsarType.long,
     ),
-    r'scheduleUnit': PropertySchema(
+    r'scheduleMonthDays': PropertySchema(
       id: 15,
+      name: r'scheduleMonthDays',
+      type: IsarType.longList,
+    ),
+    r'scheduleStartDateKey': PropertySchema(
+      id: 16,
+      name: r'scheduleStartDateKey',
+      type: IsarType.string,
+    ),
+    r'scheduleUnit': PropertySchema(
+      id: 17,
       name: r'scheduleUnit',
       type: IsarType.string,
       enumMap: _HabitLocalscheduleUnitEnumValueMap,
     ),
     r'scheduleWeekdays': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'scheduleWeekdays',
       type: IsarType.longList,
     ),
     r'sortOrder': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'sortOrder',
       type: IsarType.long,
     ),
     r'targetFrequency': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'targetFrequency',
       type: IsarType.long,
     ),
     r'targetPerDay': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'targetPerDay',
       type: IsarType.long,
     ),
     r'unitLabel': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'unitLabel',
       type: IsarType.string,
     ),
     r'userId': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'userId',
       type: IsarType.string,
     ),
     r'vacationsJson': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'vacationsJson',
       type: IsarType.string,
     )
@@ -165,6 +175,8 @@ int _habitLocalEstimateSize(
   bytesCount += 3 + object.remindersJson.length * 3;
   bytesCount += 3 + object.remoteId.length * 3;
   bytesCount += 3 + object.restDays.length * 8;
+  bytesCount += 3 + object.scheduleMonthDays.length * 8;
+  bytesCount += 3 + object.scheduleStartDateKey.length * 3;
   bytesCount += 3 + object.scheduleUnit.name.length * 3;
   bytesCount += 3 + object.scheduleWeekdays.length * 8;
   bytesCount += 3 + object.unitLabel.length * 3;
@@ -194,14 +206,16 @@ void _habitLocalSerialize(
   writer.writeString(offsets[12], object.remoteId);
   writer.writeLongList(offsets[13], object.restDays);
   writer.writeLong(offsets[14], object.scheduleEvery);
-  writer.writeString(offsets[15], object.scheduleUnit.name);
-  writer.writeLongList(offsets[16], object.scheduleWeekdays);
-  writer.writeLong(offsets[17], object.sortOrder);
-  writer.writeLong(offsets[18], object.targetFrequency);
-  writer.writeLong(offsets[19], object.targetPerDay);
-  writer.writeString(offsets[20], object.unitLabel);
-  writer.writeString(offsets[21], object.userId);
-  writer.writeString(offsets[22], object.vacationsJson);
+  writer.writeLongList(offsets[15], object.scheduleMonthDays);
+  writer.writeString(offsets[16], object.scheduleStartDateKey);
+  writer.writeString(offsets[17], object.scheduleUnit.name);
+  writer.writeLongList(offsets[18], object.scheduleWeekdays);
+  writer.writeLong(offsets[19], object.sortOrder);
+  writer.writeLong(offsets[20], object.targetFrequency);
+  writer.writeLong(offsets[21], object.targetPerDay);
+  writer.writeString(offsets[22], object.unitLabel);
+  writer.writeString(offsets[23], object.userId);
+  writer.writeString(offsets[24], object.vacationsJson);
 }
 
 HabitLocal _habitLocalDeserialize(
@@ -231,16 +245,18 @@ HabitLocal _habitLocalDeserialize(
   object.remoteId = reader.readString(offsets[12]);
   object.restDays = reader.readLongList(offsets[13]) ?? [];
   object.scheduleEvery = reader.readLong(offsets[14]);
+  object.scheduleMonthDays = reader.readLongList(offsets[15]) ?? [];
+  object.scheduleStartDateKey = reader.readString(offsets[16]);
   object.scheduleUnit = _HabitLocalscheduleUnitValueEnumMap[
-          reader.readStringOrNull(offsets[15])] ??
+          reader.readStringOrNull(offsets[17])] ??
       ScheduleUnit.days;
-  object.scheduleWeekdays = reader.readLongList(offsets[16]) ?? [];
-  object.sortOrder = reader.readLong(offsets[17]);
-  object.targetFrequency = reader.readLong(offsets[18]);
-  object.targetPerDay = reader.readLong(offsets[19]);
-  object.unitLabel = reader.readString(offsets[20]);
-  object.userId = reader.readString(offsets[21]);
-  object.vacationsJson = reader.readString(offsets[22]);
+  object.scheduleWeekdays = reader.readLongList(offsets[18]) ?? [];
+  object.sortOrder = reader.readLong(offsets[19]);
+  object.targetFrequency = reader.readLong(offsets[20]);
+  object.targetPerDay = reader.readLong(offsets[21]);
+  object.unitLabel = reader.readString(offsets[22]);
+  object.userId = reader.readString(offsets[23]);
+  object.vacationsJson = reader.readString(offsets[24]);
   return object;
 }
 
@@ -285,22 +301,26 @@ P _habitLocalDeserializeProp<P>(
     case 14:
       return (reader.readLong(offset)) as P;
     case 15:
+      return (reader.readLongList(offset) ?? []) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
       return (_HabitLocalscheduleUnitValueEnumMap[
               reader.readStringOrNull(offset)] ??
           ScheduleUnit.days) as P;
-    case 16:
-      return (reader.readLongList(offset) ?? []) as P;
-    case 17:
-      return (reader.readLong(offset)) as P;
     case 18:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongList(offset) ?? []) as P;
     case 19:
       return (reader.readLong(offset)) as P;
     case 20:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 21:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 22:
+      return (reader.readString(offset)) as P;
+    case 23:
+      return (reader.readString(offset)) as P;
+    case 24:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2011,6 +2031,287 @@ extension HabitLocalQueryFilter
   }
 
   QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysElementEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'scheduleMonthDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysElementGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'scheduleMonthDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysElementLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'scheduleMonthDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysElementBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'scheduleMonthDays',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleMonthDaysLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'scheduleMonthDays',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'scheduleStartDateKey',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'scheduleStartDateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'scheduleStartDateKey',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'scheduleStartDateKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
+      scheduleStartDateKeyIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'scheduleStartDateKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterFilterCondition>
       scheduleUnitEqualTo(
     ScheduleUnit value, {
     bool caseSensitive = true,
@@ -3037,6 +3338,20 @@ extension HabitLocalQuerySortBy
     });
   }
 
+  QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy>
+      sortByScheduleStartDateKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleStartDateKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy>
+      sortByScheduleStartDateKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleStartDateKey', Sort.desc);
+    });
+  }
+
   QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy> sortByScheduleUnit() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scheduleUnit', Sort.asc);
@@ -3307,6 +3622,20 @@ extension HabitLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy>
+      thenByScheduleStartDateKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleStartDateKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy>
+      thenByScheduleStartDateKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'scheduleStartDateKey', Sort.desc);
+    });
+  }
+
   QueryBuilder<HabitLocal, HabitLocal, QAfterSortBy> thenByScheduleUnit() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scheduleUnit', Sort.asc);
@@ -3494,6 +3823,21 @@ extension HabitLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<HabitLocal, HabitLocal, QDistinct>
+      distinctByScheduleMonthDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'scheduleMonthDays');
+    });
+  }
+
+  QueryBuilder<HabitLocal, HabitLocal, QDistinct>
+      distinctByScheduleStartDateKey({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'scheduleStartDateKey',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<HabitLocal, HabitLocal, QDistinct> distinctByScheduleUnit(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3646,6 +3990,20 @@ extension HabitLocalQueryProperty
     });
   }
 
+  QueryBuilder<HabitLocal, List<int>, QQueryOperations>
+      scheduleMonthDaysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'scheduleMonthDays');
+    });
+  }
+
+  QueryBuilder<HabitLocal, String, QQueryOperations>
+      scheduleStartDateKeyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'scheduleStartDateKey');
+    });
+  }
+
   QueryBuilder<HabitLocal, ScheduleUnit, QQueryOperations>
       scheduleUnitProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3693,6 +4051,1540 @@ extension HabitLocalQueryProperty
   QueryBuilder<HabitLocal, String, QQueryOperations> vacationsJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vacationsJson');
+    });
+  }
+}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetHabitLogLocalCollection on Isar {
+  IsarCollection<HabitLogLocal> get habitLogLocals => this.collection();
+}
+
+const HabitLogLocalSchema = CollectionSchema(
+  name: r'HabitLogLocal',
+  id: -5338590266423243080,
+  properties: {
+    r'currentValue': PropertySchema(
+      id: 0,
+      name: r'currentValue',
+      type: IsarType.double,
+    ),
+    r'dateKey': PropertySchema(
+      id: 1,
+      name: r'dateKey',
+      type: IsarType.string,
+    ),
+    r'habitRemoteId': PropertySchema(
+      id: 2,
+      name: r'habitRemoteId',
+      type: IsarType.string,
+    ),
+    r'remoteId': PropertySchema(
+      id: 3,
+      name: r'remoteId',
+      type: IsarType.string,
+    ),
+    r'status': PropertySchema(
+      id: 4,
+      name: r'status',
+      type: IsarType.string,
+      enumMap: _HabitLogLocalstatusEnumValueMap,
+    ),
+    r'userId': PropertySchema(
+      id: 5,
+      name: r'userId',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _habitLogLocalEstimateSize,
+  serialize: _habitLogLocalSerialize,
+  deserialize: _habitLogLocalDeserialize,
+  deserializeProp: _habitLogLocalDeserializeProp,
+  idName: r'id',
+  indexes: {
+    r'dateKey_habitRemoteId': IndexSchema(
+      id: 1084344594806209464,
+      name: r'dateKey_habitRemoteId',
+      unique: true,
+      replace: true,
+      properties: [
+        IndexPropertySchema(
+          name: r'dateKey',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+        IndexPropertySchema(
+          name: r'habitRemoteId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
+  links: {},
+  embeddedSchemas: {},
+  getId: _habitLogLocalGetId,
+  getLinks: _habitLogLocalGetLinks,
+  attach: _habitLogLocalAttach,
+  version: '3.1.0+1',
+);
+
+int _habitLogLocalEstimateSize(
+  HabitLogLocal object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.dateKey.length * 3;
+  bytesCount += 3 + object.habitRemoteId.length * 3;
+  bytesCount += 3 + object.remoteId.length * 3;
+  bytesCount += 3 + object.status.name.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
+  return bytesCount;
+}
+
+void _habitLogLocalSerialize(
+  HabitLogLocal object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDouble(offsets[0], object.currentValue);
+  writer.writeString(offsets[1], object.dateKey);
+  writer.writeString(offsets[2], object.habitRemoteId);
+  writer.writeString(offsets[3], object.remoteId);
+  writer.writeString(offsets[4], object.status.name);
+  writer.writeString(offsets[5], object.userId);
+}
+
+HabitLogLocal _habitLogLocalDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = HabitLogLocal();
+  object.currentValue = reader.readDoubleOrNull(offsets[0]);
+  object.dateKey = reader.readString(offsets[1]);
+  object.habitRemoteId = reader.readString(offsets[2]);
+  object.id = id;
+  object.remoteId = reader.readString(offsets[3]);
+  object.status =
+      _HabitLogLocalstatusValueEnumMap[reader.readStringOrNull(offsets[4])] ??
+          HabitLogStatus.pending;
+  object.userId = reader.readString(offsets[5]);
+  return object;
+}
+
+P _habitLogLocalDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (_HabitLogLocalstatusValueEnumMap[
+              reader.readStringOrNull(offset)] ??
+          HabitLogStatus.pending) as P;
+    case 5:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+const _HabitLogLocalstatusEnumValueMap = {
+  r'pending': r'pending',
+  r'completed': r'completed',
+  r'missed': r'missed',
+  r'excused': r'excused',
+};
+const _HabitLogLocalstatusValueEnumMap = {
+  r'pending': HabitLogStatus.pending,
+  r'completed': HabitLogStatus.completed,
+  r'missed': HabitLogStatus.missed,
+  r'excused': HabitLogStatus.excused,
+};
+
+Id _habitLogLocalGetId(HabitLogLocal object) {
+  return object.id;
+}
+
+List<IsarLinkBase<dynamic>> _habitLogLocalGetLinks(HabitLogLocal object) {
+  return [];
+}
+
+void _habitLogLocalAttach(
+    IsarCollection<dynamic> col, Id id, HabitLogLocal object) {
+  object.id = id;
+}
+
+extension HabitLogLocalByIndex on IsarCollection<HabitLogLocal> {
+  Future<HabitLogLocal?> getByDateKeyHabitRemoteId(
+      String dateKey, String habitRemoteId) {
+    return getByIndex(r'dateKey_habitRemoteId', [dateKey, habitRemoteId]);
+  }
+
+  HabitLogLocal? getByDateKeyHabitRemoteIdSync(
+      String dateKey, String habitRemoteId) {
+    return getByIndexSync(r'dateKey_habitRemoteId', [dateKey, habitRemoteId]);
+  }
+
+  Future<bool> deleteByDateKeyHabitRemoteId(
+      String dateKey, String habitRemoteId) {
+    return deleteByIndex(r'dateKey_habitRemoteId', [dateKey, habitRemoteId]);
+  }
+
+  bool deleteByDateKeyHabitRemoteIdSync(String dateKey, String habitRemoteId) {
+    return deleteByIndexSync(
+        r'dateKey_habitRemoteId', [dateKey, habitRemoteId]);
+  }
+
+  Future<List<HabitLogLocal?>> getAllByDateKeyHabitRemoteId(
+      List<String> dateKeyValues, List<String> habitRemoteIdValues) {
+    final len = dateKeyValues.length;
+    assert(habitRemoteIdValues.length == len,
+        'All index values must have the same length');
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([dateKeyValues[i], habitRemoteIdValues[i]]);
+    }
+
+    return getAllByIndex(r'dateKey_habitRemoteId', values);
+  }
+
+  List<HabitLogLocal?> getAllByDateKeyHabitRemoteIdSync(
+      List<String> dateKeyValues, List<String> habitRemoteIdValues) {
+    final len = dateKeyValues.length;
+    assert(habitRemoteIdValues.length == len,
+        'All index values must have the same length');
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([dateKeyValues[i], habitRemoteIdValues[i]]);
+    }
+
+    return getAllByIndexSync(r'dateKey_habitRemoteId', values);
+  }
+
+  Future<int> deleteAllByDateKeyHabitRemoteId(
+      List<String> dateKeyValues, List<String> habitRemoteIdValues) {
+    final len = dateKeyValues.length;
+    assert(habitRemoteIdValues.length == len,
+        'All index values must have the same length');
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([dateKeyValues[i], habitRemoteIdValues[i]]);
+    }
+
+    return deleteAllByIndex(r'dateKey_habitRemoteId', values);
+  }
+
+  int deleteAllByDateKeyHabitRemoteIdSync(
+      List<String> dateKeyValues, List<String> habitRemoteIdValues) {
+    final len = dateKeyValues.length;
+    assert(habitRemoteIdValues.length == len,
+        'All index values must have the same length');
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([dateKeyValues[i], habitRemoteIdValues[i]]);
+    }
+
+    return deleteAllByIndexSync(r'dateKey_habitRemoteId', values);
+  }
+
+  Future<Id> putByDateKeyHabitRemoteId(HabitLogLocal object) {
+    return putByIndex(r'dateKey_habitRemoteId', object);
+  }
+
+  Id putByDateKeyHabitRemoteIdSync(HabitLogLocal object,
+      {bool saveLinks = true}) {
+    return putByIndexSync(r'dateKey_habitRemoteId', object,
+        saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByDateKeyHabitRemoteId(List<HabitLogLocal> objects) {
+    return putAllByIndex(r'dateKey_habitRemoteId', objects);
+  }
+
+  List<Id> putAllByDateKeyHabitRemoteIdSync(List<HabitLogLocal> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'dateKey_habitRemoteId', objects,
+        saveLinks: saveLinks);
+  }
+}
+
+extension HabitLogLocalQueryWhereSort
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QWhere> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhere> anyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+}
+
+extension HabitLogLocalQueryWhere
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QWhereClause> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause> idEqualTo(
+      Id id) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause> idNotEqualTo(
+      Id id) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause> idGreaterThan(
+      Id id,
+      {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause> idLessThan(
+      Id id,
+      {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause>
+      dateKeyEqualToAnyHabitRemoteId(String dateKey) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dateKey_habitRemoteId',
+        value: [dateKey],
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause>
+      dateKeyNotEqualToAnyHabitRemoteId(String dateKey) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [],
+              upper: [dateKey],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [],
+              upper: [dateKey],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause>
+      dateKeyHabitRemoteIdEqualTo(String dateKey, String habitRemoteId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dateKey_habitRemoteId',
+        value: [dateKey, habitRemoteId],
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterWhereClause>
+      dateKeyEqualToHabitRemoteIdNotEqualTo(
+          String dateKey, String habitRemoteId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey],
+              upper: [dateKey, habitRemoteId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey, habitRemoteId],
+              includeLower: false,
+              upper: [dateKey],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey, habitRemoteId],
+              includeLower: false,
+              upper: [dateKey],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dateKey_habitRemoteId',
+              lower: [dateKey],
+              upper: [dateKey, habitRemoteId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+}
+
+extension HabitLogLocalQueryFilter
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QFilterCondition> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currentValue',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currentValue',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentValue',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentValue',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentValue',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      currentValueBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentValue',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dateKey',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'dateKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'dateKey',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dateKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      dateKeyIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'dateKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'habitRemoteId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'habitRemoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'habitRemoteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'habitRemoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      habitRemoteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'habitRemoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition> idEqualTo(
+      Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'remoteId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'remoteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      remoteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusEqualTo(
+    HabitLogStatus value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusGreaterThan(
+    HabitLogStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusLessThan(
+    HabitLogStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusBetween(
+    HabitLogStatus lower,
+    HabitLogStatus upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'status',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'status',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      statusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterFilterCondition>
+      userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension HabitLogLocalQueryObject
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QFilterCondition> {}
+
+extension HabitLogLocalQueryLinks
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QFilterCondition> {}
+
+extension HabitLogLocalQuerySortBy
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QSortBy> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      sortByCurrentValue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentValue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      sortByCurrentValueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentValue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByDateKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByDateKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateKey', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      sortByHabitRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitRemoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      sortByHabitRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitRemoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      sortByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension HabitLogLocalQuerySortThenBy
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QSortThenBy> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      thenByCurrentValue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentValue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      thenByCurrentValueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentValue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByDateKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByDateKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateKey', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      thenByHabitRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitRemoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      thenByHabitRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitRemoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy>
+      thenByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension HabitLogLocalQueryWhereDistinct
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> {
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct>
+      distinctByCurrentValue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentValue');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> distinctByDateKey(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dateKey', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> distinctByHabitRemoteId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'habitRemoteId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> distinctByRemoteId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> distinctByStatus(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'status', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogLocal, QDistinct> distinctByUserId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
+    });
+  }
+}
+
+extension HabitLogLocalQueryProperty
+    on QueryBuilder<HabitLogLocal, HabitLogLocal, QQueryProperty> {
+  QueryBuilder<HabitLogLocal, int, QQueryOperations> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, double?, QQueryOperations>
+      currentValueProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentValue');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, String, QQueryOperations> dateKeyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dateKey');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, String, QQueryOperations>
+      habitRemoteIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'habitRemoteId');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, String, QQueryOperations> remoteIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'remoteId');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, HabitLogStatus, QQueryOperations>
+      statusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'status');
+    });
+  }
+
+  QueryBuilder<HabitLogLocal, String, QQueryOperations> userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
     });
   }
 }

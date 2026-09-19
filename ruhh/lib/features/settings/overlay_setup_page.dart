@@ -23,8 +23,12 @@ class OverlaySetupPage extends ConsumerWidget {
             NBCard(
               child: Text(
                 supported
-                    ? 'On Samsung One UI: Settings → Advanced features → Motions and gestures → Tap back → choose **RUHH Quick Action**.'
-                    : 'Back-tap quick action works on supported Android devices. Use the in-app Quick button as fallback.',
+                    ? 'Quick action needs permission to draw over other apps.\n\n'
+                        '1. Tap “Grant overlay permission” below.\n'
+                        '2. Enable RUHH in Android settings.\n'
+                        '3. Return and tap “Test overlay now”.\n\n'
+                        'Samsung: Settings → Advanced features → Motions and gestures → Tap back → RUHH Quick Action.'
+                    : 'Quick overlay is available on Android only.',
               ),
             ),
             const SizedBox(height: 12),

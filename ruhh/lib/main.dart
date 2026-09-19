@@ -12,6 +12,7 @@ import 'package:ruhh/core/services/smart_notification_scheduler.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/theme/ruhh_theme.dart';
+import 'package:ruhh/core/theme/ruhh_scroll_behavior.dart';
 import 'package:ruhh/core/widgets/nb_glass.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
@@ -60,6 +61,7 @@ class _RuhhAppState extends ConsumerState<RuhhApp> {
       theme: RuhhTheme.light(),
       darkTheme: RuhhTheme.dark(),
       themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
+      scrollBehavior: const RuhhScrollBehavior(),
       routerConfig: _router,
       builder: (context, child) => NBGlassBackground(
         child: child ?? const SizedBox.shrink(),
@@ -92,9 +94,8 @@ class OverlayApp extends ConsumerWidget {
     ref.watch(authControllerProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: RuhhTheme.dark(),
-      builder: (context, child) =>
-          NBGlassBackground(child: child ?? const SizedBox.shrink()),
+      theme: RuhhTheme.light(),
+      scrollBehavior: const RuhhScrollBehavior(),
       home: const OverlayEntryWidget(),
     );
   }

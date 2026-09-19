@@ -4,6 +4,7 @@ import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/data/models/focus_session_local.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/todo_local.dart';
+import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
@@ -24,16 +25,20 @@ class IsarService {
         TransactionLocalSchema,
         HabitLocalSchema,
         HabitCompletionLocalSchema,
+        HabitLogLocalSchema,
         TodoLocalSchema,
         FocusSessionLocalSchema,
         PrayerLogLocalSchema,
         PrayerTimeLocalSchema,
+        DailyPrayerLogLocalSchema,
         MovieLocalSchema,
+        MovieCategoryLocalSchema,
         WalletLocalSchema,
         CategoryLocalSchema,
         BudgetPeriodLocalSchema,
         ObjectiveLocalSchema,
         CategoryBudgetLimitLocalSchema,
+        StandingSalaryLocalSchema,
       ],
       directory: dir.path,
       name: 'ruhh',
@@ -44,5 +49,10 @@ class IsarService {
   static Future<void> close() async {
     await _instance?.close();
     _instance = null;
+  }
+
+  /// Clears every local collection (dev / reset). App must restart Isar after this.
+  static Future<void> wipeAllLocalData(Isar isar) async {
+    await isar.writeTxn(() => isar.clear());
   }
 }

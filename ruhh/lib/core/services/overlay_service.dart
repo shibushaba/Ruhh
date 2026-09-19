@@ -30,11 +30,11 @@ class OverlayService {
     }
 
     await FlutterOverlayWindow.showOverlay(
-      height: 520,
-      width: 340,
+      height: WindowSize.matchParent,
+      width: WindowSize.matchParent,
       alignment: OverlayAlignment.center,
-      enableDrag: true,
-      positionGravity: PositionGravity.auto,
+      enableDrag: false,
+      positionGravity: PositionGravity.none,
       overlayTitle: 'RUHH',
       overlayContent: 'Quick log',
       flag: OverlayFlag.focusPointer,

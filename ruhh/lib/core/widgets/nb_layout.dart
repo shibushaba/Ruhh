@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
 
-/// Shared page spacing and section structure.
 abstract final class NBLayout {
   static const pagePadding = EdgeInsets.fromLTRB(20, 8, 20, 24);
   static const sectionGap = 24.0;
@@ -9,26 +9,37 @@ abstract final class NBLayout {
   static const maxContentWidth = 720.0;
 }
 
-/// Constrains and pads scrollable module content.
 class NBPageBody extends StatelessWidget {
   const NBPageBody({
     super.key,
     required this.child,
     this.padding,
+    this.extraBottomPadding = true,
   });
 
   final Widget child;
   final EdgeInsets? padding;
+  final bool extraBottomPadding;
 
   @override
   Widget build(BuildContext context) {
+    final t = context.ruhh;
+    final bottom = extraBottomPadding
+        ? ruhhGlobalNavBottomInset(context)
+        : MediaQuery.paddingOf(context).bottom + 16;
     return SafeArea(
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: NBLayout.maxContentWidth),
           child: Padding(
-            padding: padding ?? NBLayout.pagePadding,
+            padding: padding ??
+                EdgeInsets.fromLTRB(
+                  t.spaceScreenHorizontal,
+                  8,
+                  t.spaceScreenHorizontal,
+                  bottom,
+                ),
             child: child,
           ),
         ),
@@ -51,18 +62,38 @@ class NBSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(title, style: theme.titleLarge),
+        Text(title, style: t.cardTitle(theme)),
         if (subtitle != null) ...[
           const SizedBox(height: 4),
-          Text(subtitle!, style: theme.bodyMedium),
+          Text(subtitle!, style: t.caption(theme)),
         ],
         const SizedBox(height: 12),
         child,
       ],
+    );
+  }
+}
+
+class NBEmptyState extends StatelessWidget {
+  const NBEmptyState({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    return RuhhSoftCard(
+      radius: t.radiusCardMedium,
+      child: Text(
+        message,
+        style: t.caption(Theme.of(context).textTheme),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }
@@ -75,19 +106,9 @@ class NBStreakBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chip = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: NBColors.black, width: 2),
-        borderRadius: BorderRadius.circular(NBMetrics.radius),
-      ),
-      child: Text(
-        'Streak $value',
-        style: Theme.of(context).textTheme.labelLarge,
-      ),
+    return RuhhRankBadge(
+      label: 'Streak $value',
+      onTap: onTap,
     );
-    if (onTap == null) return chip;
-    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(NBMetrics.radius), child: chip);
   }
 }

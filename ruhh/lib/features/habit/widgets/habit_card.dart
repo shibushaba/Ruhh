@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/features/habit/habit_logic.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
+import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
 import 'package:ruhh/features/habit/widgets/habit_heatmap_strip.dart';
 
 class HabitCard extends StatelessWidget {
@@ -26,14 +27,6 @@ class HabitCard extends StatelessWidget {
   final void Function(double delta) onAddProgress;
   final VoidCallback? onLongPress;
 
-  IconData _glyph() => switch (habit.icon) {
-        'water' => Icons.water_drop_outlined,
-        'book' => Icons.menu_book_outlined,
-        'run' => Icons.directions_run,
-        'meditate' => Icons.self_improvement,
-        _ => Icons.flag_outlined,
-      };
-
   @override
   Widget build(BuildContext context) {
     final today = HabitLogic.dayOnly(DateTime.now());
@@ -47,8 +40,8 @@ class HabitCard extends StatelessWidget {
     );
     final color = Color(habit.colorValue);
 
-    return NBCard(
-      color: color.withValues(alpha: 0.35),
+    return NBGlassSurface(
+      accent: color,
       padding: const EdgeInsets.all(14),
       child: InkWell(
         onTap: () => context.push('/habit/edit/${habit.remoteId}'),
@@ -60,7 +53,7 @@ class HabitCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundColor: color.withValues(alpha: 0.5),
-                  child: Icon(_glyph(), color: NBColors.black),
+                  child: Icon(habitIconData(habit.icon), color: NBColors.black),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

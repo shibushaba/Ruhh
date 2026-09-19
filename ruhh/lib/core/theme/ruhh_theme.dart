@@ -1,157 +1,171 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/portfolio_palette.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
+import 'package:ruhh/core/theme/ruhh_scroll_behavior.dart';
 
 class RuhhTheme {
-  static ThemeData light() => _base(Brightness.light);
-  static ThemeData dark() => _base(Brightness.dark);
+  static ThemeData light() => _base(RuhhTokens.light, Brightness.light);
+  static ThemeData dark() => _base(RuhhTokens.dark, Brightness.dark);
 
-  static ThemeData _base(Brightness brightness) {
+  static ThemeData _base(RuhhTokens t, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final fg = isDark ? NBColors.white : NBColors.black;
-    final muted = NBColors.mutedText(brightness);
-    final surface = NBColors.surfaceFill(brightness);
-    final canvas = NBColors.canvas(brightness);
-
-    final base = GoogleFonts.interTextTheme().apply(
-      bodyColor: fg,
-      displayColor: fg,
+    final dmSans = GoogleFonts.dmSansTextTheme();
+    final base = dmSans.apply(
+      bodyColor: t.textPrimary,
+      displayColor: t.textPrimary,
     );
+    final buttonFont = GoogleFonts.outfit();
+
+    final colorScheme = isDark
+        ? ColorScheme.dark(
+            primary: PortfolioPalette.foreground,
+            onPrimary: PortfolioPalette.background,
+            secondary: t.surfaceSecondary,
+            onSecondary: t.textPrimary,
+            surface: t.surfacePrimary,
+            onSurface: t.textPrimary,
+            onSurfaceVariant: t.textSecondary,
+            error: const Color(0xFFEF4444),
+            onError: PortfolioPalette.foreground,
+            outline: PortfolioPalette.border,
+          )
+        : ColorScheme.light(
+            primary: PortfolioPalette.inkLight,
+            onPrimary: PortfolioPalette.foreground,
+            secondary: t.surfaceSecondary,
+            onSecondary: t.textPrimary,
+            surface: t.surfacePrimary,
+            onSurface: t.textPrimary,
+            onSurfaceVariant: t.textSecondary,
+            error: const Color(0xFFDC2626),
+            onError: PortfolioPalette.foreground,
+            outline: PortfolioPalette.border,
+          );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: canvas,
-      colorScheme: ColorScheme(
-        brightness: brightness,
-        primary: fg,
-        onPrimary: isDark ? NBColors.black : NBColors.white,
-        secondary: NBColors.movie,
-        onSecondary: NBColors.black,
-        surface: surface,
-        onSurface: fg,
-        onSurfaceVariant: muted,
-        error: const Color(0xFFDC2626),
-        onError: NBColors.white,
-      ),
+      scaffoldBackgroundColor: Colors.transparent,
+      extensions: [t],
+      colorScheme: colorScheme,
       textTheme: base.copyWith(
-        displayLarge: base.displayLarge?.copyWith(
-          fontWeight: FontWeight.w800,
-          fontSize: 28,
-          height: 1.15,
-        ),
-        headlineMedium: base.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          fontSize: 20,
-          height: 1.2,
-        ),
-        titleLarge: base.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-          height: 1.25,
-        ),
+        displayLarge: t.screenTitle(base),
+        headlineMedium: t.statLarge(base),
+        titleLarge: t.cardTitle(base),
         titleMedium: base.titleMedium?.copyWith(
+          fontSize: 15,
           fontWeight: FontWeight.w600,
-          fontSize: 16,
-          height: 1.3,
+          color: t.textPrimary,
         ),
         bodyLarge: base.bodyLarge?.copyWith(
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          height: 1.45,
-        ),
-        bodyMedium: base.bodyMedium?.copyWith(
+          fontSize: 15,
           fontWeight: FontWeight.w400,
-          fontSize: 14,
-          height: 1.45,
-          color: muted,
+          height: 22 / 15,
+          color: t.textPrimary,
         ),
-        labelLarge: base.labelLarge?.copyWith(
+        bodyMedium: t.caption(base),
+        bodySmall: t.micro(base),
+        labelLarge: buttonFont.copyWith(
           fontWeight: FontWeight.w600,
-          fontSize: 13,
-          letterSpacing: 0.2,
-        ),
-        labelSmall: base.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-          letterSpacing: 0.4,
-          color: muted,
+          fontSize: 15,
+          color: t.textPrimary,
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: canvas,
-        foregroundColor: fg,
+        backgroundColor: Colors.transparent,
+        foregroundColor: t.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleSpacing: 20,
-        titleTextStyle: base.titleLarge?.copyWith(
-          fontWeight: FontWeight.w800,
-          fontSize: 20,
-          color: fg,
+        titleSpacing: t.spaceScreenHorizontal,
+        toolbarHeight: 56,
+        titleTextStyle: GoogleFonts.dmSans(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: t.textPrimary,
         ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        elevation: 0,
-        height: 64,
-        indicatorColor: fg.withValues(alpha: isDark ? 0.15 : 0.08),
-        labelTextStyle: WidgetStatePropertyAll(
-          base.labelLarge?.copyWith(fontSize: 12),
-        ),
-        iconTheme: WidgetStatePropertyAll(IconThemeData(color: fg, size: 22)),
-      ),
-      tabBarTheme: TabBarThemeData(
-        labelColor: fg,
-        unselectedLabelColor: muted,
-        indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: NBColors.glassBorder(brightness),
-        labelStyle: base.labelLarge,
-        unselectedLabelStyle: base.labelLarge?.copyWith(fontWeight: FontWeight.w500),
-      ),
-      dividerColor: NBColors.glassBorder(brightness).withValues(alpha: 0.35),
-      listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-        titleTextStyle: base.titleMedium,
-        subtitleTextStyle: base.bodyMedium,
-      ),
+      dividerColor: t.divider,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
-        hintStyle: base.bodyMedium,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        fillColor: t.surfaceSecondary.withValues(alpha: isDark ? 0.9 : 1),
+        hintStyle: t.caption(base),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
+          borderRadius: BorderRadius.circular(t.radiusInput),
+          borderSide: BorderSide(color: PortfolioPalette.borderHighlight),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
+          borderRadius: BorderRadius.circular(t.radiusInput),
+          borderSide: BorderSide(color: PortfolioPalette.borderHighlight),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NBMetrics.radius),
-          borderSide: BorderSide(color: fg, width: NBMetrics.borderWidth),
+          borderRadius: BorderRadius.circular(t.radiusInput),
+          borderSide: BorderSide(color: t.textPrimary, width: 1.5),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: fg,
-        foregroundColor: isDark ? NBColors.black : NBColors.white,
+        backgroundColor: isDark ? PortfolioPalette.foreground : t.textPrimary,
+        foregroundColor: isDark ? PortfolioPalette.background : t.surfacePrimary,
         elevation: 0,
-        extendedTextStyle: base.labelLarge?.copyWith(
-          color: isDark ? NBColors.black : NBColors.white,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(NBMetrics.radius),
-          side: BorderSide(color: NBColors.glassBorder(brightness), width: NBMetrics.borderWidth),
-        ),
+        highlightElevation: 0,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: fg,
-        contentTextStyle: base.bodyMedium?.copyWith(
-          color: isDark ? NBColors.black : NBColors.white,
+        backgroundColor: t.surfacePrimary,
+        contentTextStyle: base.bodyMedium?.copyWith(color: t.textPrimary),
+        elevation: 0,
+        insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(t.radiusInput),
+          side: BorderSide(color: PortfolioPalette.borderHighlight),
         ),
       ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return isDark ? PortfolioPalette.background : t.surfacePrimary;
+          }
+          return t.textSecondary;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return PortfolioPalette.foreground;
+          }
+          return t.divider;
+        }),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: t.textPrimary,
+        textColor: t.textPrimary,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.transparent,
+        selectedColor: t.textPrimary,
+        labelStyle: buttonFont.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+        side: BorderSide(color: PortfolioPalette.borderHighlight),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(t.radiusChip),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(t.radiusChip),
+              side: BorderSide(color: PortfolioPalette.borderHighlight),
+            ),
+          ),
+        ),
+      ),
+      scrollbarTheme: kRuhhScrollbarTheme,
     );
   }
 }

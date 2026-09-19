@@ -1,107 +1,166 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
-import 'package:ruhh/core/data/models/transaction_local.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
+import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
+import 'package:ruhh/features/budget/ledger/budget_inr.dart';
+import 'package:ruhh/features/budget/ledger/budget_month_key.dart';
+import 'package:ruhh/features/budget/widgets/budget_caps_section.dart';
 import 'package:ruhh/features/budget/widgets/budget_pie_chart.dart';
-import 'package:ruhh/features/budget/widgets/budget_period_card.dart';
-import 'package:ruhh/features/budget/widgets/budget_transaction_list.dart';
 
-class BudgetHomePage extends ConsumerWidget {
+class BudgetHomePage extends ConsumerStatefulWidget {
   const BudgetHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BudgetHomePage> createState() => _BudgetHomePageState();
+}
+
+class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  String? _pieCategoryFilter;
+
+  void _shiftMonth(int delta) {
+    setState(() {
+      _month = DateTime(_month.year, _month.month + delta);
+      _pieCategoryFilter = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(budgetRefreshProvider);
     final repoAsync = ref.watch(budgetRepositoryProvider);
     return repoAsync.when(
       data: (repo) => FutureBuilder(
         future: Future.wait([
-          repo.allWalletBalances(),
-          repo.spentThisMonth(),
-          repo.incomeInRange(
-            monthRange(DateTime.now()).start,
-            monthRange(DateTime.now()).end,
-          ),
-          repo.spendByCategoryThisMonth(),
-          repo.budgets(),
-          repo.recent(limit: 8),
+          repo.monthTotals(_month),
+          repo.expenseByCategory(_month),
+          repo.budgetRules(),
+          repo.activeCategories(income: false),
+          repo.ledgerRows(),
+          repo.standingSalary(),
         ]),
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final wallets = snap.data![0] as List<WalletBalance>;
-          final spent = snap.data![1] as double;
-          final income = snap.data![2] as double;
-          final byCat = snap.data![3] as Map<String, double>;
-          final budgets = snap.data![4] as List<BudgetPeriodLocal>;
-          final recent = snap.data![5] as List<TransactionLocal>;
+          final totals = snap.data![0] as BudgetMonthTotals;
+          final byCat = snap.data![1] as Map<String, double>;
+          final rules = snap.data![2] as List<BudgetRuleRow>;
+          final expenseCats = snap.data![3] as List<CategoryLocal>;
+          final rows = snap.data![4] as List<BudgetLedgerRow>;
+          final standing = snap.data![5] as StandingSalaryLocal?;
+          final monthKey = budgetMonthKey(_month);
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Overview', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
-              NBCard(
-                color: NBColors.budget.withValues(alpha: 0.2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          final catName = {for (final c in expenseCats) c.remoteId: c.name};
+          final budgetedIds = rules
+              .where((r) =>
+                  r.monthKey == 'recurring' ||
+                  r.monthKey == monthKey)
+              .map((r) => r.categoryId)
+              .toSet();
+
+          return NBPageBody(
+            child: ListView(
+              children: [
+                Row(
                   children: [
-                    Text('Net (all wallets)',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      '\$${wallets.fold<double>(0, (s, w) => s + w.balance).toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                    IconButton(
+                      onPressed: () => _shiftMonth(-1),
+                      icon: const Icon(Icons.chevron_left),
                     ),
-                    Text(
-                      'This month: +\$${income.toStringAsFixed(0)} / -\$${spent.toStringAsFixed(0)}',
+                    Expanded(
+                      child: Text(
+                        DateFormat.yMMMM().format(_month),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _month.year == DateTime.now().year &&
+                              _month.month == DateTime.now().month
+                          ? null
+                          : () => _shiftMonth(1),
+                      icon: const Icon(Icons.chevron_right),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              ...wallets.map(
-                (w) => NBCard(
-                  child: ListTile(
-                    title: Text(w.wallet.name),
-                    subtitle: Text(w.wallet.currency),
-                    trailing: Text(
-                      '\$${w.balance.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                if (standing == null || standing.amount <= 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Set monthly salary in Manage → Salary to auto-credit each month.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
+                const SizedBox(height: 8),
+                RuhhStatProgressCard(
+                  label: 'Balance',
+                  value: BudgetInr.format(totals.balance),
+                  targetLabel: DateFormat.yMMMM().format(_month),
+                  progress: totals.totalIncome <= 0
+                      ? 0
+                      : (totals.balance / totals.totalIncome).clamp(0, 1),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text('Spending', style: Theme.of(context).textTheme.titleLarge),
-              BudgetPieChart(byCategory: byCat),
-              const SizedBox(height: 16),
-              if (budgets.isNotEmpty)
-                BudgetPeriodCard(
-                  budget: budgets.first,
-                  spent: spent,
-                ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Recent', style: Theme.of(context).textTheme.titleLarge),
-                  TextButton(
-                    onPressed: () => context.go('/budget?tab=1'),
-                    child: const Text('All transactions'),
+                const SizedBox(height: 16),
+                RuhhTwinMetricRow(
+                  left: RuhhStatProgressCard(
+                    compact: true,
+                    label: 'Income',
+                    value: BudgetInr.format(totals.totalIncome),
+                    progress: 1,
+                    accent: context.ruhh.accentMint,
                   ),
-                ],
-              ),
-              BudgetTransactionList(
-                transactions: recent,
-                groupByDay: false,
-                onTap: (t) => context.push('/budget/edit/${t.id}'),
-              ),
-              const SizedBox(height: 80),
-            ],
+                  right: RuhhStatProgressCard(
+                    compact: true,
+                    label: 'Expense',
+                    value: BudgetInr.format(totals.totalExpense),
+                    progress: totals.totalIncome <= 0
+                        ? 0
+                        : (totals.totalExpense / totals.totalIncome)
+                            .clamp(0, 1),
+                    accent: context.ruhh.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: NBLayout.sectionGap),
+                NBSection(
+                  title: 'Expense breakdown',
+                  subtitle: _pieCategoryFilter == null
+                      ? 'Tap a slice to filter the list below'
+                      : 'Filtered: ${catName[_pieCategoryFilter] ?? _pieCategoryFilter}',
+                  child: BudgetPieChart(
+                    byCategory: {
+                      for (final e in byCat.entries)
+                        catName[e.key] ?? e.key: e.value,
+                    },
+                    onSliceTap: (label) {
+                      final id = byCat.keys.firstWhere(
+                        (k) => (catName[k] ?? k) == label,
+                        orElse: () => '',
+                      );
+                      setState(() {
+                        _pieCategoryFilter =
+                            _pieCategoryFilter == id ? null : id;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: NBLayout.sectionGap),
+                BudgetCapsSection(
+                  expenseCats: expenseCats,
+                  budgetedIds: budgetedIds,
+                  rules: rules,
+                  rows: rows,
+                  byCat: byCat,
+                  monthKey: monthKey,
+                ),
+                const SizedBox(height: 72),
+              ],
+            ),
           );
         },
       ),

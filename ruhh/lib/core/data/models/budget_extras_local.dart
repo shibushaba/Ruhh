@@ -23,6 +23,11 @@ class CategoryLocal {
   late bool isIncome;
   late int colorValue;
   late int sortOrder;
+  String iconKey = 'category';
+  /// User-visible emoji for lists and chips (UTF-16 grapheme cluster).
+  String emoji = '';
+  bool isCustom = false;
+  bool isArchived = false;
 }
 
 @collection
@@ -62,4 +67,16 @@ class CategoryBudgetLimitLocal {
   late String budgetRemoteId;
   late String categoryName;
   late double limitAmount;
+  /// "recurring" or YYYY-MM for one-off month override.
+  String monthKey = 'recurring';
+  bool rolloverEnabled = false;
+  late String categoryRemoteId;
+}
+
+@collection
+class StandingSalaryLocal {
+  Id id = Isar.autoIncrement;
+  late String userId;
+  double amount = 0;
+  late String effectiveFromMonthKey;
 }

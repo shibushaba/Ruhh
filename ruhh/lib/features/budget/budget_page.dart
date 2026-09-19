@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/icons/app_icons.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
-import 'package:ruhh/features/budget/budget_objectives_page.dart';
-import 'package:ruhh/features/budget/budget_upcoming_page.dart';
-import 'package:ruhh/features/budget/budget_accounts_page.dart';
-import 'package:ruhh/features/budget/budget_budgets_page.dart';
 import 'package:ruhh/features/budget/budget_home_page.dart';
+import 'package:ruhh/features/budget/budget_income_page.dart';
+import 'package:ruhh/features/budget/budget_manage_page.dart';
 import 'package:ruhh/features/budget/budget_transactions_page.dart';
+import 'package:ruhh/features/budget/budget_trends_page.dart';
 
 final budgetTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -27,7 +27,7 @@ class _BudgetPageState extends ConsumerState<BudgetPage> {
   @override
   void initState() {
     super.initState();
-    final tab = widget.initialTab;
+    final tab = widget.initialTab.clamp(0, 4);
     _pages = PageController(initialPage: tab);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(budgetTabIndexProvider.notifier).state = tab;
@@ -53,15 +53,18 @@ class _BudgetPageState extends ConsumerState<BudgetPage> {
       }
     });
     final index = ref.watch(budgetTabIndexProvider);
+    final t = context.ruhh;
 
     return NBModuleScaffold(
       title: 'Budget',
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: NBColors.budget,
-        foregroundColor: NBColors.black,
+      wrapBody: false,
+      moduleTabLabels: const ['Home', 'List', 'Income', 'Trends', 'Manage'],
+      moduleTabIndex: index,
+      onModuleTab: _onTab,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add transaction',
         onPressed: () => context.push('/budget/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Transaction'),
+        child: Icon(AppIcons.plus(filled: true)),
       ),
       body: PageView(
         controller: _pages,
@@ -70,29 +73,9 @@ class _BudgetPageState extends ConsumerState<BudgetPage> {
         children: const [
           BudgetHomePage(),
           BudgetTransactionsPage(),
-          BudgetUpcomingPage(),
-          BudgetBudgetsPage(),
-          BudgetObjectivesPage(),
-          BudgetAccountsPage(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: _onTab,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined), label: 'History'),
-          NavigationDestination(
-              icon: Icon(Icons.schedule_outlined), label: 'Upcoming'),
-          NavigationDestination(
-              icon: Icon(Icons.pie_chart_outline), label: 'Budgets'),
-          NavigationDestination(
-              icon: Icon(Icons.flag_outlined), label: 'Goals'),
-          NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              label: 'Accounts'),
+          BudgetIncomePage(),
+          BudgetTrendsPage(),
+          BudgetManagePage(),
         ],
       ),
     );

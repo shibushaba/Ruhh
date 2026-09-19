@@ -47,6 +47,31 @@ class HabitLocal {
   late bool archived;
   late int sortOrder;
   late DateTime createdAt;
+
+  /// Days of month when [interval] == monthly (e.g. [1, 15]).
+  List<int> scheduleMonthDays = const [];
+
+  /// Anchor for custom interval counting (YYYY-MM-DD); empty = use [createdAt].
+  String scheduleStartDateKey = '';
+}
+
+enum HabitLogStatus { pending, completed, missed, excused }
+
+@collection
+class HabitLogLocal {
+  Id id = Isar.autoIncrement;
+
+  late String remoteId;
+  late String userId;
+  late String habitRemoteId;
+
+  @Index(composite: [CompositeIndex('habitRemoteId')], unique: true, replace: true)
+  late String dateKey;
+
+  @Enumerated(EnumType.name)
+  HabitLogStatus status = HabitLogStatus.pending;
+
+  double? currentValue;
 }
 
 @collection

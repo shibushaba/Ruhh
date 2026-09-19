@@ -1,8 +1,13 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/movie/tmdb_service.dart';
+import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
+import 'package:ruhh/features/movie/tracker/movie_sort.dart';
 import 'package:uuid/uuid.dart';
 
 class MovieLibraryStats {
@@ -81,6 +86,7 @@ class MovieRepository {
     bool liked = false,
     bool favorite = false,
   }) async {
+    await ensureTrackerDefaults();
     final tmdbId = item['id'] as int?;
     final mediaType = TmdbService.mediaTypeOf(item);
     MovieLocal? existing;
@@ -91,7 +97,10 @@ class MovieRepository {
         (MovieLocal()
           ..remoteId = const Uuid().v4()
           ..userId = _userId
-          ..addedAt = DateTime.now());
+          ..addedAt = DateTime.now()
+          ..trackerNote = review
+          ..priority = 3
+          ..categoryRemoteId = '');
     m
       ..tmdbId = tmdbId
       ..title = TmdbService.titleOf(item)
@@ -107,6 +116,15 @@ class MovieRepository {
       ..liked = liked
       ..favorite = favorite
       ..watchedAt = status == WatchStatus.watched ? DateTime.now() : m.watchedAt;
+    if (m.categoryRemoteId.isEmpty) {
+      final other = await defaultCategory();
+      if (other != null) m.categoryRemoteId = other.remoteId;
+    }
+    if (m.trackerNote.isEmpty && review.isNotEmpty) {
+      m.trackerNote = review;
+    } else if (existing == null && review.isNotEmpty) {
+      m.trackerNote = review;
+    }
     await _isar.writeTxn(() => _isar.movieLocals.put(m));
     return m;
   }
@@ -164,7 +182,13 @@ class MovieRepository {
     required String title,
     required WatchStatus status,
     String mediaType = 'movie',
+    int priority = 3,
+    String? categoryRemoteId,
+    String note = '',
   }) async {
+    await ensureTrackerDefaults();
+    final catId =
+        categoryRemoteId ?? (await defaultCategory())?.remoteId ?? '';
     final m = MovieLocal()
       ..remoteId = const Uuid().v4()
       ..userId = _userId
@@ -172,11 +196,243 @@ class MovieRepository {
       ..mediaType = mediaType
       ..watchStatus = status
       ..userReview = ''
+      ..trackerNote = note
       ..liked = false
       ..favorite = false
-      ..addedAt = DateTime.now();
+      ..addedAt = DateTime.now()
+      ..priority = priority.clamp(1, 5)
+      ..categoryRemoteId = catId;
+    if (status == WatchStatus.watched) {
+      m.watchedAt = DateTime.now();
+    }
     await _isar.writeTxn(() => _isar.movieLocals.put(m));
     return m;
+  }
+
+  // --- Tracker (manual watchlist) ---
+
+  Future<void> ensureTrackerDefaults() async {
+    var cats = await _isar.movieCategoryLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .findAll();
+    if (cats.isEmpty) {
+      await _isar.writeTxn(() async {
+        for (var i = 0; i < defaultMovieCategoryNames.length; i++) {
+          final c = MovieCategoryLocal()
+            ..remoteId = const Uuid().v4()
+            ..userId = _userId
+            ..name = defaultMovieCategoryNames[i]
+            ..colorValue = movieCategoryColorForName(defaultMovieCategoryNames[i])
+                .toARGB32()
+            ..isCustom = false
+            ..isArchived = false
+            ..sortOrder = i;
+          await _isar.movieCategoryLocals.put(c);
+        }
+      });
+      cats = await _isar.movieCategoryLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .findAll();
+    }
+    await _isar.writeTxn(() async {
+      for (final c in cats) {
+        if (c.isCustom) continue;
+        final idx = defaultMovieCategoryNames.indexOf(c.name);
+        if (idx < 0) continue;
+        final expected =
+            movieCategoryColorForName(c.name).toARGB32();
+        if (c.colorValue != expected) {
+          c.colorValue = expected;
+          await _isar.movieCategoryLocals.put(c);
+        }
+      }
+    });
+    MovieCategoryLocal? other;
+    for (final c in cats) {
+      if (c.name == 'Other') {
+        other = c;
+        break;
+      }
+    }
+    other ??= cats.isNotEmpty ? cats.first : null;
+    final otherId = other?.remoteId ?? '';
+    final movies = await all();
+    var dirty = false;
+    for (final m in movies) {
+      if (m.categoryRemoteId.isEmpty && otherId.isNotEmpty) {
+        m.categoryRemoteId = otherId;
+        dirty = true;
+      }
+      if (m.priority < 1 || m.priority > 5) {
+        m.priority = 3;
+        dirty = true;
+      }
+    }
+    if (dirty) {
+      await _isar.writeTxn(() => _isar.movieLocals.putAll(movies));
+    }
+  }
+
+  Stream<List<MovieCategoryLocal>> watchCategories() async* {
+    yield await categoriesAll();
+    await for (final _
+        in _isar.movieCategoryLocals.watchLazy(fireImmediately: false)) {
+      yield await categoriesAll();
+    }
+  }
+
+  Future<List<MovieCategoryLocal>> categoriesAll() => _isar.movieCategoryLocals
+      .filter()
+      .userIdEqualTo(_userId)
+      .sortBySortOrder()
+      .findAll();
+
+  Future<List<MovieCategoryLocal>> categoriesActive() async {
+    final all = await categoriesAll();
+    return all.where((c) => !c.isArchived).toList();
+  }
+
+  Future<MovieCategoryLocal?> categoryByRemoteId(String remoteId) =>
+      _isar.movieCategoryLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .remoteIdEqualTo(remoteId)
+          .findFirst();
+
+  Future<MovieCategoryLocal?> categoryByName(String name) =>
+      _isar.movieCategoryLocals
+          .filter()
+          .userIdEqualTo(_userId)
+          .nameEqualTo(name)
+          .findFirst();
+
+  Future<MovieCategoryLocal?> defaultCategory() => categoryByName('Other');
+
+  Future<MovieCategoryLocal> createCategory({
+    required String name,
+    required Color color,
+    bool isCustom = true,
+  }) async {
+    final all = await categoriesActive();
+    final c = MovieCategoryLocal()
+      ..remoteId = const Uuid().v4()
+      ..userId = _userId
+      ..name = name.trim()
+      ..colorValue = color.toARGB32()
+      ..isCustom = isCustom
+      ..isArchived = false
+      ..sortOrder = all.length;
+    await _isar.writeTxn(() => _isar.movieCategoryLocals.put(c));
+    return c;
+  }
+
+  Future<void> updateCategory(
+    MovieCategoryLocal cat, {
+    String? name,
+    Color? color,
+  }) async {
+    if (name != null) cat.name = name.trim();
+    if (color != null) cat.colorValue = color.toARGB32();
+    await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
+  }
+
+  Future<void> archiveCategory(MovieCategoryLocal cat) async {
+    cat.isArchived = true;
+    await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
+  }
+
+  Future<int> movieCountForCategory(String categoryRemoteId) => _isar.movieLocals
+      .filter()
+      .userIdEqualTo(_userId)
+      .categoryRemoteIdEqualTo(categoryRemoteId)
+      .count();
+
+  Stream<List<MovieLocal>> watchWatchlist() async* {
+    yield await watchlistMovies();
+    await for (final _ in _isar.movieLocals.watchLazy(fireImmediately: false)) {
+      yield await watchlistMovies();
+    }
+  }
+
+  Stream<List<MovieLocal>> watchWatchedList() async* {
+    yield await watchedMovies();
+    await for (final _ in _isar.movieLocals.watchLazy(fireImmediately: false)) {
+      yield await watchedMovies();
+    }
+  }
+
+  Future<List<MovieLocal>> watchlistMovies() async {
+    final movies = await all();
+    return sortWatchlistMovies(movies.where(isMovieWatchlist).toList());
+  }
+
+  Future<List<MovieLocal>> watchedMovies() async {
+    final movies = await all();
+    return sortWatchedMovies(movies.where(isMovieWatched).toList());
+  }
+
+  Future<MovieLocal?> movieByRemoteId(String remoteId) => _isar.movieLocals
+      .filter()
+      .userIdEqualTo(_userId)
+      .remoteIdEqualTo(remoteId)
+      .findFirst();
+
+  Future<MovieLocal> saveTrackerMovie({
+    String? remoteId,
+    required String title,
+    required int priority,
+    required String categoryRemoteId,
+    String note = '',
+    WatchStatus status = WatchStatus.wantToWatch,
+  }) async {
+    await ensureTrackerDefaults();
+    MovieLocal m;
+    if (remoteId != null) {
+      m = (await movieByRemoteId(remoteId)) ??
+          (throw StateError('Movie not found'));
+    } else {
+      m = MovieLocal()
+        ..remoteId = const Uuid().v4()
+        ..userId = _userId
+        ..addedAt = DateTime.now()
+        ..mediaType = 'manual'
+        ..liked = false
+        ..favorite = false
+        ..userReview = '';
+    }
+    m
+      ..title = title.trim()
+      ..priority = priority.clamp(1, 5)
+      ..categoryRemoteId = categoryRemoteId
+      ..trackerNote = note
+      ..watchStatus = status;
+    if (status == WatchStatus.watched && m.watchedAt == null) {
+      m.watchedAt = DateTime.now();
+    }
+    await _isar.writeTxn(() => _isar.movieLocals.put(m));
+    return m;
+  }
+
+  Future<MovieLocal> markWatched(MovieLocal movie) async {
+    movie.watchStatus = WatchStatus.watched;
+    movie.watchedAt = DateTime.now();
+    await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    return movie;
+  }
+
+  Future<MovieLocal> moveToWatchlist(MovieLocal movie) async {
+    movie.watchStatus = WatchStatus.wantToWatch;
+    movie.watchedAt = null;
+    await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    return movie;
+  }
+
+  Future<void> undoMarkWatched(MovieLocal movie) async {
+    movie.watchStatus = WatchStatus.wantToWatch;
+    movie.watchedAt = null;
+    await _isar.writeTxn(() => _isar.movieLocals.put(movie));
   }
 }
 
@@ -186,17 +442,20 @@ final movieRepositoryProvider = FutureProvider<MovieRepository>((ref) async {
   final isar = await ref.watch(isarProvider.future);
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) throw StateError('No user');
-  return MovieRepository(
+  final repo = MovieRepository(
     isar,
     user.supabaseId ?? user.id.toString(),
     ref.watch(tmdbServiceProvider),
   );
+  await repo.ensureTrackerDefaults();
+  return repo;
 });
 
 final movieRefreshProvider = StateProvider<int>((ref) => 0);
 
 void bumpMovieRefresh(WidgetRef ref) {
   ref.read(movieRefreshProvider.notifier).state++;
+  scheduleCloudSyncFromWidget(ref);
 }
 
 String watchStatusLabel(WatchStatus s) => switch (s) {

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_card.dart';
+import 'package:ruhh/core/widgets/nb_glass.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/widgets/movie_poster_card.dart';
 
@@ -32,9 +32,9 @@ class MovieLibraryPage extends ConsumerWidget {
                   children: [
                     if (stats != null)
                       Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: NBCard(
-                          color: NBColors.movie.withValues(alpha: 0.3),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: NBGlassPanel(
+                          padding: const EdgeInsets.all(14),
                           child: Wrap(
                             spacing: 12,
                             runSpacing: 8,
