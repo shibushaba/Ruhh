@@ -46,7 +46,39 @@ class OverlaySetupPage extends ConsumerWidget {
             const SizedBox(height: 8),
             NBButton(
               label: 'Test overlay now',
-              onPressed: () => overlay.showQuickAction(),
+              onPressed: () async {
+                if (!supported) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Quick overlay works on Android only.'),
+                    ),
+                  );
+                  return;
+                }
+                final granted = await overlay.isPermissionGranted();
+                if (!granted) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Allow “Display over other apps” first, then try again.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                final ok = await overlay.showQuickAction();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? 'Overlay opened — tap outside to close.'
+                          : 'Could not open overlay. Check permission in Settings.',
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

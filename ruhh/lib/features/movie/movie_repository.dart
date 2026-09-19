@@ -178,6 +178,26 @@ class MovieRepository {
   Future<List<Map<String, dynamic>>> searchTmdb(String q) =>
       _tmdb.searchMulti(q);
 
+  /// Title search over the user's library (overlay / quick mark watched).
+  Future<List<MovieLocal>> searchLocalTitles(
+    String query, {
+    int limit = 8,
+    WatchStatus? excludeStatus,
+  }) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    final movies = await all();
+    return movies
+        .where((m) {
+          if (excludeStatus != null && m.watchStatus == excludeStatus) {
+            return false;
+          }
+          return m.title.toLowerCase().contains(q);
+        })
+        .take(limit)
+        .toList();
+  }
+
   Future<MovieLocal> addManual({
     required String title,
     required WatchStatus status,

@@ -16,3 +16,65 @@ Color movieCategoryFill(Color accent, {double alpha = 0.14}) =>
 
 Color movieCategoryOnAccent(Color accent) =>
     accent.computeLuminance() > 0.55 ? Colors.black : Colors.white;
+
+/// Emoji-only movie category chips (horizontal row).
+class MovieCategoryEmojiChipRow extends StatelessWidget {
+  const MovieCategoryEmojiChipRow({
+    super.key,
+    required this.categories,
+    required this.selectedRemoteId,
+    required this.onSelected,
+  });
+
+  final List<MovieCategoryLocal> categories;
+  final String? selectedRemoteId;
+  final ValueChanged<MovieCategoryLocal> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = Theme.of(context).colorScheme.onSurface;
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final selected = selectedRemoteId == cat.remoteId;
+          final accent = movieCategoryAccent(cat);
+          return Tooltip(
+            message: cat.name,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelected(cat),
+                borderRadius: BorderRadius.circular(8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? accent.withValues(alpha: 0.85)
+                        : movieCategoryFill(accent, alpha: 0.2),
+                    border: Border.all(
+                      color: selected ? accent : fg.withValues(alpha: 0.5),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    movieCategoryEmojiForName(cat.name),
+                    style: const TextStyle(fontSize: 22),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

@@ -74,6 +74,7 @@ class _RuhhAppState extends ConsumerState<RuhhApp> {
 void overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  await SupabaseService.initialize();
   await IsarService.open();
   runApp(const ProviderScope(child: OverlayApp()));
 }
@@ -94,7 +95,7 @@ class OverlayApp extends ConsumerWidget {
     ref.watch(authControllerProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: RuhhTheme.light(),
+      theme: RuhhTheme.dark(),
       scrollBehavior: const RuhhScrollBehavior(),
       home: const OverlayEntryWidget(),
     );
