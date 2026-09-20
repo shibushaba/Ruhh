@@ -18,6 +18,8 @@ import 'package:ruhh/core/widgets/nb_layout.dart';
 
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
+
 import 'package:ruhh/features/budget/budget_repository.dart';
 
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
@@ -168,7 +170,7 @@ class HomePage extends ConsumerWidget {
 
                   ),
 
-                  const SizedBox(height: 72),
+                  const RuhhNavClearance(),
 
                 ],
 

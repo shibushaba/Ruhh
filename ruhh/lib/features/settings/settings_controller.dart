@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
-import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -168,7 +168,7 @@ class SettingsController extends Notifier<ModuleSettings> {
     await isar.writeTxn(() async {
       await isar.userLocals.put(user);
     });
-    scheduleCloudSyncFromNotifier(ref);
+    notifyLocalDataChanged();
   }
 
   Future<void> setBudgetEnabled(bool value) async {

@@ -5,6 +5,8 @@ import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/movie/tmdb_service.dart';
 import 'package:ruhh/features/movie/tracker/movie_defaults.dart';
@@ -33,6 +35,8 @@ class MovieRepository {
   final Isar _isar;
   final String _userId;
   final TmdbService _tmdb;
+
+  void _markCloudBackupNeeded() => notifyLocalDataChanged();
 
   Stream<List<MovieLocal>> watchLibrary() async* {
     yield await all();
@@ -131,6 +135,7 @@ class MovieRepository {
       m.trackerNote = review;
     }
     await _isar.writeTxn(() => _isar.movieLocals.put(m));
+    _markCloudBackupNeeded();
     return m;
   }
 
@@ -140,6 +145,7 @@ class MovieRepository {
       movie.watchedAt = DateTime.now();
     }
     await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    _markCloudBackupNeeded();
   }
 
   Future<void> updateEntry(
@@ -159,10 +165,12 @@ class MovieRepository {
     if (liked != null) movie.liked = liked;
     if (favorite != null) movie.favorite = favorite;
     await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    _markCloudBackupNeeded();
   }
 
   Future<void> remove(MovieLocal movie) async {
     await _isar.writeTxn(() => _isar.movieLocals.delete(movie.id));
+    _markCloudBackupNeeded();
   }
 
   Future<int> watchedThisMonth() async {
@@ -232,6 +240,7 @@ class MovieRepository {
       m.watchedAt = DateTime.now();
     }
     await _isar.writeTxn(() => _isar.movieLocals.put(m));
+    _markCloudBackupNeeded();
     return m;
   }
 
@@ -365,6 +374,7 @@ class MovieRepository {
       ..isArchived = false
       ..sortOrder = all.length;
     await _isar.writeTxn(() => _isar.movieCategoryLocals.put(c));
+    _markCloudBackupNeeded();
     return c;
   }
 
@@ -378,11 +388,13 @@ class MovieRepository {
     if (color != null) cat.colorValue = color.toARGB32();
     if (emoji != null) cat.emoji = emoji.trim();
     await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
+    _markCloudBackupNeeded();
   }
 
   Future<void> archiveCategory(MovieCategoryLocal cat) async {
     cat.isArchived = true;
     await _isar.writeTxn(() => _isar.movieCategoryLocals.put(cat));
+    _markCloudBackupNeeded();
   }
 
   Future<int> movieCountForCategory(String categoryRemoteId) async {
@@ -455,6 +467,7 @@ class MovieRepository {
       m.watchedAt = DateTime.now();
     }
     await _isar.writeTxn(() => _isar.movieLocals.put(m));
+    _markCloudBackupNeeded();
     return m;
   }
 
@@ -462,6 +475,7 @@ class MovieRepository {
     movie.watchStatus = WatchStatus.watched;
     movie.watchedAt = DateTime.now();
     await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    _markCloudBackupNeeded();
     return movie;
   }
 
@@ -469,6 +483,7 @@ class MovieRepository {
     movie.watchStatus = WatchStatus.wantToWatch;
     movie.watchedAt = null;
     await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    _markCloudBackupNeeded();
     return movie;
   }
 
@@ -476,6 +491,7 @@ class MovieRepository {
     movie.watchStatus = WatchStatus.wantToWatch;
     movie.watchedAt = null;
     await _isar.writeTxn(() => _isar.movieLocals.put(movie));
+    _markCloudBackupNeeded();
   }
 }
 
@@ -496,9 +512,11 @@ final movieRepositoryProvider = FutureProvider<MovieRepository>((ref) async {
 
 final movieRefreshProvider = StateProvider<int>((ref) => 0);
 
-void bumpMovieRefresh(WidgetRef ref) {
+void bumpMovieRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(movieRefreshProvider.notifier).state++;
-  scheduleCloudSyncFromWidget(ref);
+  if (scheduleCloudSync && !ruhhOverlayIsolate) {
+    scheduleCloudSyncFromWidget(ref);
+  }
 }
 
 String watchStatusLabel(WatchStatus s) => switch (s) {

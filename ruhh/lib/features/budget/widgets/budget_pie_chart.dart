@@ -35,6 +35,14 @@ class BudgetPieChart extends StatefulWidget {
 }
 
 class _BudgetPieChartState extends State<BudgetPieChart> {
+  static const _centerSpaceRadius = 56.0;
+  static const _baseSliceRadius = 46.0;
+  static const _selectedRadiusBoost = 6.0;
+  static const _touchedRadiusBoost = 4.0;
+  static const _sliceBorderWidth = 1.5;
+  /// Room for section gaps, stroke, and touch expansion outside the 200px box.
+  static const _chartEdgePadding = 8.0;
+
   int? _touchedIndex;
 
   List<BudgetPieSlice> get _sorted {
@@ -83,20 +91,26 @@ class _BudgetPieChartState extends State<BudgetPieChart> {
     final selectedShare =
         selected != null && _total > 0 ? selected.amount / _total : 0.0;
 
+    final maxSliceRadius =
+        _baseSliceRadius + _selectedRadiusBoost + _sliceBorderWidth;
+    final chartDiameter =
+        (_centerSpaceRadius + maxSliceRadius + _chartEdgePadding) * 2;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Center(
           child: SizedBox(
-            width: 200,
-            height: 200,
+            width: chartDiameter,
+            height: chartDiameter,
             child: Stack(
+              clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
                 PieChart(
                   PieChartData(
                     sectionsSpace: 2,
-                    centerSpaceRadius: 56,
+                    centerSpaceRadius: _centerSpaceRadius,
                     borderData: FlBorderData(show: false),
                     pieTouchData: PieTouchData(
                       touchCallback: (event, response) {
@@ -122,7 +136,7 @@ class _BudgetPieChartState extends State<BudgetPieChart> {
                           radius: _sliceRadius(i, slices[i].categoryId),
                           borderSide: BorderSide(
                             color: t.textPrimary,
-                            width: 1.5,
+                            width: _sliceBorderWidth,
                           ),
                         ),
                     ],
@@ -207,10 +221,11 @@ class _BudgetPieChartState extends State<BudgetPieChart> {
   }
 
   double _sliceRadius(int index, String categoryId) {
-    const base = 46.0;
-    if (widget.selectedCategoryId == categoryId) return base + 6;
-    if (_touchedIndex == index) return base + 4;
-    return base;
+    if (widget.selectedCategoryId == categoryId) {
+      return _baseSliceRadius + _selectedRadiusBoost;
+    }
+    if (_touchedIndex == index) return _baseSliceRadius + _touchedRadiusBoost;
+    return _baseSliceRadius;
   }
 }
 

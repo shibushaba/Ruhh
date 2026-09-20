@@ -35,54 +35,65 @@ class HomeInsightTile extends StatelessWidget {
       child: RuhhSoftCard(
         onTap: () => context.go(item.route),
         padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 4,
-              height: 52,
-              decoration: BoxDecoration(
-                color: item.accent,
-                borderRadius: BorderRadius.circular(2),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: item.accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(item.emoji, style: const TextStyle(fontSize: 26)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: t.divider),
-                      borderRadius: BorderRadius.circular(t.radiusChip),
-                    ),
-                    child: Text(
-                      item.tag.toUpperCase(),
-                      style: t.micro(theme),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(item.title, style: t.cardTitle(theme)),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.detail,
-                    style: t.caption(theme),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Center(
+                child: Text(
+                  item.emoji,
+                  style: const TextStyle(fontSize: 26, height: 1),
+                ),
               ),
-            ),
-            Icon(
-              Icons.north_east,
-              size: 16,
-              color: t.textTertiary,
-            ),
-          ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: t.divider),
+                        borderRadius: BorderRadius.circular(t.radiusChip),
+                      ),
+                      child: Text(
+                        item.tag.toUpperCase(),
+                        style: t.micro(theme),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(item.title, style: t.cardTitle(theme)),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.detail,
+                      style: t.caption(theme),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Center(
+                child: Icon(
+                  Icons.north_east,
+                  size: 16,
+                  color: t.textTertiary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

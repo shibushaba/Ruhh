@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/routing/app_router.dart';
 import 'package:ruhh/core/services/overlay_main_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
+import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
@@ -50,7 +52,7 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _overlayDataSub = listenForOverlayDataChanges(() {
       if (!mounted) return;
-      refreshMainAppAfterOverlayWrite(ref.read);
+      unawaited(_reloadLocalDbAfterOverlayWrite());
     });
   }
 
@@ -62,11 +64,25 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Future<void> _reloadLocalDbAfterOverlayWrite() async {
+    await IsarService.close();
+    ref.invalidate(isarProvider);
+    ref.invalidate(currentUserProvider);
+    ref.invalidate(habitRepositoryProvider);
+    ref.invalidate(budgetRepositoryProvider);
+    ref.invalidate(prayerRepositoryProvider);
+    ref.invalidate(movieRepositoryProvider);
+    refreshMainAppAfterOverlayWrite(ref.read);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      scheduleCloudSync(ref.read, delay: Duration.zero);
-      refreshMainAppAfterOverlayWrite(ref.read);
+      scheduleFullCloudSync(ref.read, delay: Duration.zero);
+      unawaited(_reloadLocalDbAfterOverlayWrite());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      flushCloudSyncToServer(ref.read);
     }
   }
 
@@ -119,8 +135,8 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
 @pragma('vm:entry-point')
 void overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  markRuhhOverlayIsolate();
   await dotenv.load(fileName: '.env');
-  await SupabaseService.initialize();
   await IsarService.open();
   runApp(const ProviderScope(child: OverlayApp()));
 }
@@ -128,6 +144,7 @@ void overlayMain() async {
 @pragma('vm:entry-point')
 void overlayTriggerMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  markRuhhOverlayIsolate();
   await dotenv.load(fileName: '.env');
   final overlay = OverlayService();
   await overlay.showQuickAction();
@@ -138,7 +155,6 @@ class OverlayApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(authControllerProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: RuhhTheme.dark(),

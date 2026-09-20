@@ -8,7 +8,7 @@ import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
-import 'package:ruhh/core/services/supabase_sync_service.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
@@ -77,8 +77,7 @@ class OnboardingPage extends ConsumerWidget {
                       .usernameEqualTo(username)
                       .findFirst();
                   if (user != null) {
-                    await SupabaseSyncService(isar)
-                        .syncUser(user, user.pinHash);
+                    await performUserCloudSync(isar, user);
                   }
                 }
                 if (context.mounted) context.go('/home');

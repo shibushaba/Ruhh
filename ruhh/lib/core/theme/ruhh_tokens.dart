@@ -342,12 +342,35 @@ extension RuhhTokensContext on BuildContext {
 }
 
 /// Floating nav pill + bottom margin (matches [RuhhFloatingNav] layout).
-const kRuhhFloatingNavBlockHeight = 16.0 + 60.0;
+/// 16 bottom margin + 8 pad + ~48 icons + 8 pad ≈ 80; use 88 for breathing room.
+const kRuhhFloatingNavBlockHeight = 88.0;
 
 /// Bottom inset so content clears the floating global nav.
 double ruhhGlobalNavBottomInset(BuildContext context) {
   final safe = MediaQuery.paddingOf(context).bottom;
-  return safe + kRuhhFloatingNavBlockHeight + 12;
+  return safe + kRuhhFloatingNavBlockHeight + 16;
+}
+
+/// Module tab bodies inside [HomeShell] (nav overlays content).
+double ruhhModuleShellBottomInset(
+  BuildContext context, {
+  bool hasFab = false,
+}) {
+  var inset = ruhhGlobalNavBottomInset(context);
+  if (hasFab) {
+    inset += 72;
+  }
+  return inset;
+}
+
+/// Scroll padding at the bottom of lists (floating nav ± module FAB).
+/// Prefer [RuhhShellScrollInsets] from [NBModuleScaffold] when inside a module tab.
+double ruhhScrollBottomInset(
+  BuildContext context, {
+  double? shellInset,
+}) {
+  if (shellInset != null) return shellInset;
+  return ruhhGlobalNavBottomInset(context);
 }
 
 /// Distance from screen bottom to the FAB's bottom edge (above nav).

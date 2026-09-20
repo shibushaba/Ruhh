@@ -44,7 +44,6 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
   int _step = 0;
   QuickModule? _module;
   bool _success = false;
-  int _dataTick = 0;
 
   final _amountCtrl = TextEditingController(text: '');
   final _noteCtrl = TextEditingController();
@@ -59,6 +58,13 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
   List<MovieLocal> _movieSuggestions = [];
   Timer? _movieSearchDebounce;
   StreamSubscription<dynamic>? _overlayResetSub;
+  String? _writeError;
+  bool _writeInFlight = false;
+  Timer? _successCloseTimer;
+
+  DailyPrayerLog? _prayerToday;
+  List<({HabitLocal habit, bool done})>? _dueHabits;
+  bool _moduleDataLoading = false;
 
   @override
   void dispose() {
@@ -70,7 +76,12 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     _movieTitleCtrl.dispose();
     _movieSearchCtrl.dispose();
     _movieSearchDebounce?.cancel();
+    _successCloseTimer?.cancel();
     super.dispose();
+  }
+
+  void _notifyMainAppLater() {
+    unawaited(notifyMainAppDataChanged());
   }
 
   RuhhTokens get _t => RuhhTokens.dark;
@@ -90,6 +101,12 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     _movieTitleCtrl.clear();
     _movieSearchCtrl.clear();
     _movieSearchDebounce?.cancel();
+    _successCloseTimer?.cancel();
+    _writeInFlight = false;
+    _writeError = null;
+    _prayerToday = null;
+    _dueHabits = null;
+    _moduleDataLoading = false;
     if (rebuild && mounted) {
       setState(() {});
     }
@@ -149,6 +166,39 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     );
   }
 
+  Future<void> _runOverlayWrite(Future<void> Function() action) async {
+    if (_writeInFlight) return;
+    setState(() {
+      _writeError = null;
+      _writeInFlight = true;
+    });
+    try {
+      await action();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _writeError =
+            'Could not save — open RUHH once, then try again. ($e)';
+      });
+    } finally {
+      if (mounted && !_success) {
+        setState(() => _writeInFlight = false);
+      }
+    }
+  }
+
+  Widget _writeErrorBanner() {
+    final err = _writeError;
+    if (err == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        err,
+        style: TextStyle(color: Colors.red.shade300, height: 1.35),
+      ),
+    );
+  }
+
   Widget _message(String text) {
     return Text(
       text,
@@ -167,7 +217,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
         Icon(Icons.check_circle_rounded, size: 48, color: _t.accentMint),
         const SizedBox(height: 12),
         Text(
-          'Saved',
+          'Done',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: _t.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -175,7 +225,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Syncing with RUHH…',
+          'Closing…',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: _t.textSecondary,
               ),
@@ -221,6 +271,9 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
                       setState(() {
                         _module = m;
                         _step = 1;
+                        _prayerToday = null;
+                        _dueHabits = null;
+                        _moduleDataLoading = false;
                       });
                       _syncOverlayHeaderBack();
                     },
@@ -238,6 +291,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _writeErrorBanner(),
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -349,7 +403,10 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
               _primaryButton(
                 label: 'Save',
                 accent: NBColors.budget,
-                onPressed: cats.isEmpty ? null : () => _saveBudget(repo),
+                loading: _writeInFlight,
+                onPressed: cats.isEmpty || _writeInFlight
+                    ? null
+                    : () => _saveBudget(repo),
               ),
             ],
           );
@@ -363,114 +420,150 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     return repoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('$e'),
-      data: (repo) => FutureBuilder<List<({HabitLocal habit, bool done})>>(
-        key: ValueKey(_dataTick),
-        future: _loadDueHabits(repo),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = snap.data!;
-          if (items.isEmpty) {
-            return _sectionTitle('Nothing due today — you\'re clear.');
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _sectionTitle('Today\'s habits'),
-              ...items.map((item) {
-                final habit = item.habit;
-                final done = item.done;
-                final color = Color(habit.colorValue);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        await repo.toggleSimple(habit, repo.todayKey);
-                        bumpHabitRefresh(ref);
-                        await notifyMainAppDataChanged();
-                        setState(() => _dataTick++);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          color: _t.surfaceSecondary.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
+      data: (repo) {
+        if (_dueHabits == null && !_moduleDataLoading) {
+          unawaited(_loadDueHabitsCached(repo));
+        }
+        if (_moduleDataLoading || _dueHabits == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final items = _dueHabits!;
+        if (items.isEmpty) {
+          return _sectionTitle('Nothing due today — you\'re clear.');
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _sectionTitle('Today\'s habits'),
+            ...items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final habit = item.habit;
+              final done = item.done;
+              final color = Color(habit.colorValue);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _writeInFlight
+                        ? null
+                        : () => _toggleHabit(repo, index, habit, done),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: _t.surfaceSecondary.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  habitIconData(habit.icon),
-                                  color: Colors.black,
-                                  size: 22,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                habitIconData(habit.icon),
+                                color: Colors.black,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                habit.name,
+                                style: TextStyle(
+                                  color: _t.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  decoration: done
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: _t.textSecondary,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  habit.name,
-                                  style: TextStyle(
-                                    color: _t.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                    decoration: done
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    decorationColor: _t.textSecondary,
-                                  ),
-                                ),
-                              ),
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
+                            ),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 120),
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: done
+                                    ? NBColors.habit.withValues(alpha: 0.9)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
                                   color: done
-                                      ? NBColors.habit.withValues(alpha: 0.9)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: done
-                                        ? NBColors.habit
-                                        : _t.textSecondary,
-                                    width: 2,
-                                  ),
+                                      ? NBColors.habit
+                                      : _t.textSecondary,
+                                  width: 2,
                                 ),
-                                child: done
-                                    ? const Icon(Icons.check,
-                                        size: 18, color: Colors.black)
-                                    : null,
                               ),
-                            ],
-                          ),
+                              child: done
+                                  ? const Icon(Icons.check,
+                                      size: 18, color: Colors.black)
+                                  : null,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                );
-              }),
-            ],
-          );
-        },
-      ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
+  }
+
+  Future<void> _loadDueHabitsCached(HabitRepository repo) async {
+    if (_moduleDataLoading) return;
+    _moduleDataLoading = true;
+    if (mounted) setState(() {});
+    try {
+      _dueHabits = await _loadDueHabits(repo);
+    } finally {
+      _moduleDataLoading = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _toggleHabit(
+    HabitRepository repo,
+    int index,
+    HabitLocal habit,
+    bool wasDone,
+  ) async {
+    if (_dueHabits == null) return;
+    setState(() {
+      _dueHabits![index] = (habit: habit, done: !wasDone);
+      _writeInFlight = true;
+    });
+    try {
+      await repo.toggleSimple(habit, repo.todayKey);
+      bumpHabitRefresh(ref, scheduleCloudSync: false);
+      _notifyMainAppLater();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _dueHabits![index] = (habit: habit, done: wasDone);
+        _writeError = 'Could not update habit. ($e)';
+      });
+    } finally {
+      if (mounted) setState(() => _writeInFlight = false);
+    }
   }
 
   Future<List<({HabitLocal habit, bool done})>> _loadDueHabits(
@@ -496,100 +589,142 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     return repoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('$e'),
-      data: (repo) => FutureBuilder<DailyPrayerLog>(
-        key: ValueKey(_dataTick),
-        future: repo.dailyLogFor(repo.todayKey),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final today = snap.data!;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _sectionTitle('Today\'s prayers'),
-              ...PrayerName.values.map((p) {
-                final status = today.statuses[p]!;
-                final done = status == TrackerPrayerStatus.prayed;
-                final accent = PrayerRepository.prayerAccent(p);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        await repo.toggleTrackerPrayer(repo.todayKey, p);
-                        bumpPrayerRefresh(ref);
-                        await notifyMainAppDataChanged();
-                        setState(() => _dataTick++);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: done ? 0.35 : 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: done
-                                ? accent.withValues(alpha: 0.9)
-                                : Colors.white.withValues(alpha: 0.12),
-                            width: 2,
-                          ),
+      data: (repo) {
+        if (_prayerToday == null && !_moduleDataLoading) {
+          unawaited(_loadPrayerTodayCached(repo));
+        }
+        if (_moduleDataLoading || _prayerToday == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final today = _prayerToday!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _sectionTitle('Today\'s prayers'),
+            ...PrayerName.values.map((p) {
+              final status = today.statuses[p]!;
+              final done = status == TrackerPrayerStatus.prayed;
+              final accent = PrayerRepository.prayerAccent(p);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _writeInFlight
+                        ? null
+                        : () => _togglePrayer(repo, p, today, done),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: done ? 0.35 : 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: done
+                              ? accent.withValues(alpha: 0.9)
+                              : Colors.white.withValues(alpha: 0.12),
+                          width: 2,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                PrayerRepository.prayerIcon(p),
-                                color: _t.textPrimary,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  PrayerRepository.label(p),
-                                  style: TextStyle(
-                                    color: _t.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              PrayerRepository.prayerIcon(p),
+                              color: _t.textPrimary,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                PrayerRepository.label(p),
+                                style: TextStyle(
+                                  color: _t.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
                                 ),
                               ),
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: done
-                                      ? accent.withValues(alpha: 0.95)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: _t.textPrimary,
-                                    width: 2,
-                                  ),
+                            ),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 120),
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: done
+                                    ? accent.withValues(alpha: 0.95)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _t.textPrimary,
+                                  width: 2,
                                 ),
-                                child: done
-                                    ? const Icon(Icons.check,
-                                        size: 18, color: Colors.black)
-                                    : null,
                               ),
-                            ],
-                          ),
+                              child: done
+                                  ? const Icon(Icons.check,
+                                      size: 18, color: Colors.black)
+                                  : null,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                );
-              }),
-            ],
-          );
-        },
-      ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
+  }
+
+  Future<void> _loadPrayerTodayCached(PrayerRepository repo) async {
+    if (_moduleDataLoading) return;
+    _moduleDataLoading = true;
+    if (mounted) setState(() {});
+    try {
+      _prayerToday = await repo.dailyLogFor(repo.todayKey);
+    } finally {
+      _moduleDataLoading = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _togglePrayer(
+    PrayerRepository repo,
+    PrayerName prayer,
+    DailyPrayerLog today,
+    bool wasDone,
+  ) async {
+    final nextStatus = wasDone
+        ? TrackerPrayerStatus.unmarked
+        : TrackerPrayerStatus.prayed;
+    final optimistic = today.copyWith(
+      statuses: Map<PrayerName, TrackerPrayerStatus>.from(today.statuses)
+        ..[prayer] = nextStatus,
+    );
+    setState(() {
+      _prayerToday = optimistic;
+      _writeInFlight = true;
+    });
+    try {
+      final persisted = await repo.toggleTrackerPrayer(repo.todayKey, prayer);
+      if (!mounted) return;
+      setState(() => _prayerToday = persisted);
+      bumpPrayerRefresh(ref, scheduleCloudSync: false);
+      _notifyMainAppLater();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _prayerToday = today;
+        _writeError = 'Could not update prayer. ($e)';
+      });
+    } finally {
+      if (mounted) setState(() => _writeInFlight = false);
+    }
   }
 
   Widget _moviePanel() {
@@ -661,7 +796,10 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
               _primaryButton(
                 label: 'Add',
                 accent: NBColors.movie,
-                onPressed: cats.isEmpty ? null : () => _saveNewMovie(repo),
+                loading: _writeInFlight,
+                onPressed: cats.isEmpty || _writeInFlight
+                    ? null
+                    : () => _saveNewMovie(repo),
               ),
             ],
           );
@@ -854,31 +992,42 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     required String label,
     required Color accent,
     required VoidCallback? onPressed,
+    bool loading = false,
   }) {
+    final enabled = onPressed != null && !loading;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onPressed,
+        onTap: enabled ? onPressed : null,
         borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
-            color: onPressed == null
-                ? _t.textTertiary
-                : accent.withValues(alpha: 0.92),
+            color: enabled
+                ? accent.withValues(alpha: 0.92)
+                : _t.textTertiary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.black, width: 2),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Center(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
-              ),
+              child: loading
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.black.withValues(alpha: 0.85),
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -888,45 +1037,63 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
 
   Future<void> _saveBudget(BudgetRepository repo) async {
     final amount = BudgetInr.parse(_amountCtrl.text);
-    if (amount == null || amount <= 0 || _budgetCategory == null) return;
-    await repo.upsertLedgerTransaction(
-      type: _ledgerType,
-      amount: amount,
-      category: _budgetCategory!,
-      note: _noteCtrl.text.trim(),
-      date: DateTime.now(),
-    );
-    bumpBudgetRefresh(ref);
-    await notifyMainAppDataChanged();
-    _showSuccess();
+    if (amount == null || amount <= 0) {
+      setState(() => _writeError = 'Enter a valid amount.');
+      return;
+    }
+    if (_budgetCategory == null) return;
+    await _runOverlayWrite(() async {
+      await repo.upsertLedgerTransaction(
+        type: _ledgerType,
+        amount: amount,
+        category: _budgetCategory!,
+        note: _noteCtrl.text.trim(),
+        date: DateTime.now(),
+      );
+      bumpBudgetRefresh(ref, scheduleCloudSync: false);
+      _showSuccess();
+      _notifyMainAppLater();
+    });
   }
 
   Future<void> _saveNewMovie(MovieRepository repo) async {
     final title = _movieTitleCtrl.text.trim();
-    if (title.isEmpty || _movieCategory == null) return;
-    await repo.addManual(
-      title: title,
-      status: WatchStatus.wantToWatch,
-      categoryRemoteId: _movieCategory!.remoteId,
-    );
-    bumpMovieRefresh(ref);
-    await notifyMainAppDataChanged();
-    _showSuccess();
+    if (title.isEmpty) {
+      setState(() => _writeError = 'Enter a title.');
+      return;
+    }
+    if (_movieCategory == null) return;
+    await _runOverlayWrite(() async {
+      await repo.addManual(
+        title: title,
+        status: WatchStatus.wantToWatch,
+        categoryRemoteId: _movieCategory!.remoteId,
+      );
+      bumpMovieRefresh(ref, scheduleCloudSync: false);
+      _showSuccess();
+      _notifyMainAppLater();
+    });
   }
 
   Future<void> _markMovieWatched(MovieRepository repo, MovieLocal movie) async {
-    await repo.setStatus(movie, WatchStatus.watched);
-    bumpMovieRefresh(ref);
-    await notifyMainAppDataChanged();
-    _showSuccess();
+    if (_writeInFlight) return;
+    await _runOverlayWrite(() async {
+      await repo.setStatus(movie, WatchStatus.watched);
+      bumpMovieRefresh(ref, scheduleCloudSync: false);
+      _showSuccess();
+      _notifyMainAppLater();
+    });
   }
 
   void _showSuccess() {
-    setState(() => _success = true);
+    _successCloseTimer?.cancel();
+    setState(() {
+      _success = true;
+      _writeInFlight = false;
+    });
     _syncOverlayHeaderBack();
-    Future.delayed(const Duration(milliseconds: 1400), () {
+    _successCloseTimer = Timer(const Duration(milliseconds: 750), () {
       if (!mounted) return;
-      _resetToModulePicker(rebuild: false);
       ref.read(overlayServiceProvider).close();
     });
   }

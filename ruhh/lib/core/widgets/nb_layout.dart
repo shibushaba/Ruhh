@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 
 abstract final class NBLayout {
   static const pagePadding = EdgeInsets.fromLTRB(20, 8, 20, 24);
@@ -24,10 +25,11 @@ class NBPageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.ruhh;
-    final bottom = extraBottomPadding
-        ? ruhhGlobalNavBottomInset(context)
-        : MediaQuery.paddingOf(context).bottom + 16;
+    final scrollBottom = extraBottomPadding
+        ? ruhhEffectiveScrollBottomInset(context)
+        : MediaQuery.paddingOf(context).bottom + 16.0;
     return SafeArea(
+      bottom: false,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -38,9 +40,20 @@ class NBPageBody extends StatelessWidget {
                   t.spaceScreenHorizontal,
                   8,
                   t.spaceScreenHorizontal,
-                  bottom,
+                  0,
                 ),
-            child: child,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxH = constraints.maxHeight;
+                final body = ruhhApplyScrollBottomInset(
+                  context: context,
+                  bottomInset: scrollBottom,
+                  child: child,
+                );
+                if (!maxH.isFinite) return body;
+                return SizedBox(height: maxH, child: body);
+              },
+            ),
           ),
         ),
       ),

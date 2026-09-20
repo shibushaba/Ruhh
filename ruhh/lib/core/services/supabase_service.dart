@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ruhh/features/auth/username_availability.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,6 +24,13 @@ class SupabaseAuthProfile {
       pinSalt: json['pin_salt'] as String,
     );
   }
+}
+
+class SupabasePushResult {
+  const SupabasePushResult({required this.ok, this.errorMessage});
+
+  final bool ok;
+  final String? errorMessage;
 }
 
 class SupabaseService {
@@ -133,13 +141,18 @@ class SupabaseService {
     }
   }
 
-  static Future<bool> push({
+  static Future<SupabasePushResult> push({
     required String userId,
     required String pinHash,
     required Map<String, dynamic> payload,
   }) async {
     final c = client;
-    if (c == null) return false;
+    if (c == null) {
+      return const SupabasePushResult(
+        ok: false,
+        errorMessage: 'Cloud backup is not configured in this build.',
+      );
+    }
     try {
       await c.rpc(
         'ruhh_push',
@@ -149,9 +162,38 @@ class SupabaseService {
           'p_payload': payload,
         },
       );
-      return true;
-    } catch (_) {
-      return false;
+      return const SupabasePushResult(ok: true);
+    } on PostgrestException catch (e) {
+      if (kDebugMode) {
+        debugPrint('ruhh_push failed: ${e.message} (${e.code})');
+      }
+      final msg = e.message.toLowerCase();
+      if (msg.contains('unauthorized')) {
+        return const SupabasePushResult(
+          ok: false,
+          errorMessage:
+              'Account verification failed — log out and sign in again with your PIN.',
+        );
+      }
+      if (msg.contains('invalid input syntax for type uuid')) {
+        return const SupabasePushResult(
+          ok: false,
+          errorMessage:
+              'Backup data format error — update the app and sync again.',
+        );
+      }
+      return SupabasePushResult(
+        ok: false,
+        errorMessage: e.message.isNotEmpty
+            ? e.message
+            : 'Could not upload to cloud backup.',
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('ruhh_push failed: $e');
+      return const SupabasePushResult(
+        ok: false,
+        errorMessage: 'Could not upload to cloud backup.',
+      );
     }
   }
 }

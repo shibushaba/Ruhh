@@ -6,6 +6,7 @@ import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_pin_input.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -55,6 +56,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       setState(() => _error = err);
       _pinKey.currentState?.clear();
       return;
+    }
+    final notice = ref.read(cloudRestoreNoticeProvider);
+    if (notice != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(notice)),
+      );
     }
     context.go('/home');
   }

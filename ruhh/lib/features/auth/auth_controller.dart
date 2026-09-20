@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,8 +58,8 @@ class AuthController extends Notifier<AuthState> {
       }
     }
     state = AuthState(username: username, loading: false);
-    if (username != null) {
-      scheduleCloudSync(ref.read, delay: Duration.zero);
+    if (username != null && !ruhhOverlayIsolate) {
+      scheduleFullCloudSync(ref.read, delay: Duration.zero);
     }
   }
 
@@ -123,7 +124,7 @@ class AuthController extends Notifier<AuthState> {
 
     await _persistSession(trimmed);
     state = AuthState(username: trimmed);
-    await _syncUserData(user, hash);
+    await _syncUserData(user, hash, expectCloudRestore: false);
     return null;
   }
 
@@ -150,8 +151,8 @@ class AuthController extends Notifier<AuthState> {
         await isar.userLocals.put(user!);
       });
       await _persistSession(trimmed);
+      await _syncUserData(user, hash, expectCloudRestore: true);
       state = AuthState(username: trimmed);
-      await _syncUserData(user, hash);
       return null;
     }
 
@@ -160,17 +161,39 @@ class AuthController extends Notifier<AuthState> {
 
     await _persistSession(trimmed);
     state = AuthState(username: trimmed);
-    await _syncUserData(user, hash);
+    await _syncUserData(user, hash, expectCloudRestore: false);
     return null;
   }
 
-  Future<void> _syncUserData(UserLocal user, String pinHash) async {
+  Future<void> _syncUserData(
+    UserLocal user,
+    String pinHash, {
+    required bool expectCloudRestore,
+  }) async {
+    ref.read(cloudRestoreNoticeProvider.notifier).state = null;
     try {
       final isar = await ref.read(isarProvider.future);
-      await SupabaseSyncService(isar).syncUser(user, pinHash);
+      final result = await performUserCloudSync(isar, user);
+      if (expectCloudRestore &&
+          result.startedWithEmptyLocal &&
+          result.noCloudBackup) {
+        ref.read(cloudRestoreNoticeProvider.notifier).state =
+            'No cloud backup found for this account. If you reinstalled after an older app version, '
+            'your backup may have been cleared. Data on another phone that is still logged in can be re-uploaded.';
+      } else if (expectCloudRestore && result.restoredFromCloud) {
+        ref.read(cloudRestoreNoticeProvider.notifier).state =
+            'Restored your data from the cloud.';
+      }
       markCloudSyncSuccess(ref.read);
-      await ref.read(settingsControllerProvider.notifier).reloadForCurrentUser(force: true);
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .reloadForCurrentUser(force: true);
+    } on CloudSyncPullFailedException catch (e) {
+      ref.read(lastCloudSyncErrorProvider.notifier).state = e.message;
+      scheduleCloudSync(ref.read, delay: const Duration(seconds: 15));
     } catch (_) {
+      ref.read(lastCloudSyncErrorProvider.notifier).state =
+          'Backup failed — will retry automatically.';
       scheduleCloudSync(ref.read, delay: const Duration(seconds: 15));
     }
   }

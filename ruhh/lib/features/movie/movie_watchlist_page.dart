@@ -7,6 +7,7 @@ import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/tracker/movie_sort.dart';
 import 'package:ruhh/features/movie/widgets/movie_category_display.dart';
 import 'package:ruhh/features/movie/widgets/movie_tracker_card.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 
 final watchlistCategoryFilterProvider = StateProvider<String?>((ref) => null);
 final watchedCategoryFilterProvider = StateProvider<String?>((ref) => null);
@@ -56,7 +57,10 @@ class MovieWatchlistPage extends ConsumerWidget {
               child: filtered.isEmpty
                   ? _EmptyWatchlist(hasFilter: filter != null)
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      padding: ruhhListPadding(
+                        context,
+                        base: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final movie = filtered[index];
@@ -137,7 +141,10 @@ class MovieWatchedPage extends ConsumerWidget {
               child: filtered.isEmpty
                   ? _EmptyWatched(hasFilter: filter != null)
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      padding: ruhhListPadding(
+                        context,
+                        base: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final movie = filtered[index];

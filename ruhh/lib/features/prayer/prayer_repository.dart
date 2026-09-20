@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/prayer/aladhan_prayer_service.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
@@ -21,6 +23,8 @@ class PrayerRepository {
 
   final Isar _isar;
   final String _userId;
+
+  void _markCloudBackupNeeded() => notifyLocalDataChanged();
 
   String get _latKey => 'prayer_lat_$_userId';
   String get _lngKey => 'prayer_lng_$_userId';
@@ -130,6 +134,7 @@ class PrayerRepository {
 
     await _applyPointsDelta(oldStatus, status);
     await _recalculateMetrics();
+    _markCloudBackupNeeded();
   }
 
   int _pointsDelta(PrayerStatus status) => switch (status) {
@@ -490,6 +495,7 @@ class PrayerRepository {
     log = log.copyWith(statuses: next);
     applyToLocal(log, local);
     await _isar.writeTxn(() => _isar.dailyPrayerLogLocals.put(local));
+    _markCloudBackupNeeded();
     return finalizePastDay(log, todayKey: todayKey);
   }
 
@@ -498,6 +504,7 @@ class PrayerRepository {
     var log = fromLocal(local).copyWith(isExcusedDay: excused);
     applyToLocal(log, local);
     await _isar.writeTxn(() => _isar.dailyPrayerLogLocals.put(local));
+    _markCloudBackupNeeded();
     return finalizePastDay(log, todayKey: todayKey);
   }
 
@@ -621,7 +628,9 @@ final dailyPrayerLogsProvider = StreamProvider<Map<String, DailyPrayerLog>>((ref
 
 final prayerRefreshProvider = StateProvider<int>((ref) => 0);
 
-void bumpPrayerRefresh(WidgetRef ref) {
+void bumpPrayerRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(prayerRefreshProvider.notifier).state++;
-  scheduleCloudSyncFromWidget(ref);
+  if (scheduleCloudSync && !ruhhOverlayIsolate) {
+    scheduleCloudSyncFromWidget(ref);
+  }
 }

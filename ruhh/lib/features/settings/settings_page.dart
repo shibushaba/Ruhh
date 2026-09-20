@@ -1,7 +1,10 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/services/ruhh_file_backup_service.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
@@ -111,6 +114,15 @@ class SettingsPage extends ConsumerWidget {
                       .read(settingsControllerProvider.notifier)
                       .setDarkMode(v),
                 ),
+              ),
+            ),
+            const SizedBox(height: NBLayout.sectionGap),
+            NBSection(
+              title: 'Download backup (CSV)',
+              subtitle:
+                  'Save a full copy of this account — budget, habits, prayer, movies, todos, and settings. Restore it on a fresh install after you log in.',
+              child: const NBCard(
+                child: _LocalBackupSection(),
               ),
             ),
             const SizedBox(height: NBLayout.sectionGap),
@@ -254,6 +266,155 @@ class SettingsPage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LocalBackupSection extends ConsumerStatefulWidget {
+  const _LocalBackupSection();
+
+  @override
+  ConsumerState<_LocalBackupSection> createState() => _LocalBackupSectionState();
+}
+
+class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
+  var _busy = false;
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _downloadBackup() async {
+    final auth = ref.read(authControllerProvider);
+    if (!auth.isLoggedIn) {
+      _snack('Log in to download a backup.');
+      return;
+    }
+    final user = await currentUserLocal(ref);
+    if (user == null) {
+      _snack('Could not load your account.');
+      return;
+    }
+    final backupAsync = ref.read(ruhhFileBackupServiceProvider);
+    final service = backupAsync.maybeWhen(
+      data: (s) => s,
+      orElse: () => null,
+    );
+    if (service == null) {
+      final service2 = await ref.read(ruhhFileBackupServiceProvider.future);
+      await _exportWith(service2, user);
+      return;
+    }
+    await _exportWith(service, user);
+  }
+
+  Future<void> _exportWith(RuhhFileBackupService service, UserLocal user) async {
+    final settings = ref.read(settingsControllerProvider);
+    final file = await service.exportBackupCsv(
+      user: user,
+      deviceSettings: settings,
+    );
+    await service.shareBackupFile(file);
+    if (mounted) {
+      _snack('Backup ready — save the CSV file from the share sheet.');
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    final auth = ref.read(authControllerProvider);
+    if (!auth.isLoggedIn) {
+      _snack('Log in first, then restore a backup into this account.');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore from backup?'),
+        content: const Text(
+          'This replaces all data in your current RUHH account with the backup file. '
+          'Your username and PIN stay the same.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final pick = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      withData: true,
+    );
+    if (pick == null || pick.files.isEmpty) return;
+    final bytes = pick.files.single.bytes;
+    if (bytes == null) {
+      _snack('Could not read the selected file.');
+      return;
+    }
+    final csv = String.fromCharCodes(bytes);
+
+    final user = await currentUserLocal(ref);
+    if (user == null || !mounted) {
+      _snack('Could not load your account.');
+      return;
+    }
+
+    try {
+      final service = await ref.read(ruhhFileBackupServiceProvider.future);
+      final result = await service.importBackupCsv(
+        user: user,
+        csvContents: csv,
+        settingsController: ref.read(settingsControllerProvider.notifier),
+      );
+      await refreshAppAfterFileBackupImport(ref);
+      if (!mounted) return;
+      final from = result.sourceUsername;
+      final fromNote = from != null && from != user.username
+          ? ' (from account "$from")'
+          : '';
+      _snack('Restored ${result.entityCount} items$fromNote.');
+    } catch (e) {
+      if (mounted) _snack('Restore failed: $e');
+    }
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NBButton(
+          label: _busy ? 'Working…' : 'Download backup CSV',
+          onPressed: _busy ? null : () => _run(_downloadBackup),
+        ),
+        const SizedBox(height: 12),
+        NBButton(
+          label: _busy ? 'Working…' : 'Restore from backup CSV',
+          primary: false,
+          onPressed: _busy ? null : () => _run(_restoreBackup),
+        ),
+      ],
     );
   }
 }

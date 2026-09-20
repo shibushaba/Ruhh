@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
+import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
 
 Timer? _cloudSyncDebounce;
@@ -15,16 +17,43 @@ Timer? _cloudSyncPeriodic;
 Timer? _cloudSyncRetry;
 var _cloudSyncInFlight = false;
 var _periodicCloudSyncActive = false;
+var _pendingCloudSync = false;
+var _pendingFullPull = false;
+Future<void>? _userSyncChain;
 
-/// Background sync while logged in (push local, then pull remote).
-const cloudSyncInterval = Duration(minutes: 1);
+/// Serializes all cloud sync calls (login + background).
+Future<T> withCloudUserSyncLock<T>(Future<T> Function() action) async {
+  final previous = _userSyncChain ?? Future.value();
+  final gate = Completer<void>();
+  _userSyncChain = gate.future;
+  await previous;
+  try {
+    return await action();
+  } finally {
+    gate.complete();
+  }
+}
 
-/// Debounce after local edits before uploading.
-const cloudSyncDebounceDelay = Duration(seconds: 1);
+Future<SyncUserResult> performUserCloudSync(Isar isar, UserLocal user) {
+  return withCloudUserSyncLock(
+    () => SupabaseSyncService(isar).syncUser(user, user.pinHash),
+  );
+}
+
+Future<void> performUserCloudPush(Isar isar, UserLocal user) {
+  return withCloudUserSyncLock(
+    () => SupabaseSyncService(isar).pushUserChanges(user, user.pinHash),
+  );
+}
+
+/// Full pull+push safety net while logged in.
+const cloudSyncInterval = Duration(seconds: 45);
+
+/// Coalesce rapid edits; upload runs soon after you stop tapping.
+const cloudSyncDebounceDelay = Duration(milliseconds: 400);
 
 typedef _RiverpodRead = T Function<T>(ProviderListenable<T> provider);
 
-/// Incremented after a successful cloud sync so lists reload remote data.
 final cloudSyncGenerationProvider = StateProvider<int>((ref) => 0);
 
 final lastCloudSyncAtProvider = StateProvider<DateTime?>((ref) => null);
@@ -32,6 +61,8 @@ final lastCloudSyncAtProvider = StateProvider<DateTime?>((ref) => null);
 final lastCloudSyncErrorProvider = StateProvider<String?>((ref) => null);
 
 final cloudSyncBusyProvider = StateProvider<bool>((ref) => false);
+
+final cloudRestoreNoticeProvider = StateProvider<String?>((ref) => null);
 
 void markCloudSyncSuccess(_RiverpodRead read) {
   read(cloudSyncGenerationProvider.notifier).state++;
@@ -43,31 +74,42 @@ void clearCloudSyncStatus(_RiverpodRead read) {
   read(lastCloudSyncAtProvider.notifier).state = null;
   read(lastCloudSyncErrorProvider.notifier).state = null;
   read(cloudSyncBusyProvider.notifier).state = false;
+  read(cloudRestoreNoticeProvider.notifier).state = null;
 }
 
-/// Push local changes to Supabase then pull remote (debounced).
+/// Queue upload to Supabase ([pullRemote] true = also download after push).
 void scheduleCloudSync(
   _RiverpodRead read, {
   Duration delay = cloudSyncDebounceDelay,
+  bool pullRemote = false,
 }) {
   if (SupabaseService.client == null) return;
+  _pendingCloudSync = true;
+  if (pullRemote) _pendingFullPull = true;
   _cloudSyncDebounce?.cancel();
   _cloudSyncDebounce = Timer(delay, () {
-    unawaited(runCloudSync(read));
+    if (!_pendingCloudSync) return;
+    _pendingCloudSync = false;
+    final full = _pendingFullPull;
+    _pendingFullPull = false;
+    unawaited(runCloudSync(read, pullRemote: full));
   });
 }
 
-/// Starts periodic sync and runs one cycle immediately.
+void scheduleFullCloudSync(_RiverpodRead read, {Duration delay = Duration.zero}) {
+  scheduleCloudSync(read, delay: delay, pullRemote: true);
+}
+
 void startPeriodicCloudSync(_RiverpodRead read) {
   if (SupabaseService.client == null) return;
   if (!_periodicCloudSyncActive) {
     _periodicCloudSyncActive = true;
     _cloudSyncPeriodic?.cancel();
     _cloudSyncPeriodic = Timer.periodic(cloudSyncInterval, (_) {
-      unawaited(runCloudSync(read));
+      scheduleFullCloudSync(read, delay: Duration.zero);
     });
   }
-  scheduleCloudSync(read, delay: Duration.zero);
+  scheduleFullCloudSync(read, delay: Duration.zero);
 }
 
 void stopPeriodicCloudSync() {
@@ -76,12 +118,19 @@ void stopPeriodicCloudSync() {
   _cloudSyncPeriodic = null;
   _cloudSyncRetry?.cancel();
   _cloudSyncRetry = null;
+  _pendingCloudSync = false;
+  _pendingFullPull = false;
 }
 
-Future<bool> runCloudSync(_RiverpodRead read) async {
+Future<bool> runCloudSync(
+  _RiverpodRead read, {
+  bool pullRemote = false,
+}) async {
   if (SupabaseService.client == null) return false;
   if (_cloudSyncInFlight) {
-    scheduleCloudSync(read, delay: cloudSyncDebounceDelay);
+    _pendingCloudSync = true;
+    if (pullRemote) _pendingFullPull = true;
+    scheduleCloudSync(read, delay: cloudSyncDebounceDelay, pullRemote: pullRemote);
     return false;
   }
   final username = read(authControllerProvider).username;
@@ -100,8 +149,13 @@ Future<bool> runCloudSync(_RiverpodRead read) async {
           'Sign in again to back up this account.';
       return false;
     }
-    await SupabaseSyncService(isar).syncUser(user, user.pinHash);
+    if (pullRemote) {
+      await performUserCloudSync(isar, user);
+    } else {
+      await performUserCloudPush(isar, user);
+    }
     markCloudSyncSuccess(read);
+    read(budgetRefreshProvider.notifier).state++;
     await read(settingsControllerProvider.notifier)
         .reloadForCurrentUser(force: true);
     _cloudSyncRetry?.cancel();
@@ -111,21 +165,33 @@ Future<bool> runCloudSync(_RiverpodRead read) async {
     if (kDebugMode) {
       debugPrint('Cloud sync failed: $e\n$st');
     }
-    read(lastCloudSyncErrorProvider.notifier).state =
-        'Backup failed — will retry automatically.';
+    final message = e is CloudSyncPullFailedException
+        ? e.message
+        : 'Backup failed — will retry automatically.';
+    read(lastCloudSyncErrorProvider.notifier).state = message;
     _cloudSyncRetry?.cancel();
-    _cloudSyncRetry = Timer(const Duration(seconds: 30), () {
-      unawaited(runCloudSync(read));
+    _cloudSyncRetry = Timer(const Duration(seconds: 12), () {
+      unawaited(runCloudSync(read, pullRemote: pullRemote));
     });
     return false;
   } finally {
     _cloudSyncInFlight = false;
     read(cloudSyncBusyProvider.notifier).state = false;
+    if (_pendingCloudSync) {
+      scheduleCloudSync(
+        read,
+        delay: cloudSyncDebounceDelay,
+        pullRemote: _pendingFullPull,
+      );
+    }
   }
 }
 
-/// Wires auth + automatic background sync for the app lifetime.
 final cloudSyncLifecycleProvider = Provider<void>((ref) {
+  registerLocalDataChangedHook(
+    () => scheduleCloudSync(ref.read, pullRemote: false),
+  );
+
   void onAuth(AuthState auth) {
     if (auth.loading) return;
     if (auth.isLoggedIn) {
@@ -141,8 +207,15 @@ final cloudSyncLifecycleProvider = Provider<void>((ref) {
   ref.onDispose(stopPeriodicCloudSync);
 });
 
-void scheduleCloudSyncFromWidget(WidgetRef ref) => scheduleCloudSync(ref.read);
+void scheduleCloudSyncFromWidget(WidgetRef ref) =>
+    scheduleCloudSync(ref.read, pullRemote: false);
 
-Future<bool> runCloudSyncFromWidget(WidgetRef ref) => runCloudSync(ref.read);
+Future<bool> runCloudSyncFromWidget(WidgetRef ref) =>
+    runCloudSync(ref.read, pullRemote: true);
 
-void scheduleCloudSyncFromNotifier(Ref ref) => scheduleCloudSync(ref.read);
+void scheduleCloudSyncFromNotifier(Ref ref) =>
+    scheduleCloudSync(ref.read, pullRemote: false);
+
+void flushCloudSyncToServer(_RiverpodRead read) {
+  scheduleFullCloudSync(read, delay: Duration.zero);
+}

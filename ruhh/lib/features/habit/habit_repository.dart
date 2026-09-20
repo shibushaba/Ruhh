@@ -5,6 +5,8 @@ import 'package:ruhh/core/data/models/habit_reminder.dart';
 import 'package:ruhh/core/data/models/vacation_period.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/habit/habit_extensions.dart';
 import 'package:ruhh/features/habit/habit_logic.dart';
@@ -136,6 +138,7 @@ class HabitRepository {
   }
 
   Future<void> _afterWrite() async {
+    notifyLocalDataChanged();
     HomeWidgetService.syncSoon(Future.value(this));
   }
 
@@ -558,7 +561,9 @@ final habitLogViewsProvider =
 
 final habitRefreshProvider = StateProvider<int>((ref) => 0);
 
-void bumpHabitRefresh(WidgetRef ref) {
+void bumpHabitRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(habitRefreshProvider.notifier).state++;
-  scheduleCloudSyncFromWidget(ref);
+  if (scheduleCloudSync && !ruhhOverlayIsolate) {
+    scheduleCloudSyncFromWidget(ref);
+  }
 }

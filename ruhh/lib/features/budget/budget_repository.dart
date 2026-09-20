@@ -4,6 +4,8 @@ import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
+import 'package:ruhh/core/services/local_data_sync.dart';
+import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/features/budget/budget_defaults.dart';
 import 'package:ruhh/features/budget/widgets/category_display.dart';
@@ -43,6 +45,8 @@ class BudgetRepository {
   Isar get isar => _isar;
   String get userId => _userId;
   static const _uuid = Uuid();
+
+  void _markCloudBackupNeeded() => notifyLocalDataChanged();
 
   String newRemoteId() => _uuid.v4();
 
@@ -198,6 +202,7 @@ class BudgetRepository {
       ..recurrenceEnd = recurrenceEnd
       ..objectiveRemoteId = objectiveRemoteId;
     await _isar.writeTxn(() => _isar.transactionLocals.put(tx));
+    _markCloudBackupNeeded();
   }
 
   Future<void> markScheduledPaid(int id) async {
@@ -256,10 +261,12 @@ class BudgetRepository {
 
   Future<void> updateTransaction(TransactionLocal tx) async {
     await _isar.writeTxn(() => _isar.transactionLocals.put(tx));
+    _markCloudBackupNeeded();
   }
 
   Future<void> delete(Id id) async {
     await _isar.writeTxn(() => _isar.transactionLocals.delete(id));
+    _markCloudBackupNeeded();
   }
 
   Future<double> walletBalance(WalletLocal wallet) async {
@@ -373,10 +380,12 @@ class BudgetRepository {
       }
       await _isar.walletLocals.put(w);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> deleteWallet(Id id) async {
     await _isar.writeTxn(() => _isar.walletLocals.delete(id));
+    _markCloudBackupNeeded();
   }
 
   Future<void> upsertCategory({
@@ -413,6 +422,7 @@ class BudgetRepository {
       }
       await _isar.categoryLocals.put(c);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> deleteCategory(Id id) async {
@@ -422,6 +432,7 @@ class BudgetRepository {
       c.isArchived = true;
       await _isar.categoryLocals.put(c);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> upsertBudgetPeriod({
@@ -456,6 +467,7 @@ class BudgetRepository {
       }
       await _isar.budgetPeriodLocals.put(b);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> deleteBudgetPeriod(Id id) async {
@@ -473,6 +485,7 @@ class BudgetRepository {
       }
       await _isar.budgetPeriodLocals.delete(id);
     });
+    _markCloudBackupNeeded();
   }
 
   // ——— Objectives ———
@@ -537,10 +550,12 @@ class BudgetRepository {
       }
       await _isar.objectiveLocals.put(o);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> deleteObjective(Id id) async {
     await _isar.writeTxn(() => _isar.objectiveLocals.delete(id));
+    _markCloudBackupNeeded();
   }
 
   // ——— Category budget limits ———
@@ -590,10 +605,12 @@ class BudgetRepository {
       }
       await _isar.categoryBudgetLimitLocals.put(l);
     });
+    _markCloudBackupNeeded();
   }
 
   Future<void> deleteCategoryLimit(Id id) async {
     await _isar.writeTxn(() => _isar.categoryBudgetLimitLocals.delete(id));
+    _markCloudBackupNeeded();
   }
 
   Future<List<TransactionLocal>> _rangeTransactions(
@@ -621,7 +638,9 @@ final budgetRepositoryProvider = FutureProvider<BudgetRepository>((ref) async {
 /// Bump to refresh lists after mutations.
 final budgetRefreshProvider = StateProvider<int>((ref) => 0);
 
-void bumpBudgetRefresh(WidgetRef ref) {
+void bumpBudgetRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(budgetRefreshProvider.notifier).state++;
-  scheduleCloudSyncFromWidget(ref);
+  if (scheduleCloudSync && !ruhhOverlayIsolate) {
+    scheduleCloudSyncFromWidget(ref);
+  }
 }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/widgets/nb_dialog.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 import 'package:ruhh/features/budget/widgets/ledger_list_row.dart';
@@ -117,6 +118,7 @@ class _BudgetTransactionsPageState extends ConsumerState<BudgetTransactionsPage>
                     );
                   }
                   return ListView.separated(
+                    padding: ruhhListPadding(context),
                     itemCount: txs.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),

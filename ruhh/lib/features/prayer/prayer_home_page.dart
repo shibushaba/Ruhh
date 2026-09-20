@@ -102,7 +102,7 @@ class _PrayerHomePageState extends ConsumerState<PrayerHomePage> {
                             bumpPrayerRefresh(ref);
                           },
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 16),
                       ],
                     );
                   },

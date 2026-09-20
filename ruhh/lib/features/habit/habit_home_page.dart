@@ -5,6 +5,7 @@ import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
@@ -43,7 +44,9 @@ class _HabitHomePageState extends ConsumerState<HabitHomePage> {
             return HabitMilestoneOverlay(
               milestone: _milestone,
               child: Padding(
-                padding: NBLayout.pagePadding.copyWith(bottom: 0),
+                padding: NBLayout.pagePadding.copyWith(
+                  bottom: ruhhEffectiveScrollBottomInset(context),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -67,7 +70,10 @@ class _HabitHomePageState extends ConsumerState<HabitHomePage> {
                     else
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(0, 8, 0, 96),
+                          padding: ruhhListPadding(
+                            context,
+                            base: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+                          ),
                           itemCount: due.length,
                           itemBuilder: (context, i) {
                             final h = due[i];

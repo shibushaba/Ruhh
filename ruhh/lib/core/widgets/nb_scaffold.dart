@@ -7,6 +7,7 @@ import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_fab_location.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 
 /// Parent route when the stack cannot pop (sibling GoRouter locations).
 String? ruhhParentRoute(String matchedLocation) {
@@ -123,7 +124,17 @@ class NBModuleScaffold extends ConsumerWidget {
 
     void onModuleTabBack() => onTab!(tabIndex - 1);
 
-    Widget pageBody = wrapBody ? NBPageBody(child: body) : body;
+    final shellScrollBottom = ruhhModuleShellBottomInset(
+      context,
+      hasFab: floatingActionButton != null,
+    );
+
+    Widget pageBody = wrapBody
+        ? NBPageBody(child: body)
+        : RuhhShellScrollInsets(
+            bottom: shellScrollBottom,
+            child: body,
+          );
 
     final showBack = !hideBackButton &&
         (showBackButton ||

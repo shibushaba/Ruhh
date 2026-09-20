@@ -29,7 +29,7 @@ void refreshMainAppAfterOverlayWrite(
   read(budgetRefreshProvider.notifier).state++;
   read(prayerRefreshProvider.notifier).state++;
   read(movieRefreshProvider.notifier).state++;
-  scheduleCloudSync(read, delay: const Duration(milliseconds: 500));
+  scheduleCloudSync(read, delay: const Duration(milliseconds: 300));
 }
 
 StreamSubscription<dynamic>? listenForOverlayDataChanges(void Function() onChanged) {
