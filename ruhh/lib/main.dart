@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/routing/app_router.dart';
+import 'package:ruhh/core/services/overlay_main_sync.dart';
 import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
@@ -40,15 +42,21 @@ class RuhhApp extends ConsumerStatefulWidget {
 class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
   GoRouter? _router;
   var _notificationsBootstrapped = false;
+  StreamSubscription<dynamic>? _overlayDataSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _overlayDataSub = listenForOverlayDataChanges(() {
+      if (!mounted) return;
+      refreshMainAppAfterOverlayWrite(ref.read);
+    });
   }
 
   @override
   void dispose() {
+    _overlayDataSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     stopPeriodicCloudSync();
     super.dispose();
@@ -58,6 +66,7 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       scheduleCloudSync(ref.read, delay: Duration.zero);
+      refreshMainAppAfterOverlayWrite(ref.read);
     }
   }
 

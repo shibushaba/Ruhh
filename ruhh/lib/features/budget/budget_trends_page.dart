@@ -36,7 +36,10 @@ class BudgetTrendsPage extends ConsumerWidget {
           }
           final rows = snap.data![0] as List<BudgetLedgerRow>;
           final expenseCats = snap.data![1] as List<CategoryLocal>;
-          final snapshot = BudgetTrendsInsights.build(rows);
+          final snapshot = BudgetTrendsInsights.build(
+            rows,
+            expenseCategories: expenseCats,
+          );
 
           CategoryLocal? catById(String id) {
             for (final c in expenseCats) {
@@ -228,11 +231,11 @@ class BudgetTrendsPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 NBSection(
-                  title: 'Top spend',
-                  subtitle: 'Categories over the last 6 months',
+                  title: 'By category',
+                  subtitle: 'All expense categories · last 6 months',
                   child: snapshot.topSpend.isEmpty
                       ? const NBEmptyState(
-                          message: 'No expenses in this window yet.',
+                          message: 'Add expense categories in Manage to see them here.',
                         )
                       : Column(
                           children: [

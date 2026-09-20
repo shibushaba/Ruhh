@@ -51,6 +51,7 @@ class BudgetTrendsInsights {
   static BudgetTrendsSnapshot build(
     List<BudgetLedgerRow> rows, {
     int monthCount = 6,
+    List<CategoryLocal> expenseCategories = const [],
   }) {
     final now = DateTime.now();
     final monthKeys = List.generate(monthCount, (i) {
@@ -78,6 +79,9 @@ class BudgetTrendsInsights {
     }
 
     final catTotals = <String, double>{};
+    for (final c in expenseCategories) {
+      catTotals[c.remoteId] = 0;
+    }
     for (final k in monthKeys) {
       for (final e in BudgetCalculations.expenseByCategory(rows, k).entries) {
         catTotals[e.key] = (catTotals[e.key] ?? 0) + e.value;
@@ -85,11 +89,15 @@ class BudgetTrendsInsights {
     }
 
     final topEntries = catTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        final byAmount = b.value.compareTo(a.value);
+        if (byAmount != 0) return byAmount;
+        return categoryLabel(a.key, expenseCategories)
+            .compareTo(categoryLabel(b.key, expenseCategories));
+      });
 
     final topSpend = <TopSpendEntry>[];
-    for (var i = 0; i < topEntries.length && i < 5; i++) {
-      final e = topEntries[i];
+    for (final e in topEntries) {
       topSpend.add(
         TopSpendEntry(
           categoryId: e.key,

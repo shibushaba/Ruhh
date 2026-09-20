@@ -84,21 +84,18 @@ class HomeFeedInsights extends ConsumerStatefulWidget {
       final today =
           resolveDayLog(prayerRepo.todayKey, logs, prayerRepo.todayKey);
       final prayed = (todayRatio(today) * 5).round();
-      PrayerName? next;
-      for (final p in prayerOrder) {
-        if (today.statuses[p] == TrackerPrayerStatus.unmarked) {
-          next = p;
-          break;
-        }
-      }
+      final next = await prayerRepo.nextUnloggedPrayerByTime();
       if (next != null && prayed < 5) {
+        final times = await prayerRepo.displayTimesForDay(DateTime.now());
+        final timeLabel = times[next];
         items.add(
           HomeInsightItem(
             emoji: '🕌',
             tag: 'Next up',
             title: '${PrayerTheme.label(next)} remaining',
-            detail:
-                '$prayed/5 logged today · ${summary.currentStreak} day streak',
+            detail: timeLabel != null && timeLabel.length >= 5
+                ? '$prayed/5 logged · adhan ${timeLabel.substring(0, 5)} · ${summary.currentStreak} day streak'
+                : '$prayed/5 logged today · ${summary.currentStreak} day streak',
             accent: PrayerTheme.accentSolid(next),
             route: '/prayer',
           ),
@@ -256,6 +253,7 @@ class _HomeFeedInsightsState extends ConsumerState<HomeFeedInsights> {
   Widget build(BuildContext context) {
     ref.listen(habitRefreshProvider, (_, __) => _reload());
     ref.listen(budgetRefreshProvider, (_, __) => _reload());
+    ref.listen(prayerRefreshProvider, (_, __) => _reload());
     ref.watch(habitLogViewsProvider);
     ref.watch(dailyPrayerLogsProvider);
 
@@ -374,6 +372,7 @@ class _HomeDayHeroSectionState extends ConsumerState<HomeDayHeroSection> {
   Widget build(BuildContext context) {
     ref.listen(habitRefreshProvider, (_, __) => _reload());
     ref.listen(budgetRefreshProvider, (_, __) => _reload());
+    ref.listen(prayerRefreshProvider, (_, __) => _reload());
     ref.watch(habitLogViewsProvider);
     ref.watch(dailyPrayerLogsProvider);
 

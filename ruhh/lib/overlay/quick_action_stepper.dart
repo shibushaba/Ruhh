@@ -10,6 +10,7 @@ import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/services/overlay_main_sync.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
@@ -19,10 +20,12 @@ import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 import 'package:ruhh/features/budget/widgets/category_display.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
+import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/movie/widgets/movie_category_display.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
+import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
 
 enum QuickModule { budget, habit, prayer, movie }
 
@@ -385,8 +388,9 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () async {
-                        await repo.toggleToday(habit);
+                        await repo.toggleSimple(habit, repo.todayKey);
                         bumpHabitRefresh(ref);
+                        await notifyMainAppDataChanged();
                         setState(() => _dataTick++);
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -477,7 +481,12 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     final due = habits.where((h) => isDue(h, todayKey)).toList();
     final out = <({HabitLocal habit, bool done})>[];
     for (final h in due) {
-      out.add((habit: h, done: await repo.isDoneToday(h)));
+      final logs = await repo.logsForHabit(h);
+      final log = resolveLog(todayKey, logs, todayKey);
+      out.add((
+        habit: h,
+        done: log.status == HabitLogStatus.completed,
+      ));
     }
     return out;
   }
@@ -487,18 +496,21 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
     return repoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('$e'),
-      data: (repo) => FutureBuilder<Map<PrayerName, PrayerLogLocal>>(
+      data: (repo) => FutureBuilder<DailyPrayerLog>(
         key: ValueKey(_dataTick),
-        future: repo.logsForDay(DateTime.now()),
+        future: repo.dailyLogFor(repo.todayKey),
         builder: (context, snap) {
-          final logs = snap.data ?? {};
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final today = snap.data!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _sectionTitle('Today\'s prayers'),
               ...PrayerName.values.map((p) {
-                final status = logs[p]?.status ?? PrayerStatus.none;
-                final done = _prayerMarkedDone(status);
+                final status = today.statuses[p]!;
+                final done = status == TrackerPrayerStatus.prayed;
                 final accent = PrayerRepository.prayerAccent(p);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -506,11 +518,9 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () async {
-                        await repo.setStatus(
-                          p,
-                          done ? PrayerStatus.none : PrayerStatus.onTimeAlone,
-                        );
+                        await repo.toggleTrackerPrayer(repo.todayKey, p);
                         bumpPrayerRefresh(ref);
+                        await notifyMainAppDataChanged();
                         setState(() => _dataTick++);
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -581,11 +591,6 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       ),
     );
   }
-
-  bool _prayerMarkedDone(PrayerStatus status) =>
-      status == PrayerStatus.onTimeAlone ||
-      status == PrayerStatus.withGroup ||
-      status == PrayerStatus.lateAlone;
 
   Widget _moviePanel() {
     return Column(
@@ -892,6 +897,7 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       date: DateTime.now(),
     );
     bumpBudgetRefresh(ref);
+    await notifyMainAppDataChanged();
     _showSuccess();
   }
 
@@ -904,12 +910,14 @@ class _QuickActionStepperState extends ConsumerState<QuickActionStepper> {
       categoryRemoteId: _movieCategory!.remoteId,
     );
     bumpMovieRefresh(ref);
+    await notifyMainAppDataChanged();
     _showSuccess();
   }
 
   Future<void> _markMovieWatched(MovieRepository repo, MovieLocal movie) async {
     await repo.setStatus(movie, WatchStatus.watched);
     bumpMovieRefresh(ref);
+    await notifyMainAppDataChanged();
     _showSuccess();
   }
 

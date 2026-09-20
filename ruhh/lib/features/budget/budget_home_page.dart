@@ -11,6 +11,7 @@ import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 import 'package:ruhh/features/budget/ledger/budget_month_key.dart';
 import 'package:ruhh/features/budget/widgets/budget_caps_section.dart';
 import 'package:ruhh/features/budget/widgets/budget_pie_chart.dart';
+import 'package:ruhh/features/budget/widgets/category_display.dart';
 
 class BudgetHomePage extends ConsumerStatefulWidget {
   const BudgetHomePage({super.key});
@@ -63,6 +64,36 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
                   r.monthKey == monthKey)
               .map((r) => r.categoryId)
               .toSet();
+
+          final pieSlices = <BudgetPieSlice>[];
+          var colorIndex = 0;
+          for (final c in expenseCats) {
+            final amount = byCat[c.remoteId] ?? 0;
+            if (amount <= 0) continue;
+            pieSlices.add(
+              BudgetPieSlice(
+                categoryId: c.remoteId,
+                label: categoryChipLabel(c),
+                amount: amount,
+                color: categoryAccentColorOrFallback(c, colorIndex),
+              ),
+            );
+            colorIndex++;
+          }
+          for (final e in byCat.entries) {
+            if (e.value <= 0) continue;
+            if (expenseCats.any((c) => c.remoteId == e.key)) continue;
+            pieSlices.add(
+              BudgetPieSlice(
+                categoryId: e.key,
+                label: catName[e.key] ?? e.key,
+                amount: e.value,
+                color: categoryAccentColorOrFallback(null, colorIndex),
+              ),
+            );
+            colorIndex++;
+          }
+          pieSlices.sort((a, b) => b.amount.compareTo(a.amount));
 
           return NBPageBody(
             child: ListView(
@@ -130,22 +161,13 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
                 NBSection(
                   title: 'Expense breakdown',
                   subtitle: _pieCategoryFilter == null
-                      ? 'Tap a slice to filter the list below'
-                      : 'Filtered: ${catName[_pieCategoryFilter] ?? _pieCategoryFilter}',
+                      ? 'Tap the chart or a row for details · tap again to filter caps'
+                      : 'Filtering budgets: ${catName[_pieCategoryFilter] ?? _pieCategoryFilter}',
                   child: BudgetPieChart(
-                    byCategory: {
-                      for (final e in byCat.entries)
-                        catName[e.key] ?? e.key: e.value,
-                    },
-                    onSliceTap: (label) {
-                      final id = byCat.keys.firstWhere(
-                        (k) => (catName[k] ?? k) == label,
-                        orElse: () => '',
-                      );
-                      setState(() {
-                        _pieCategoryFilter =
-                            _pieCategoryFilter == id ? null : id;
-                      });
+                    slices: pieSlices,
+                    selectedCategoryId: _pieCategoryFilter,
+                    onSelectedCategoryIdChanged: (id) {
+                      setState(() => _pieCategoryFilter = id);
                     },
                   ),
                 ),

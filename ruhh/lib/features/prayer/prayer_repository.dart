@@ -438,6 +438,36 @@ class PrayerRepository {
     return finalizePastDay(fromLocal(local), todayKey: todayKey);
   }
 
+  /// Next salāh to highlight: latest unlogged whose adhan has passed, else next upcoming.
+  Future<PrayerName?> nextUnloggedPrayerByTime({DateTime? now}) async {
+    final clock = now ?? DateTime.now();
+    final day = _dayOnly(clock);
+    final log = await dailyLogFor(todayKey);
+    final times = await displayTimesForDay(day);
+
+    PrayerName? latestPassedUnmarked;
+    PrayerName? firstFutureUnmarked;
+
+    for (final p in prayerOrder) {
+      if (log.statuses[p] == TrackerPrayerStatus.prayed) continue;
+      final hhmm = times[p];
+      if (hhmm == null || hhmm.length < 4) continue;
+      final parts = hhmm.split(':');
+      if (parts.length < 2) continue;
+      final h = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      if (h == null || m == null) continue;
+      final at = DateTime(day.year, day.month, day.day, h, m);
+      if (!at.isAfter(clock)) {
+        latestPassedUnmarked = p;
+      } else if (firstFutureUnmarked == null) {
+        firstFutureUnmarked = p;
+      }
+    }
+
+    return latestPassedUnmarked ?? firstFutureUnmarked;
+  }
+
   Future<DailyPrayerLog> toggleTrackerPrayer(
     String dateKey,
     PrayerName prayer,
