@@ -9,7 +9,10 @@ import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
 import 'package:ruhh/core/services/smart_notification_scheduler.dart';
+import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
+import 'package:ruhh/features/movie/movie_repository.dart';
+import 'package:ruhh/features/prayer/prayer_repository.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/theme/ruhh_theme.dart';
@@ -37,7 +40,6 @@ class RuhhApp extends ConsumerStatefulWidget {
 class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
   GoRouter? _router;
   var _notificationsBootstrapped = false;
-  var _syncStartedForUser = false;
 
   @override
   void initState() {
@@ -59,28 +61,21 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
     }
   }
 
-  void _updateCloudSync(AuthState auth) {
-    if (auth.loading) return;
-    if (auth.isLoggedIn) {
-      if (!_syncStartedForUser) {
-        _syncStartedForUser = true;
-        startPeriodicCloudSync(ref.read);
-        scheduleCloudSync(ref.read, delay: const Duration(seconds: 1));
-      }
-    } else {
-      _syncStartedForUser = false;
-      stopPeriodicCloudSync();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     _router ??= AppRouter.create(ref);
+    ref.watch(cloudSyncLifecycleProvider);
+    ref.listen(cloudSyncGenerationProvider, (previous, next) {
+      if (next == 0) return;
+      ref.read(habitRefreshProvider.notifier).state++;
+      ref.read(budgetRefreshProvider.notifier).state++;
+      ref.read(prayerRefreshProvider.notifier).state++;
+      ref.read(movieRefreshProvider.notifier).state++;
+    });
     ref.listen(
       authControllerProvider,
       (prev, next) {
         _router?.refresh();
-        _updateCloudSync(next);
       },
     );
     ref.listen(settingsControllerProvider, (_, __) => _router?.refresh());

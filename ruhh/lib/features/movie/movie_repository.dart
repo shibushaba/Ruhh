@@ -491,7 +491,6 @@ final movieRepositoryProvider = FutureProvider<MovieRepository>((ref) async {
     ref.watch(tmdbServiceProvider),
   );
     await repo.ensureTrackerDefaults();
-    scheduleCloudSync(ref.read, delay: const Duration(seconds: 1));
     return repo;
 });
 

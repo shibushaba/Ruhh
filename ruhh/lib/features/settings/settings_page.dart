@@ -8,8 +8,25 @@ import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
+import 'package:intl/intl.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
+
+String formatLastCloudSync(DateTime? at) {
+  if (at == null) return 'No successful sync yet this session';
+  final local = at.toLocal();
+  final now = DateTime.now();
+  final time = DateFormat.jm().format(local);
+  final sameDay =
+      local.year == now.year && local.month == now.month && local.day == now.day;
+  if (sameDay) return 'Last sync: today at $time';
+  final yesterday = now.subtract(const Duration(days: 1));
+  final wasYesterday = local.year == yesterday.year &&
+      local.month == yesterday.month &&
+      local.day == yesterday.day;
+  if (wasYesterday) return 'Last sync: yesterday at $time';
+  return 'Last sync: ${DateFormat.yMMMd().format(local)} at $time';
+}
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -100,41 +117,119 @@ class SettingsPage extends ConsumerWidget {
             NBSection(
               title: 'Cloud backup',
               subtitle: SupabaseService.client == null
-                  ? 'Add SUPABASE_URL and SUPABASE_ANON_KEY in .env to enable sync.'
-                  : 'Your data syncs after login and when you change habits, budget, prayer, or movies.',
+                  ? 'Add SUPABASE_URL and SUPABASE_ANON_KEY in .env, then rebuild the app.'
+                  : 'Backup runs automatically while you\'re signed in (after edits, on open, and about every minute).',
               child: NBCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Supabase'),
+                      title: Text(
+                        SupabaseService.client == null
+                            ? 'Not configured'
+                            : 'Cloud configured',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(color: t.textPrimary),
+                      ),
                       subtitle: Text(
                         SupabaseService.client == null
-                            ? 'Offline only'
-                            : 'Connected',
+                            ? 'This build has no Supabase URL or anon key.'
+                            : 'Automatic backup while you\'re signed in.',
+                        style: t.caption(Theme.of(context).textTheme),
                       ),
                       trailing: Icon(
                         SupabaseService.client == null
                             ? Icons.cloud_off_outlined
                             : Icons.cloud_done_outlined,
+                        color: SupabaseService.client == null
+                            ? t.textSecondary
+                            : t.textPrimary,
                       ),
                     ),
                     if (SupabaseService.client != null) ...[
-                      const SizedBox(height: 8),
-                      NBButton(
-                        label: 'Sync now',
-                        primary: false,
-                        onPressed: () async {
-                          await runCloudSyncFromWidget(ref);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Sync finished'),
+                      Divider(height: 1, color: t.divider),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              formatLastCloudSync(
+                                ref.watch(lastCloudSyncAtProvider),
                               ),
-                            );
-                          }
-                        },
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: t.textPrimary),
+                            ),
+                            if (ref.watch(cloudSyncBusyProvider))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: t.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Syncing…',
+                                      style: t.caption(
+                                        Theme.of(context).textTheme,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (ref.watch(lastCloudSyncErrorProvider) !=
+                                null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  ref.watch(lastCloudSyncErrorProvider)!,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(color: t.textSecondary),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      NBButton(
+                        label: ref.watch(cloudSyncBusyProvider)
+                            ? 'Syncing…'
+                            : 'Sync now',
+                        primary: false,
+                        onPressed: ref.watch(cloudSyncBusyProvider)
+                            ? null
+                            : () async {
+                                final ok = await runCloudSyncFromWidget(ref);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      ok
+                                          ? formatLastCloudSync(
+                                              ref.read(
+                                                lastCloudSyncAtProvider,
+                                              ),
+                                            )
+                                          : (ref.read(
+                                                    lastCloudSyncErrorProvider,
+                                                  ) ??
+                                                  'Sync could not complete'),
+                                    ),
+                                  ),
+                                );
+                              },
                       ),
                     ],
                   ],

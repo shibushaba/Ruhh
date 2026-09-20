@@ -21,6 +21,8 @@ Future<UserLocal?> resolveCurrentUser(Isar isar) async {
     final match =
         await isar.userLocals.filter().usernameEqualTo(username).findFirst();
     if (match != null) return match;
+    // Session points at a missing user — do not fall back to another account.
+    return null;
   }
 
   final all = await isar.userLocals.where().findAll();

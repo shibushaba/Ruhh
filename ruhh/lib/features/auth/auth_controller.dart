@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,7 +44,22 @@ class AuthController extends Notifier<AuthState> {
   Future<void> _loadSession() async {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString(ruhhSessionUsernameKey);
+    if (username != null && username.isNotEmpty) {
+      final isar = await ref.read(isarProvider.future);
+      final user = await isar.userLocals
+          .filter()
+          .usernameEqualTo(username)
+          .findFirst();
+      if (user == null) {
+        await prefs.remove(ruhhSessionUsernameKey);
+        state = const AuthState(loading: false);
+        return;
+      }
+    }
     state = AuthState(username: username, loading: false);
+    if (username != null) {
+      scheduleCloudSync(ref.read, delay: Duration.zero);
+    }
   }
 
   Future<UsernameAvailability> checkUsernameAvailability(String username) async {
@@ -152,9 +168,10 @@ class AuthController extends Notifier<AuthState> {
     try {
       final isar = await ref.read(isarProvider.future);
       await SupabaseSyncService(isar).syncUser(user, pinHash);
+      markCloudSyncSuccess(ref.read);
       await ref.read(settingsControllerProvider.notifier).reloadForCurrentUser(force: true);
     } catch (_) {
-      // Offline — retry on next login.
+      scheduleCloudSync(ref.read, delay: const Duration(seconds: 15));
     }
   }
 

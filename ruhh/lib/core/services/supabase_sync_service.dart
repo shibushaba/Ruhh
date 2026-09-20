@@ -20,6 +20,53 @@ class SupabaseSyncService {
 
     await _migrateLegacyUserIds(user, userId);
 
+    final legacyIsarId = user.id;
+    final localCount = await _countLocalSyncedEntities(userId, legacyIsarId);
+
+    // Reinstall / new device: local DB is empty but cloud may still have data.
+    // Pushing an empty payload first would wipe the server (reconcile deletes).
+    if (localCount == 0) {
+      final remote = await SupabaseService.pull(
+        userId: userId,
+        pinHash: pinHash,
+      );
+      if (remote != null) {
+        final remoteCount = _countRemoteEntities(remote);
+        final hasPrefs = remote['preferences'] is Map;
+        if (remoteCount > 0 || hasPrefs) {
+          await _importPayload(
+            userId,
+            remote,
+            allowDeleteReconcile: false,
+            legacyIsarId: legacyIsarId,
+          );
+          if (remoteCount > 0) return;
+        }
+      }
+
+      final payload = await _exportPayload(user, userId);
+      final pushed = await SupabaseService.push(
+        userId: userId,
+        pinHash: pinHash,
+        payload: payload,
+      );
+      if (!pushed) return;
+
+      final afterPush = await SupabaseService.pull(
+        userId: userId,
+        pinHash: pinHash,
+      );
+      if (afterPush != null) {
+        await _importPayload(
+          userId,
+          afterPush,
+          allowDeleteReconcile: false,
+          legacyIsarId: legacyIsarId,
+        );
+      }
+      return;
+    }
+
     final payload = await _exportPayload(user, userId);
     final pushed = await SupabaseService.push(
       userId: userId,
@@ -31,7 +78,6 @@ class SupabaseSyncService {
     final remote = await SupabaseService.pull(userId: userId, pinHash: pinHash);
     if (remote == null) return;
 
-    final localCount = await _countLocalSyncedEntities(userId, user.id);
     final remoteCount = _countRemoteEntities(remote);
     final allowDeleteReconcile = !(localCount > 0 && remoteCount == 0);
 
@@ -39,7 +85,7 @@ class SupabaseSyncService {
       userId,
       remote,
       allowDeleteReconcile: allowDeleteReconcile,
-      legacyIsarId: user.id,
+      legacyIsarId: legacyIsarId,
     );
   }
 
