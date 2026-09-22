@@ -18,6 +18,22 @@ import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
 import 'package:uuid/uuid.dart';
 
+/// Postgres `int` is signed 32-bit; Flutter [Color.value] is unsigned 32-bit ARGB.
+const _kSignedInt32Max = 2147483647;
+const _kUnsigned32Range = 4294967296;
+
+int _colorValueForCloudSync(int colorValue) {
+  if (colorValue <= _kSignedInt32Max) return colorValue;
+  return colorValue - _kUnsigned32Range;
+}
+
+int _colorValueFromCloudSync(num? value, {int fallback = 0}) {
+  if (value == null) return fallback;
+  final v = value.toInt();
+  if (v < 0) return v + _kUnsigned32Range;
+  return v;
+}
+
 /// Outcome of [SupabaseSyncService.syncUser] (login restore + background sync).
 class SyncUserResult {
   const SyncUserResult({
@@ -665,7 +681,7 @@ class SupabaseSyncService {
           ..targetAmount = (m['target_amount'] as num).toDouble()
           ..kind = m['kind'] as String? ?? 'savings'
           ..walletName = m['wallet_name'] as String? ?? 'Cash'
-          ..colorValue = m['color_value'] as int? ?? 0
+          ..colorValue = _colorValueFromCloudSync(m['color_value'])
           ..pinned = m['pinned'] as bool? ?? true
           ..archived = m['archived'] as bool? ?? false
           ..endDate = m['end_date'] != null
@@ -723,7 +739,10 @@ class SupabaseSyncService {
           ..remoteId = m['id'] as String
           ..userId = userId
           ..name = m['name'] as String
-          ..colorValue = (m['color_value'] as num?)?.toInt() ?? 0xFFF97316
+          ..colorValue = _colorValueFromCloudSync(
+            m['color_value'],
+            fallback: 0xFFF97316,
+          )
           ..icon = m['icon'] as String? ?? 'target'
           ..kind = HabitKind.values.byName(m['kind'] as String? ?? 'positive')
           ..interval = HabitInterval.values.byName(
@@ -978,7 +997,7 @@ class SupabaseSyncService {
         'target_amount': o.targetAmount,
         'kind': o.kind,
         'wallet_name': o.walletName,
-        'color_value': o.colorValue,
+        'color_value': _colorValueForCloudSync(o.colorValue),
         'pinned': o.pinned,
         'archived': o.archived,
         'end_date': o.endDate?.toUtc().toIso8601String(),
@@ -1000,7 +1019,7 @@ class SupabaseSyncService {
   Map<String, dynamic> _habitJson(HabitLocal h) => {
         'id': h.remoteId,
         'name': h.name,
-        'color_value': h.colorValue,
+        'color_value': _colorValueForCloudSync(h.colorValue),
         'icon': h.icon,
         'kind': h.kind.name,
         'interval': h.interval.name,
