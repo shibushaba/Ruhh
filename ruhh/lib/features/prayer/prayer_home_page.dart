@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
@@ -102,7 +103,7 @@ class _PrayerHomePageState extends ConsumerState<PrayerHomePage> {
                             bumpPrayerRefresh(ref);
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const RuhhNavClearance(),
                       ],
                     );
                   },

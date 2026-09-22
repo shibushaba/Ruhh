@@ -6,6 +6,8 @@ import 'package:ruhh/core/theme/ruhh_tokens.dart';
 
 import 'package:ruhh/core/widgets/nb_layout.dart';
 
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
+
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
@@ -200,7 +202,7 @@ class _PrayerStatsPageState extends ConsumerState<PrayerStatsPage> {
 
                 ),
 
-                const SizedBox(height: 48),
+                const RuhhNavClearance(),
 
               ],
 
