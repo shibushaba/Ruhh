@@ -81,4 +81,42 @@ void main() {
     logs['2024-02-02'] = _allPrayed('2024-02-02');
     expect(currentStreak(logs, '2024-02-02'), 2);
   });
+
+  test('next unlogged prayer prefers upcoming over post-midnight isha', () {
+    final log = _day(
+      '2026-09-22',
+      statuses: [
+        TrackerPrayerStatus.prayed,
+        TrackerPrayerStatus.unmarked,
+        TrackerPrayerStatus.unmarked,
+        TrackerPrayerStatus.unmarked,
+        TrackerPrayerStatus.unmarked,
+      ],
+    );
+    final times = {
+      PrayerName.fajr: '05:12',
+      PrayerName.dhuhr: '12:18',
+      PrayerName.asr: '15:42',
+      PrayerName.maghrib: '18:31',
+      PrayerName.isha: '00:35',
+    };
+    final now = DateTime(2026, 9, 22, 11, 23);
+    expect(
+      nextUnloggedPrayer(log: log, times: times, now: now),
+      PrayerName.dhuhr,
+    );
+  });
+
+  test('post-midnight isha counts as tonight not early morning', () {
+    final times = {
+      PrayerName.fajr: '05:12',
+      PrayerName.dhuhr: '12:18',
+      PrayerName.asr: '15:42',
+      PrayerName.maghrib: '18:31',
+      PrayerName.isha: '00:35',
+    };
+    final day = DateTime(2026, 9, 22);
+    final ishaAt = prayerOccurrenceAt(day, PrayerName.isha, times);
+    expect(ishaAt, DateTime(2026, 9, 23, 0, 35));
+  });
 }

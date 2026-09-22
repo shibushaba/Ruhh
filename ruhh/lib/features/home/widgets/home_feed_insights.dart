@@ -92,7 +92,7 @@ class HomeFeedInsights extends ConsumerStatefulWidget {
           HomeInsightItem(
             emoji: '🕌',
             tag: 'Next up',
-            title: '${PrayerTheme.label(next)} remaining',
+            title: '${PrayerTheme.label(next)} next',
             detail: timeLabel != null && timeLabel.length >= 5
                 ? '$prayed/5 logged · adhan ${timeLabel.substring(0, 5)} · ${summary.currentStreak} day streak'
                 : '$prayed/5 logged today · ${summary.currentStreak} day streak',

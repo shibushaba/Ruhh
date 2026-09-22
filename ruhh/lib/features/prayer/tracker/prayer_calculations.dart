@@ -205,3 +205,57 @@ DayVisualKind dayVisualKind(
 
 int prayedCount(DailyPrayerLog day) =>
     day.statuses.values.where((s) => s == TrackerPrayerStatus.prayed).length;
+
+int? _minutesFromMidnight(String? hhmm) {
+  if (hhmm == null || hhmm.length < 4) return null;
+  final parts = hhmm.split(':');
+  if (parts.length < 2) return null;
+  final h = int.tryParse(parts[0]);
+  final m = int.tryParse(parts[1]);
+  if (h == null || m == null) return null;
+  return h * 60 + m;
+}
+
+/// When Isha is after midnight (e.g. 00:35), it belongs to the evening of [day],
+/// not the early-morning slot on the same calendar date.
+DateTime? prayerOccurrenceAt(
+  DateTime day,
+  PrayerName prayer,
+  Map<PrayerName, String> times,
+) {
+  final mins = _minutesFromMidnight(times[prayer]);
+  if (mins == null) return null;
+  final d = DateTime(day.year, day.month, day.day);
+  var at = d.add(Duration(minutes: mins));
+  if (prayer == PrayerName.isha) {
+    final fajrMins = _minutesFromMidnight(times[PrayerName.fajr]);
+    if (fajrMins != null && mins <= fajrMins) {
+      at = at.add(const Duration(days: 1));
+    }
+  }
+  return at;
+}
+
+/// Next salāh for home / highlights: earliest upcoming unlogged, else latest overdue.
+PrayerName? nextUnloggedPrayer({
+  required DailyPrayerLog log,
+  required Map<PrayerName, String> times,
+  required DateTime now,
+}) {
+  final day = DateTime(now.year, now.month, now.day);
+  PrayerName? latestPassedUnmarked;
+  PrayerName? firstFutureUnmarked;
+
+  for (final p in prayerOrder) {
+    if (log.statuses[p] == TrackerPrayerStatus.prayed) continue;
+    final at = prayerOccurrenceAt(day, p, times);
+    if (at == null) continue;
+    if (!at.isAfter(now)) {
+      latestPassedUnmarked = p;
+    } else if (firstFutureUnmarked == null) {
+      firstFutureUnmarked = p;
+    }
+  }
+
+  return firstFutureUnmarked ?? latestPassedUnmarked;
+}
