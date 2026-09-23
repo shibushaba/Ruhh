@@ -133,7 +133,6 @@ class NBModuleScaffold extends ConsumerWidget {
         ? NBPageBody(child: body)
         : RuhhShellScrollInsets(
             bottom: shellScrollBottom,
-            end: floatingActionButton != null ? kRuhhModuleFabEndInset : 0,
             child: body,
           );
 

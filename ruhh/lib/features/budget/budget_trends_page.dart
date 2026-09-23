@@ -7,6 +7,7 @@ import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
@@ -61,32 +62,51 @@ class BudgetTrendsPage extends ConsumerWidget {
                 NBSection(
                   title: 'Last 6 months',
                   subtitle: 'Income vs expense at a glance',
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  child: Column(
                     children: [
-                      _KpiTile(
-                        label: 'Income',
-                        value: BudgetInr.format(snapshot.totalIncome),
-                        accent: NBMetrics.incomeGreen,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _KpiTile(
+                              label: 'Income',
+                              value: BudgetInr.format(snapshot.totalIncome),
+                              accent: NBMetrics.incomeGreen,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _KpiTile(
+                              label: 'Spent',
+                              value: BudgetInr.format(snapshot.totalExpense),
+                              accent: NBMetrics.expenseRed,
+                            ),
+                          ),
+                        ],
                       ),
-                      _KpiTile(
-                        label: 'Spent',
-                        value: BudgetInr.format(snapshot.totalExpense),
-                        accent: NBMetrics.expenseRed,
-                      ),
-                      _KpiTile(
-                        label: 'Net saved',
-                        value: BudgetInr.format(snapshot.netSaved),
-                        accent: snapshot.netSaved >= 0
-                            ? t.textPrimary
-                            : NBMetrics.expenseRed,
-                      ),
-                      _KpiTile(
-                        label: 'Savings rate',
-                        value:
-                            '${(snapshot.savingsRate * 100).toStringAsFixed(0)}%',
-                        accent: t.textPrimary,
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _KpiTile(
+                              label: 'Net saved',
+                              value: BudgetInr.format(snapshot.netSaved),
+                              accent: snapshot.netSaved >= 0
+                                  ? t.textPrimary
+                                  : NBMetrics.expenseRed,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _KpiTile(
+                              label: 'Savings rate',
+                              value:
+                                  '${(snapshot.savingsRate * 100).toStringAsFixed(0)}%',
+                              accent: t.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -256,7 +276,7 @@ class BudgetTrendsPage extends ConsumerWidget {
                           ],
                         ),
                 ),
-                const SizedBox(height: 72),
+                const RuhhNavClearance(extra: 12),
               ],
             ),
           );
@@ -355,9 +375,7 @@ class _KpiTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
-    return SizedBox(
-      width: (MediaQuery.sizeOf(context).width - 48) / 2,
-      child: RuhhSoftCard(
+    return RuhhSoftCard(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +388,6 @@ class _KpiTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

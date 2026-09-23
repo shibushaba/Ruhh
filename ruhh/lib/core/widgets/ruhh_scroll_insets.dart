@@ -6,12 +6,10 @@ class RuhhShellScrollInsets extends InheritedWidget {
   const RuhhShellScrollInsets({
     super.key,
     required this.bottom,
-    this.end = 0,
     required super.child,
   });
 
   final double bottom;
-  final double end;
 
   static RuhhShellScrollInsets? maybeOf(BuildContext context) {
     return context
@@ -20,12 +18,8 @@ class RuhhShellScrollInsets extends InheritedWidget {
 
   @override
   bool updateShouldNotify(RuhhShellScrollInsets oldWidget) {
-    return oldWidget.bottom != bottom || oldWidget.end != end;
+    return oldWidget.bottom != bottom;
   }
-}
-
-double ruhhEffectiveFabEndInset(BuildContext context) {
-  return RuhhShellScrollInsets.maybeOf(context)?.end ?? 0;
 }
 
 double ruhhEffectiveScrollBottomInset(BuildContext context) {

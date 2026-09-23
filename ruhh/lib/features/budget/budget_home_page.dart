@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/budget_extras_local.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
@@ -180,7 +181,7 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
                   byCat: byCat,
                   monthKey: monthKey,
                 ),
-                const SizedBox(height: 72),
+                const RuhhNavClearance(extra: 12),
               ],
             ),
           );

@@ -345,9 +345,6 @@ extension RuhhTokensContext on BuildContext {
 /// 16 bottom margin + 8 pad + ~48 icons + 8 pad ≈ 80; use 88 for breathing room.
 const kRuhhFloatingNavBlockHeight = 88.0;
 
-/// Module FAB width + trailing margin so scroll content stays left of the + button.
-const kRuhhModuleFabEndInset = 72.0;
-
 /// Bottom inset so content clears the floating global nav.
 double ruhhGlobalNavBottomInset(BuildContext context) {
   final safe = MediaQuery.paddingOf(context).bottom;

@@ -44,11 +44,7 @@ class _HabitHomePageState extends ConsumerState<HabitHomePage> {
             return HabitMilestoneOverlay(
               milestone: _milestone,
               child: Padding(
-                padding: NBLayout.pagePadding.copyWith(
-                  bottom: 0,
-                  right: NBLayout.pagePadding.right +
-                      ruhhEffectiveFabEndInset(context),
-                ),
+                padding: NBLayout.pagePadding.copyWith(bottom: 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

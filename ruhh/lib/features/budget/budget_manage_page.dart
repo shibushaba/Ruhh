@@ -7,6 +7,7 @@ import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_dialog.dart';
 import 'package:ruhh/core/widgets/nb_form_fields.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
@@ -133,7 +134,7 @@ class BudgetManagePage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 72),
+                const RuhhNavClearance(extra: 12),
               ],
             ),
           );

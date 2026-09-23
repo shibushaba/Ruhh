@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/widgets/ledger_list_row.dart';
 
@@ -90,7 +91,7 @@ class _BudgetIncomePageState extends ConsumerState<BudgetIncomePage> {
                           ],
                         ),
                 ),
-                const SizedBox(height: 72),
+                const RuhhNavClearance(extra: 12),
               ],
             ),
           );
