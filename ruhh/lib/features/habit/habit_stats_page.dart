@@ -100,28 +100,35 @@ class HabitStatsPage extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _HabitSummaryChip(
-                        label: 'Active',
-                        value: '${habits.length}',
-                      ),
-                      _HabitSummaryChip(
-                        label: 'This week',
-                        value: '${(avgWeekRate * 100).round()}%',
-                        accent: heatmapAccent,
-                      ),
-                      _HabitSummaryChip(
-                        label: 'Top streak',
-                        value: bestStreak > 0
-                            ? '$bestStreak d'
-                            : '—',
-                        subtitle: bestStreakHabit,
-                        accent: t.accentAmber,
-                      ),
-                    ],
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _HabitSummaryChip(
+                            label: 'Active',
+                            value: '${habits.length}',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _HabitSummaryChip(
+                            label: 'This week',
+                            value: '${(avgWeekRate * 100).round()}%',
+                            accent: heatmapAccent,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _HabitSummaryChip(
+                            label: 'Top streak',
+                            value: bestStreak > 0 ? '$bestStreak d' : '—',
+                            subtitle: bestStreakHabit,
+                            accent: t.accentAmber,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -177,7 +184,7 @@ class HabitStatsPage extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   if (bestName != null)
                     NBStatCard(
                       label: 'Best this month',
@@ -188,7 +195,7 @@ class HabitStatsPage extends ConsumerWidget {
                       accent: NBMetrics.incomeGreen,
                       prominentLabel: true,
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   if (worstName != null)
                     NBStatCard(
                       label: 'Needs attention',
@@ -225,7 +232,7 @@ class HabitStatsPage extends ConsumerWidget {
                       ),
                     ),
                   ],
-                  const RuhhNavClearance(extra: 12),
+                  const RuhhNavClearance(extra: 20),
                 ],
               ),
             );
@@ -255,10 +262,10 @@ class _HabitSummaryChip extends StatelessWidget {
     final color = accent ?? t.accentMint;
     return RuhhSoftCard(
       radius: t.radiusCardMedium,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
         children: [
           Text(
             label,

@@ -28,6 +28,7 @@ class NBPageBody extends StatelessWidget {
     final scrollBottom = extraBottomPadding
         ? ruhhEffectiveScrollBottomInset(context)
         : MediaQuery.paddingOf(context).bottom + 16.0;
+    final fabEnd = ruhhEffectiveFabEndInset(context);
     return SafeArea(
       bottom: false,
       child: Align(
@@ -39,7 +40,7 @@ class NBPageBody extends StatelessWidget {
                 EdgeInsets.fromLTRB(
                   t.spaceScreenHorizontal,
                   8,
-                  t.spaceScreenHorizontal,
+                  t.spaceScreenHorizontal + fabEnd,
                   0,
                 ),
             child: LayoutBuilder(
