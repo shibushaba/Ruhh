@@ -358,7 +358,8 @@ double ruhhModuleShellBottomInset(
 }) {
   var inset = ruhhGlobalNavBottomInset(context);
   if (hasFab) {
-    inset += 72;
+    // FAB (~56) + gap above floating nav; must clear last list row under + button.
+    inset += 88;
   }
   return inset;
 }

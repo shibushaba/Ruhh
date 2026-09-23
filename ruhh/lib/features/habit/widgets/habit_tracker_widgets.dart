@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
+import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/icons/app_icons.dart';
 import 'package:ruhh/core/motion/animated_radial_dial.dart';
@@ -152,23 +153,29 @@ class NBGoalStepper extends StatelessWidget {
 }
 
 class NBHeatmapCell extends StatelessWidget {
-  const NBHeatmapCell({super.key, required this.intensity});
+  const NBHeatmapCell({
+    super.key,
+    required this.intensity,
+    this.accent,
+  });
 
   final double intensity;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
     final t = context.ruhh;
-    final fill = Color.lerp(
-      t.canvas,
-      t.accentMintPastel,
-      intensity.clamp(0.0, 1.0),
-    )!;
-    return Container(
-      margin: const EdgeInsets.all(2),
+    final level = intensity.clamp(0.0, 1.0);
+    final tone = accent ?? NBColors.habit;
+    final empty = t.surfaceSecondary;
+    final fill = Color.lerp(empty, tone, 0.2 + level * 0.8)!;
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: intensity > 0 ? fill : t.canvas,
-        borderRadius: BorderRadius.circular(t.radiusChip),
+        color: level > 0 ? fill : empty,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: t.divider.withValues(alpha: 0.9),
+        ),
       ),
     );
   }

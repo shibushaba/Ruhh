@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
 import 'package:ruhh/features/habit/tracker/habit_appearance.dart';
@@ -65,6 +66,7 @@ class HabitListPage extends ConsumerWidget {
                             .toList(),
                       ),
                     ],
+                    const RuhhNavClearance(extra: 12),
                   ],
                 ),
               );

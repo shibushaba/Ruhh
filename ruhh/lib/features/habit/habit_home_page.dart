@@ -44,9 +44,7 @@ class _HabitHomePageState extends ConsumerState<HabitHomePage> {
             return HabitMilestoneOverlay(
               milestone: _milestone,
               child: Padding(
-                padding: NBLayout.pagePadding.copyWith(
-                  bottom: ruhhEffectiveScrollBottomInset(context),
-                ),
+                padding: NBLayout.pagePadding.copyWith(bottom: 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -70,12 +68,12 @@ class _HabitHomePageState extends ConsumerState<HabitHomePage> {
                     else
                       Expanded(
                         child: ListView.builder(
-                          padding: ruhhListPadding(
-                            context,
-                            base: const EdgeInsets.fromLTRB(0, 8, 0, 8),
-                          ),
-                          itemCount: due.length,
+                          padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+                          itemCount: due.length + 1,
                           itemBuilder: (context, i) {
+                            if (i == due.length) {
+                              return const RuhhNavClearance(extra: 12);
+                            }
                             final h = due[i];
                             final logs = allLogs[h.remoteId] ?? {};
                             final log = resolveLog(todayKey, logs, todayKey);

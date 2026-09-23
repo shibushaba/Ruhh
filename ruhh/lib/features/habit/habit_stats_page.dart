@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_stat_card.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/habit/tracker/habit_scheduling.dart';
@@ -33,11 +36,17 @@ class HabitStatsPage extends ConsumerWidget {
             final todayKey = repo.todayKey;
             final now = DateTime.now();
             final monthStart = habitDateKey(DateTime(now.year, now.month, 1));
+            final weekStart =
+                habitDateKey(now.subtract(const Duration(days: 6)));
 
             String? bestName;
             String? worstName;
             var bestRate = -1.0;
             var worstRate = 2.0;
+            var weekRateSum = 0.0;
+            var bestStreak = 0;
+            String? bestStreakHabit;
+
             for (final h in habits) {
               final logs = allLogs[h.remoteId] ?? {};
               final rate = completionRateForPeriod(
@@ -55,7 +64,22 @@ class HabitStatsPage extends ConsumerWidget {
                 worstRate = rate;
                 worstName = h.name;
               }
+              weekRateSum += completionRateForPeriod(
+                h,
+                logs,
+                weekStart,
+                todayKey,
+                todayKey,
+              );
+              final streak = currentStreakForHabit(h, logs, todayKey);
+              if (streak > bestStreak) {
+                bestStreak = streak;
+                bestStreakHabit = h.name;
+              }
             }
+
+            final avgWeekRate =
+                habits.isEmpty ? 0.0 : weekRateSum / habits.length;
 
             final milestones = <String>[];
             for (final h in habits) {
@@ -65,65 +89,247 @@ class HabitStatsPage extends ConsumerWidget {
               if (m != null) milestones.add('${h.name}: $m days');
             }
 
+            final t = context.ruhh;
+            final heatmapAccent = NBColors.habit;
+
             return NBPageBody(
               child: ListView(
                 children: [
-                  Text('Overview', style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    'Overview',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 12),
-                  Text('Last 12 weeks (all habits)',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 120,
-                    child: GridView.builder(
-                      scrollDirection: Axis.horizontal,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                        mainAxisSpacing: 2,
-                        crossAxisSpacing: 2,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _HabitSummaryChip(
+                        label: 'Active',
+                        value: '${habits.length}',
                       ),
-                      itemCount: 7 * 12,
-                      itemBuilder: (context, i) {
-                        final day = DateTime.now().subtract(
-                          Duration(days: (7 * 12 - 1) - i),
-                        );
-                        final key = habitDateKey(day);
-                        final intensity = dayScoreOn(
-                          habits,
-                          allLogs,
-                          key,
-                          todayKey,
-                        );
-                        return NBHeatmapCell(intensity: intensity);
-                      },
+                      _HabitSummaryChip(
+                        label: 'This week',
+                        value: '${(avgWeekRate * 100).round()}%',
+                        accent: heatmapAccent,
+                      ),
+                      _HabitSummaryChip(
+                        label: 'Top streak',
+                        value: bestStreak > 0
+                            ? '$bestStreak d'
+                            : '—',
+                        subtitle: bestStreakHabit,
+                        accent: t.accentAmber,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Last 12 weeks',
+                    style: t.cardTitle(Theme.of(context).textTheme),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Daily completion across all habits',
+                    style: t.caption(Theme.of(context).textTheme).copyWith(
+                          color: t.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  RuhhSoftCard(
+                    radius: t.radiusCardMedium,
+                    padding: EdgeInsets.all(t.spaceCardPaddingCompact),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: 156,
+                          child: GridView.builder(
+                            scrollDirection: Axis.horizontal,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 7,
+                              mainAxisSpacing: 3,
+                              crossAxisSpacing: 3,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: 7 * 12,
+                            itemBuilder: (context, i) {
+                              final day = DateTime.now().subtract(
+                                Duration(days: (7 * 12 - 1) - i),
+                              );
+                              final key = habitDateKey(day);
+                              final intensity = dayScoreOn(
+                                habits,
+                                allLogs,
+                                key,
+                                todayKey,
+                              );
+                              return NBHeatmapCell(
+                                intensity: intensity,
+                                accent: heatmapAccent,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _HabitHeatmapLegend(accent: heatmapAccent),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
                   if (bestName != null)
                     NBStatCard(
                       label: 'Best this month',
-                      value: bestName!,
-                      accent: const Color(0xFF22C55E),
+                      value: bestName,
+                      targetLabel: '${(bestRate * 100).round()}%',
+                      subtitle: 'Completion rate',
+                      progress: bestRate,
+                      accent: NBMetrics.incomeGreen,
+                      prominentLabel: true,
                     ),
                   const SizedBox(height: 8),
                   if (worstName != null)
                     NBStatCard(
                       label: 'Needs attention',
-                      value: worstName!,
+                      value: worstName,
+                      targetLabel: '${(worstRate * 100).round()}%',
+                      subtitle: 'Completion rate',
+                      progress: worstRate,
                       accent: NBMetrics.expenseRed,
+                      prominentLabel: true,
                     ),
                   if (milestones.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text('Milestones',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    ...milestones.map((m) => Text('🎉 $m')),
+                    Text(
+                      'Milestones',
+                      style: t.cardTitle(Theme.of(context).textTheme),
+                    ),
+                    const SizedBox(height: 8),
+                    ...milestones.map(
+                      (m) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: RuhhSoftCard(
+                          radius: t.radiusCardMedium,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: t.spaceCardPaddingCompact,
+                            vertical: 10,
+                          ),
+                          child: Text(
+                            '🎉 $m',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: t.textPrimary,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
+                  const RuhhNavClearance(extra: 12),
                 ],
               ),
             );
           },
         ),
       ),
+    );
+  }
+}
+
+class _HabitSummaryChip extends StatelessWidget {
+  const _HabitSummaryChip({
+    required this.label,
+    required this.value,
+    this.subtitle,
+    this.accent,
+  });
+
+  final String label;
+  final String value;
+  final String? subtitle;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    final color = accent ?? t.accentMint;
+    return RuhhSoftCard(
+      radius: t.radiusCardMedium,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: t.caption(Theme.of(context).textTheme).copyWith(
+                  color: t.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: t.statMedium(Theme.of(context).textTheme).copyWith(
+                  color: color,
+                ),
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: t.micro(Theme.of(context).textTheme),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitHeatmapLegend extends StatelessWidget {
+  const _HabitHeatmapLegend({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    return Row(
+      children: [
+        Text(
+          'Less',
+          style: t.micro(Theme.of(context).textTheme).copyWith(
+                color: t.textSecondary,
+              ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Row(
+            children: [
+              for (var step = 0; step < 4; step++)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: step == 0 ? 0 : 3),
+                    child: NBHeatmapCell(
+                      intensity: step / 3,
+                      accent: accent,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'More',
+          style: t.micro(Theme.of(context).textTheme).copyWith(
+                color: t.textSecondary,
+              ),
+        ),
+      ],
     );
   }
 }
