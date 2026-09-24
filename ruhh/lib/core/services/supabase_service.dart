@@ -36,14 +36,27 @@ class SupabasePushResult {
 class SupabaseService {
   static bool _initialized = false;
 
+  static bool _hasValidConfig(String? url, String? key) {
+    if (url == null || key == null || url.isEmpty || key.isEmpty) {
+      return false;
+    }
+    if (!url.startsWith('https://') || !url.contains('supabase')) {
+      return false;
+    }
+    if (key.contains('your_') || key.length < 40) {
+      return false;
+    }
+    return true;
+  }
+
   static Future<void> initialize() async {
     if (_initialized) return;
     final url = dotenv.env['SUPABASE_URL'];
     final key = dotenv.env['SUPABASE_ANON_KEY'];
-    if (url == null || key == null || url.isEmpty || key.isEmpty) {
+    if (!_hasValidConfig(url, key)) {
       return;
     }
-    await Supabase.initialize(url: url, anonKey: key);
+    await Supabase.initialize(url: url!, anonKey: key!);
     _initialized = true;
   }
 
@@ -76,7 +89,8 @@ class SupabaseService {
       if (available == true) return UsernameAvailability.available;
       return UsernameAvailability.taken;
     } catch (_) {
-      return UsernameAvailability.checkFailed;
+      // Network or misconfigured cloud — still allow local signup if not taken on device.
+      return UsernameAvailability.offlineAvailable;
     }
   }
 

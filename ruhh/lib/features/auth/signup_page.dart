@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
+import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_pin_input.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
@@ -54,35 +56,51 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final theme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: ruhhAppBar(context, title: 'Sign up'),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          NBTextField(
-            controller: _username,
-            label: 'Username',
-            onChanged: _checkUsername,
-            suffix: _availabilitySuffix(),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _availabilityMessage(),
-            style: theme.bodySmall?.copyWith(
-              color: _availabilityColor(),
-              fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: NBLayout.maxContentWidth),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                context.ruhh.spaceScreenHorizontal,
+                16,
+                context.ruhh.spaceScreenHorizontal,
+                24,
+              ),
+              children: [
+                NBTextField(
+                  controller: _username,
+                  label: 'Username',
+                  onChanged: _checkUsername,
+                  suffix: _availabilitySuffix(),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _availabilityMessage(),
+                  style: theme.bodySmall?.copyWith(
+                    color: _availabilityColor(),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                NBPinInput(
+                  key: _pinKey,
+                  length: AuthController.pinLength,
+                  title: _phase == 0 ? 'Create PIN' : 'Confirm PIN',
+                  onCompleted: _onPin,
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(color: NBMetrics.expenseRed),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          NBPinInput(
-            key: _pinKey,
-            length: AuthController.pinLength,
-            title: _phase == 0 ? 'Create PIN' : 'Confirm PIN',
-            onCompleted: _onPin,
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-          ],
-        ],
+        ),
       ),
     );
   }

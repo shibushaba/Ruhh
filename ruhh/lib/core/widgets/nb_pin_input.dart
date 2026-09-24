@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/core/theme/nb_colors.dart';
-import 'package:ruhh/core/widgets/nb_button.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 
 class NBPinInput extends StatefulWidget {
   const NBPinInput({
@@ -38,24 +37,32 @@ class NBPinInputState extends State<NBPinInput> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.ruhh;
+    final theme = Theme.of(context).textTheme;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          widget.title,
+          style: theme.titleLarge,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(widget.length, (i) {
             final filled = i < _digits.length;
             return Container(
-              width: 18,
-              height: 18,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: 14,
+              height: 14,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: NBColors.black,
-                  width: NBMetrics.borderWidth,
+                  color: t.textPrimary,
+                  width: 2,
                 ),
-                color: filled ? NBColors.black : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+                color: filled ? t.textPrimary : Colors.transparent,
               ),
             );
           }),
@@ -75,33 +82,91 @@ class _Keypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.6,
+    const rows = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+    ];
+    return Column(
+      children: [
+        for (final row in rows) ...[
+          Row(
+            children: [
+              for (final key in row)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: _KeypadKey(
+                      label: key,
+                      onPressed: () => onDigit(key),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+        Row(
+          children: [
+            const Expanded(child: SizedBox(height: 52)),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: _KeypadKey(
+                  label: '0',
+                  onPressed: () => onDigit('0'),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: _KeypadKey(
+                  label: '',
+                  icon: Icons.backspace_outlined,
+                  onPressed: onBack,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _KeypadKey extends StatelessWidget {
+  const _KeypadKey({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+  });
+
+  final String label;
+  final IconData? icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    return SizedBox(
+      height: 52,
+      child: Material(
+        color: t.textPrimary,
+        child: InkWell(
+          onTap: onPressed,
+          child: Center(
+            child: icon != null
+                ? Icon(icon, color: t.surfacePrimary, size: 22)
+                : Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: t.surfacePrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+          ),
+        ),
       ),
-      itemCount: keys.length,
-      itemBuilder: (context, index) {
-        final key = keys[index];
-        if (key.isEmpty) return const SizedBox.shrink();
-        return NBButton(
-          expand: false,
-          label: key,
-          color: NBColors.offWhite,
-          onPressed: () {
-            if (key == '⌫') {
-              onBack();
-            } else {
-              onDigit(key);
-            }
-          },
-        );
-      },
     );
   }
 }
