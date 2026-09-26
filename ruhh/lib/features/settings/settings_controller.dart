@@ -18,6 +18,8 @@ class ModuleSettings {
     required this.notifyHabit,
     required this.notifyPrayer,
     required this.notifyMovie,
+    required this.notifyStreakProtection,
+    required this.notifyRecommendations,
   });
 
   final bool budgetEnabled;
@@ -28,6 +30,8 @@ class ModuleSettings {
   final bool notifyHabit;
   final bool notifyPrayer;
   final bool notifyMovie;
+  final bool notifyStreakProtection;
+  final bool notifyRecommendations;
 
   ModuleSettings copyWith({
     bool? budgetEnabled,
@@ -38,6 +42,8 @@ class ModuleSettings {
     bool? notifyHabit,
     bool? notifyPrayer,
     bool? notifyMovie,
+    bool? notifyStreakProtection,
+    bool? notifyRecommendations,
   }) {
     return ModuleSettings(
       budgetEnabled: budgetEnabled ?? this.budgetEnabled,
@@ -48,6 +54,10 @@ class ModuleSettings {
       notifyHabit: notifyHabit ?? this.notifyHabit,
       notifyPrayer: notifyPrayer ?? this.notifyPrayer,
       notifyMovie: notifyMovie ?? this.notifyMovie,
+      notifyStreakProtection:
+          notifyStreakProtection ?? this.notifyStreakProtection,
+      notifyRecommendations:
+          notifyRecommendations ?? this.notifyRecommendations,
     );
   }
 }
@@ -61,6 +71,8 @@ class SettingsController extends Notifier<ModuleSettings> {
   static const _nHabit = 'notify_habit';
   static const _nPrayer = 'notify_prayer';
   static const _nMovie = 'notify_movie';
+  static const _nStreak = 'notify_streak';
+  static const _nRec = 'notify_recommendations';
 
   String? _loadedForUsername;
   int _loadGeneration = 0;
@@ -87,6 +99,8 @@ class SettingsController extends Notifier<ModuleSettings> {
       notifyHabit: true,
       notifyPrayer: true,
       notifyMovie: true,
+      notifyStreakProtection: true,
+      notifyRecommendations: true,
     );
   }
 
@@ -114,6 +128,8 @@ class SettingsController extends Notifier<ModuleSettings> {
       notifyHabit: p.getBool(_nHabit) ?? true,
       notifyPrayer: p.getBool(_nPrayer) ?? true,
       notifyMovie: p.getBool(_nMovie) ?? true,
+      notifyStreakProtection: p.getBool(_nStreak) ?? true,
+      notifyRecommendations: p.getBool(_nRec) ?? true,
     );
 
     if (username == null) {
@@ -192,17 +208,25 @@ class SettingsController extends Notifier<ModuleSettings> {
     bool? habit,
     bool? prayer,
     bool? movie,
+    bool? streakProtection,
+    bool? recommendations,
   }) async {
     final p = await SharedPreferences.getInstance();
     if (budget != null) await p.setBool(_nBudget, budget);
     if (habit != null) await p.setBool(_nHabit, habit);
     if (prayer != null) await p.setBool(_nPrayer, prayer);
     if (movie != null) await p.setBool(_nMovie, movie);
+    if (streakProtection != null) await p.setBool(_nStreak, streakProtection);
+    if (recommendations != null) await p.setBool(_nRec, recommendations);
     state = state.copyWith(
       notifyBudget: budget ?? state.notifyBudget,
       notifyHabit: habit ?? state.notifyHabit,
       notifyPrayer: prayer ?? state.notifyPrayer,
       notifyMovie: movie ?? state.notifyMovie,
+      notifyStreakProtection:
+          streakProtection ?? state.notifyStreakProtection,
+      notifyRecommendations:
+          recommendations ?? state.notifyRecommendations,
     );
   }
 }

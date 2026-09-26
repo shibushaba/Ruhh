@@ -66,9 +66,6 @@ class OnboardingPage extends ConsumerWidget {
             NBButton(
               label: 'Continue',
               onPressed: () async {
-                await ref
-                    .read(settingsControllerProvider.notifier)
-                    .setOnboardingComplete(true);
                 final username = ref.read(authControllerProvider).username;
                 if (username != null) {
                   final isar = await ref.read(isarProvider.future);
@@ -80,7 +77,9 @@ class OnboardingPage extends ConsumerWidget {
                     await performUserCloudSync(isar, user);
                   }
                 }
-                if (context.mounted) context.go('/home');
+                if (context.mounted) {
+                  context.go('/onboarding/notifications');
+                }
               },
             ),
           ],

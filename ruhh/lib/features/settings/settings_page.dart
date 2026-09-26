@@ -11,6 +11,7 @@ import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/nb_card.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
+import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
@@ -50,6 +51,7 @@ class SettingsPage extends ConsumerWidget {
               title: 'Modules',
               subtitle: 'Turn trackers on or off for this account.',
               child: NBCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: _SettingsSwitch(
                   title: 'Budget tracker',
                   subtitle: 'Expenses, goals, and accounts',
@@ -63,11 +65,18 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: NBLayout.sectionGap),
             NBSection(
               title: 'Notifications',
-              subtitle: 'Android reminders when enabled.',
+              subtitle: 'Channels, permissions, and test delivery.',
               child: NBCard(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: [
+                    ListTile(
+                      title: const Text('Notification settings'),
+                      subtitle: const Text('Channels, permissions, test'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/settings/notifications'),
+                    ),
+                    Divider(height: 1, color: t.divider),
                     _SettingsSwitch(
                       title: 'Budget',
                       value: settings.notifyBudget,
@@ -107,6 +116,7 @@ class SettingsPage extends ConsumerWidget {
             NBSection(
               title: 'Appearance',
               child: NBCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: _SettingsSwitch(
                   title: 'Dark mode',
                   value: settings.darkMode,
@@ -121,45 +131,58 @@ class SettingsPage extends ConsumerWidget {
               title: 'Download backup (CSV)',
               subtitle:
                   'Save a full copy of this account — budget, habits, prayer, movies, todos, and settings. Restore it on a fresh install after you log in.',
-              child: const NBCard(
-                child: _LocalBackupSection(),
+              child: NBCard(
+                padding: const EdgeInsets.all(12),
+                child: const _LocalBackupSection(),
               ),
             ),
             const SizedBox(height: NBLayout.sectionGap),
             NBSection(
               title: 'Cloud backup',
               subtitle: SupabaseService.client == null
-                  ? 'Add SUPABASE_URL and SUPABASE_ANON_KEY in .env, then rebuild the app.'
+                  ? 'Cloud sync needs Supabase keys in the app build.'
                   : 'Backup runs automatically while you\'re signed in (after edits, on open, and about every minute).',
               child: NBCard(
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        SupabaseService.client == null
-                            ? 'Not configured'
-                            : 'Cloud configured',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(color: t.textPrimary),
-                      ),
-                      subtitle: Text(
-                        SupabaseService.client == null
-                            ? 'This build has no Supabase URL or anon key.'
-                            : 'Automatic backup while you\'re signed in.',
-                        style: t.caption(Theme.of(context).textTheme),
-                      ),
-                      trailing: Icon(
-                        SupabaseService.client == null
-                            ? Icons.cloud_off_outlined
-                            : Icons.cloud_done_outlined,
-                        color: SupabaseService.client == null
-                            ? t.textSecondary
-                            : t.textPrimary,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                SupabaseService.client == null
+                                    ? 'Not configured'
+                                    : 'Cloud configured',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(color: t.textPrimary),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                SupabaseService.client == null
+                                    ? 'This APK was built without cloud keys. Local backup still works.'
+                                    : 'Automatic backup while you\'re signed in.',
+                                style: t.caption(Theme.of(context).textTheme),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          SupabaseService.client == null
+                              ? Icons.cloud_off_outlined
+                              : Icons.cloud_done_outlined,
+                          color: SupabaseService.client == null
+                              ? t.textSecondary
+                              : t.textPrimary,
+                        ),
+                      ],
                     ),
                     if (SupabaseService.client != null) ...[
                       Divider(height: 1, color: t.divider),
@@ -262,7 +285,7 @@ class SettingsPage extends ConsumerWidget {
                 if (context.mounted) context.go('/auth/welcome');
               },
             ),
-            SizedBox(height: MediaQuery.paddingOf(context).bottom + 24),
+            const RuhhNavClearance(extra: 16),
           ],
         ),
       ),
@@ -437,7 +460,8 @@ class _SettingsSwitch extends StatelessWidget {
     final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
     return SwitchListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      dense: true,
       title: Text(title, style: theme.titleMedium?.copyWith(color: t.textPrimary)),
       subtitle: subtitle != null
           ? Text(subtitle!, style: t.caption(theme))

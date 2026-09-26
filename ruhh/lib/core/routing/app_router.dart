@@ -18,7 +18,9 @@ import 'package:ruhh/features/movie/movie_categories_page.dart';
 import 'package:ruhh/features/movie/movie_detail_page.dart';
 import 'package:ruhh/features/movie/movie_form_page.dart';
 import 'package:ruhh/features/movie/movie_page.dart';
+import 'package:ruhh/features/onboarding/notification_onboarding_page.dart';
 import 'package:ruhh/features/onboarding/onboarding_page.dart';
+import 'package:ruhh/features/settings/notification_settings_page.dart';
 import 'package:ruhh/features/prayer/prayer_page.dart';
 import 'package:ruhh/features/settings/overlay_setup_page.dart';
 import 'package:ruhh/features/settings/settings_page.dart';
@@ -49,7 +51,9 @@ class AppRouter {
           return loc == '/splash' ? null : '/splash';
         }
 
-        if (!settings.onboardingComplete && loc != '/onboarding') {
+        if (!settings.onboardingComplete &&
+            loc != '/onboarding' &&
+            loc != '/onboarding/notifications') {
           return '/onboarding';
         }
 
@@ -80,10 +84,20 @@ class AppRouter {
           builder: (_, __) => const OnboardingPage(),
         ),
         GoRoute(
+          path: '/onboarding/notifications',
+          builder: (_, __) => const NotificationOnboardingPage(),
+        ),
+        GoRoute(
           path: '/settings',
           parentNavigatorKey: rootNavigatorKey,
           pageBuilder: (c, s) =>
               ruhhPage(child: const SettingsPage(), state: s),
+        ),
+        GoRoute(
+          path: '/settings/notifications',
+          parentNavigatorKey: rootNavigatorKey,
+          pageBuilder: (c, s) =>
+              ruhhPage(child: const NotificationSettingsPage(), state: s),
         ),
         GoRoute(
           path: '/settings/overlay',

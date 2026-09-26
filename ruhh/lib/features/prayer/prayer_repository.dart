@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/local_data_sync.dart';
 import 'package:ruhh/core/services/overlay_runtime.dart';
+import 'package:ruhh/core/services/reschedule_all_notifications.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/prayer/aladhan_prayer_service.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
@@ -610,5 +613,8 @@ void bumpPrayerRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(prayerRefreshProvider.notifier).state++;
   if (scheduleCloudSync && !ruhhOverlayIsolate) {
     scheduleCloudSyncFromWidget(ref);
+  }
+  if (!ruhhOverlayIsolate) {
+    unawaited(refreshStreakProtectionAlarm(ref));
   }
 }

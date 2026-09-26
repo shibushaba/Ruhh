@@ -12,6 +12,9 @@ import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/core/data/isar_service.dart';
 import 'package:ruhh/core/services/overlay_service.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
+import 'package:ruhh/core/services/notification_navigation.dart';
+import 'package:ruhh/core/services/ruhh_workmanager.dart';
+import 'package:ruhh/core/services/reschedule_all_notifications.dart';
 import 'package:ruhh/core/services/smart_notification_scheduler.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
@@ -31,6 +34,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await SupabaseService.initialize();
+  await initRuhhWorkmanager();
   runApp(const ProviderScope(child: RuhhApp()));
 }
 
@@ -80,6 +84,9 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       scheduleFullCloudSync(ref.read, delay: Duration.zero);
       unawaited(_reloadLocalDbAfterOverlayWrite());
+      if (ref.read(authControllerProvider).isLoggedIn) {
+        unawaited(refreshStreakProtectionAlarm(ref));
+      }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       flushCloudSyncToServer(ref.read);
@@ -89,6 +96,7 @@ class _RuhhAppState extends ConsumerState<RuhhApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     _router ??= AppRouter.create(ref);
+    NotificationNavigation.bindRouter(_router!);
     ref.watch(cloudSyncLifecycleProvider);
     ref.listen(cloudSyncGenerationProvider, (previous, next) {
       if (next == 0) return;

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/habit_reminder.dart';
+import 'package:ruhh/core/services/notification_channels.dart';
 import 'package:ruhh/core/services/notification_service.dart';
 import 'package:ruhh/core/services/reminder_schedule.dart';
 import 'package:ruhh/features/habit/habit_extensions.dart';
@@ -38,7 +39,8 @@ class HabitNotificationScheduler {
             weekday: wd,
             hour: r.hour,
             minute: r.minute,
-            payload: '/habit',
+            payload: 'habit:${h.remoteId}',
+            channelId: RuhhNotificationChannels.habit,
           );
         }
       }
@@ -49,10 +51,11 @@ class HabitNotificationScheduler {
         await _notifications.scheduleDaily(
           id: id,
           title: h.name,
-          body: 'Check in on ${h.name}',
+          body: 'Don\'t forget: ${h.name}',
           hour: m ~/ 60,
           minute: m % 60,
-          payload: '/habit',
+          payload: 'habit:${h.remoteId}',
+          channelId: RuhhNotificationChannels.habit,
         );
       }
     }

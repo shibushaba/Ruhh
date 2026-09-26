@@ -111,11 +111,18 @@ class HomeSectionLabel extends StatelessWidget {
     final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: t.cardTitle(theme)),
+          Text(
+            title,
+            style: theme.titleMedium?.copyWith(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: t.textSecondary,
+            ),
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
             Text(subtitle!, style: t.caption(theme)),

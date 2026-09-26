@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
@@ -7,6 +9,7 @@ import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/home_widget_service.dart';
 import 'package:ruhh/core/services/local_data_sync.dart';
 import 'package:ruhh/core/services/overlay_runtime.dart';
+import 'package:ruhh/core/services/reschedule_all_notifications.dart';
 import 'package:ruhh/core/session/session_providers.dart';
 import 'package:ruhh/features/habit/habit_extensions.dart';
 import 'package:ruhh/features/habit/habit_logic.dart';
@@ -565,5 +568,8 @@ void bumpHabitRefresh(WidgetRef ref, {bool scheduleCloudSync = true}) {
   ref.read(habitRefreshProvider.notifier).state++;
   if (scheduleCloudSync && !ruhhOverlayIsolate) {
     scheduleCloudSyncFromWidget(ref);
+  }
+  if (!ruhhOverlayIsolate) {
+    unawaited(refreshStreakProtectionAlarm(ref));
   }
 }

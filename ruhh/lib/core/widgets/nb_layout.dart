@@ -34,15 +34,17 @@ class NBPageBody extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: NBLayout.maxContentWidth),
-          child: Padding(
-            padding: padding ??
-                EdgeInsets.fromLTRB(
-                  t.spaceScreenHorizontal,
-                  8,
-                  t.spaceScreenHorizontal,
-                  0,
-                ),
-            child: LayoutBuilder(
+          child: SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: padding ??
+                  EdgeInsets.fromLTRB(
+                    t.spaceScreenHorizontal,
+                    8,
+                    t.spaceScreenHorizontal,
+                    0,
+                  ),
+              child: LayoutBuilder(
               builder: (context, constraints) {
                 final maxH = constraints.maxHeight;
                 final width = constraints.maxWidth.isFinite
@@ -58,6 +60,7 @@ class NBPageBody extends StatelessWidget {
                 }
                 return SizedBox(width: width, height: maxH, child: body);
               },
+            ),
             ),
           ),
         ),

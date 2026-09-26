@@ -1,7 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:ruhh/core/services/notification_channels.dart';
+import 'package:ruhh/core/services/notification_navigation.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -11,16 +15,36 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
   final bool enabled;
 
-  static Future<NotificationService> create() async {
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
+  static Future<void> configureTimeZones() async {
     tz.initializeTimeZones();
+    try {
+      final name = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(name));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Timezone fallback to local offset: $e');
+      }
+      tz.setLocalLocation(tz.local);
+    }
+  }
+
+  static Future<NotificationService> create() async {
+    await configureTimeZones();
     final plugin = FlutterLocalNotificationsPlugin();
     var enabled = false;
+
+    void onResponse(NotificationResponse r) {
+      NotificationNavigation.handlePayload(r.payload);
+    }
 
     if (Platform.isAndroid) {
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
       await plugin.initialize(
         const InitializationSettings(android: android),
-        onDidReceiveNotificationResponse: (_) {},
+        onDidReceiveNotificationResponse: onResponse,
+        onDidReceiveBackgroundNotificationResponse: onBackgroundNotification,
       );
       enabled = true;
     } else if (Platform.isIOS) {
@@ -28,12 +52,35 @@ class NotificationService {
         const InitializationSettings(
           iOS: DarwinInitializationSettings(),
         ),
-        onDidReceiveNotificationResponse: (_) {},
+        onDidReceiveNotificationResponse: onResponse,
       );
       enabled = true;
     }
 
+    await NotificationNavigation.handleLaunchDetails(plugin);
     return NotificationService(plugin, enabled: enabled);
+  }
+
+  Future<bool> canScheduleExact() async {
+    if (!Platform.isAndroid) return true;
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return await android?.canScheduleExactNotifications() ?? false;
+  }
+
+  AndroidScheduleMode _scheduleMode() {
+    if (!Platform.isAndroid) return AndroidScheduleMode.exactAllowWhileIdle;
+    return AndroidScheduleMode.exactAllowWhileIdle;
+  }
+
+  NotificationDetails _details(String channelId) => NotificationDetails(
+        android: RuhhNotificationChannels.androidDetails(channelId),
+        iOS: const DarwinNotificationDetails(),
+      );
+
+  Future<void> cancelAllPending() async {
+    if (!enabled) return;
+    await _plugin.cancelAll();
   }
 
   Future<void> showInstant({
@@ -41,18 +88,16 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    String channelId = RuhhNotificationChannels.system,
   }) async {
     if (!enabled) return;
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'ruhh_general',
-        'RUHH Reminders',
-        channelDescription: 'Smart reminders across trackers',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-      ),
+    await _plugin.show(
+      id,
+      title,
+      body,
+      _details(channelId),
+      payload: payload,
     );
-    await _plugin.show(id, title, body, details, payload: payload);
   }
 
   Future<void> cancel(int id) async {
@@ -82,6 +127,7 @@ class NotificationService {
     required int hour,
     required int minute,
     String? payload,
+    String channelId = RuhhNotificationChannels.habit,
   }) async {
     if (!enabled) return;
     final now = tz.TZDateTime.now(tz.local);
@@ -104,22 +150,13 @@ class NotificationService {
         minute,
       );
     }
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'ruhh_habit',
-        'Habit reminders',
-        channelDescription: 'Per-habit scheduled reminders',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-    );
     await _plugin.zonedSchedule(
       id,
       title,
       body,
       scheduled,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      _details(channelId),
+      androidScheduleMode: _scheduleMode(),
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: payload,
     );
@@ -131,25 +168,18 @@ class NotificationService {
     required String body,
     required DateTime when,
     String? payload,
+    String channelId = RuhhNotificationChannels.habit,
   }) async {
     if (!enabled) return;
     final scheduled = tz.TZDateTime.from(when, tz.local);
     if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'ruhh_todo',
-        'Todo reminders',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-    );
     await _plugin.zonedSchedule(
       id,
       title,
       body,
       scheduled,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      _details(channelId),
+      androidScheduleMode: _scheduleMode(),
       payload: payload,
     );
   }
@@ -161,6 +191,7 @@ class NotificationService {
     required int hour,
     required int minute,
     String? payload,
+    String channelId = RuhhNotificationChannels.system,
   }) async {
     if (!enabled) return;
     final now = tz.TZDateTime.now(tz.local);
@@ -175,25 +206,22 @@ class NotificationService {
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'ruhh_scheduled',
-        'RUHH Scheduled',
-        channelDescription: 'Scheduled tracker reminders',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-    );
     await _plugin.zonedSchedule(
       id,
       title,
       body,
       scheduled,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      _details(channelId),
+      androidScheduleMode: _scheduleMode(),
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
   }
+}
+
+@pragma('vm:entry-point')
+void onBackgroundNotification(NotificationResponse response) {
+  NotificationNavigation.handlePayload(response.payload);
 }
 
 final notificationServiceProvider =

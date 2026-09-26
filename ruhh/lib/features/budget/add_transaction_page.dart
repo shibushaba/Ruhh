@@ -9,7 +9,10 @@ import 'package:ruhh/core/widgets/nb_dialog.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/nb_scaffold.dart';
 import 'package:ruhh/core/widgets/nb_text_field.dart';
+import 'package:ruhh/core/services/budget_notification_alerts.dart';
+import 'package:ruhh/core/services/notification_service.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
+import 'package:ruhh/features/settings/settings_controller.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 import 'package:ruhh/features/budget/widgets/category_display.dart';
 
@@ -102,6 +105,14 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
       );
     }
     bumpBudgetRefresh(ref);
+    if (_type == BudgetLedgerType.expense && _category != null) {
+      final n = await ref.read(notificationServiceProvider.future);
+      final settings = ref.read(settingsControllerProvider);
+      await BudgetNotificationAlerts(n, settings, repo).evaluateAfterExpense(
+        categoryName: _category!.name,
+        month: _date,
+      );
+    }
     if (mounted) context.pop();
   }
 
