@@ -469,12 +469,13 @@ class _HomeTodaysFocusSectionState extends ConsumerState<HomeTodaysFocusSection>
         if (rows.isEmpty) {
           return CelebrationBurst(
             trigger: _celebrate ? 1 : null,
-            child: RuhhSoftCard(
-              padding: const EdgeInsets.all(20),
+            child: HomeSurfaceCard(
+              accent: t.accentMint,
+              padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(AppIcons.checkCircle(), color: t.accentMint, size: 40),
-                  const SizedBox(height: 8),
+                  Icon(AppIcons.checkCircle(), color: t.accentMint, size: 44),
+                  const SizedBox(height: 10),
                   Text(
                     'All caught up',
                     style: t.cardTitle(Theme.of(context).textTheme),
@@ -489,10 +490,40 @@ class _HomeTodaysFocusSectionState extends ConsumerState<HomeTodaysFocusSection>
             ),
           );
         }
-        return RuhhSoftCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        return HomeSurfaceCard(
+          accent: t.accentSky,
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  Text(
+                    'Today\'s focus',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: t.textPrimary,
+                        ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: t.pastelForAccent(t.accentSky),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${rows.length} left',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: t.textPrimary,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               for (final row in rows) ...[
                 RuhhSelectableRow(
                   title: row.title,
@@ -501,13 +532,17 @@ class _HomeTodaysFocusSectionState extends ConsumerState<HomeTodaysFocusSection>
                     icon: row.icon,
                     accent: row.accent,
                     emoji: row.emoji,
-                    size: 36,
+                    size: 40,
                   ),
                   selected: row.done,
                   trailing: RuhhSelectionTrailing.checkbox,
                   onTap: () => _toggle(row),
                 ),
-                if (row != rows.last) Divider(height: 1, color: t.divider),
+                if (row != rows.last)
+                  Divider(
+                    height: 1,
+                    color: t.divider.withValues(alpha: 0.5),
+                  ),
               ],
             ],
           ),
@@ -626,26 +661,57 @@ class HomeMonthSnapshotGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<List<Widget>>(
-      future: _cells(ref),
+    return FutureBuilder<List<_MonthStat>>(
+      future: _stats(ref),
       builder: (context, snap) {
-        final cells = snap.data ?? [];
-        if (cells.isEmpty) return const SizedBox.shrink();
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.45,
-          children: cells,
+        final stats = snap.data ?? [];
+        if (stats.isEmpty) return const SizedBox.shrink();
+        return SizedBox(
+          height: 156,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: stats.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final s = stats[i];
+              return SizedBox(
+                width: 132,
+                child: HomeSurfaceCard(
+                  accent: s.accent,
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                  onTap: s.onTap,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.label,
+                        style: context.ruhh.caption(Theme.of(context).textTheme),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Center(
+                        child: RuhhRadialDial(
+                          value: s.value,
+                          label: s.subtitle,
+                          progress: s.progress,
+                          accent: s.accent,
+                          size: 88,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  Future<List<Widget>> _cells(WidgetRef ref) async {
-    final out = <Widget>[];
+  Future<List<_MonthStat>> _stats(WidgetRef ref) async {
+    final out = <_MonthStat>[];
     final now = DateTime.now();
     try {
       final habitRepo = await ref.read(habitRepositoryProvider.future);
@@ -667,15 +733,12 @@ class HomeMonthSnapshotGrid extends ConsumerWidget {
       }
       final pct = denom == 0 ? 0 : ((sum / denom) * 100).round();
       out.add(
-        RuhhStatProgressCard(
-          compact: true,
+        _MonthStat(
           label: 'Habits',
-          value: '$pct',
-          targetLabel: '%',
+          value: '$pct%',
           subtitle: 'This month',
           progress: pct / 100,
           accent: NBColors.habit,
-          onTap: () {},
         ),
       );
     } catch (_) {}
@@ -696,15 +759,12 @@ class HomeMonthSnapshotGrid extends ConsumerWidget {
       }
       final pct = days == 0 ? 0 : ((prayedDays / days) * 100).round();
       out.add(
-        RuhhStatProgressCard(
-          compact: true,
+        _MonthStat(
           label: 'Prayer',
-          value: '$pct',
-          targetLabel: '%',
+          value: '$pct%',
           subtitle: 'This month',
           progress: pct / 100,
           accent: NBColors.prayer,
-          onTap: () {},
         ),
       );
     } catch (_) {}
@@ -713,15 +773,12 @@ class HomeMonthSnapshotGrid extends ConsumerWidget {
       final movieRepo = await ref.read(movieRepositoryProvider.future);
       final watched = await movieRepo.watchedThisMonth();
       out.add(
-        RuhhStatProgressCard(
-          compact: true,
+        _MonthStat(
           label: 'Movies',
           value: '$watched',
-          targetLabel: 'watched',
-          subtitle: DateFormat.MMMM().format(now),
+          subtitle: 'watched',
           progress: (watched / 10).clamp(0, 1),
           accent: NBColors.movie,
-          onTap: () {},
         ),
       );
     } catch (_) {}
@@ -731,21 +788,36 @@ class HomeMonthSnapshotGrid extends ConsumerWidget {
         final budgetRepo = await ref.read(budgetRepositoryProvider.future);
         final totals = await budgetRepo.monthTotals(now);
         out.add(
-          RuhhStatProgressCard(
-            compact: true,
+          _MonthStat(
             label: 'Budget',
             value: BudgetInr.format(totals.balance),
-            targetLabel: '',
             subtitle: 'Balance',
             progress: 0.5,
             accent: NBColors.budget,
-            onTap: () {},
           ),
         );
       } catch (_) {}
     }
     return out;
   }
+}
+
+class _MonthStat {
+  _MonthStat({
+    required this.label,
+    required this.value,
+    required this.subtitle,
+    required this.progress,
+    required this.accent,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final String subtitle;
+  final double progress;
+  final Color accent;
+  final VoidCallback? onTap;
 }
 
 class HomeNotificationBanner extends ConsumerWidget {

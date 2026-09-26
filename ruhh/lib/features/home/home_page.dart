@@ -6,6 +6,7 @@ import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
+import 'package:ruhh/features/home/widgets/home_feed_insights.dart';
 import 'package:ruhh/features/home/widgets/home_insight_widgets.dart';
 import 'package:ruhh/features/home/widgets/home_redesign_sections.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
@@ -41,20 +42,26 @@ class HomePage extends ConsumerWidget {
               const HomeNotificationBanner(),
               StaggeredEntranceColumn(
                 children: [
-                  const HomeSectionLabel(title: 'Insights'),
+                  HomeDayHeroSection(budgetEnabled: settings.budgetEnabled),
+                  SizedBox(height: t.spaceStackGap),
+                  const HomeTodaysFocusSection(),
+                  SizedBox(height: t.spaceStackGap),
+                  const HomeSectionLabel(
+                    title: 'This month',
+                    subtitle: 'Swipe for habits, prayer, and more',
+                  ),
+                  HomeMonthSnapshotGrid(budgetEnabled: settings.budgetEnabled),
+                  SizedBox(height: t.spaceStackGap + 4),
+                  const HomeSectionLabel(
+                    title: 'Momentum',
+                    subtitle: 'Trends and quick wins',
+                  ),
                   HomeInsightChipRow(budgetEnabled: settings.budgetEnabled),
                   SizedBox(height: t.spaceStackGap),
-                  const HomeSectionLabel(title: 'Your Week'),
                   HomeWeeklyTrendSection(budgetEnabled: settings.budgetEnabled),
                   SizedBox(height: t.spaceStackGap),
                   const HomeSectionLabel(title: 'For you'),
                   HomeInsightsCarousel(budgetEnabled: settings.budgetEnabled),
-                  SizedBox(height: t.spaceStackGap),
-                  const HomeSectionLabel(title: 'Today\'s focus'),
-                  const HomeTodaysFocusSection(),
-                  SizedBox(height: t.spaceStackGap),
-                  const HomeSectionLabel(title: 'This month'),
-                  HomeMonthSnapshotGrid(budgetEnabled: settings.budgetEnabled),
                   const RuhhNavClearance(),
                 ],
               ),

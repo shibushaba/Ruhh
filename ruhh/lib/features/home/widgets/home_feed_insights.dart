@@ -304,12 +304,15 @@ class HomeDayHeroSection extends ConsumerStatefulWidget {
     var prayerLine = 'Prayer — log your salāh';
     String? budgetLine;
     var headline = 'Here\'s what matters today.';
+    var habitProgress = 0.0;
+    var prayerProgress = 0.0;
 
     try {
       final habitRepo = await ref.read(habitRepositoryProvider.future);
       final allLogs = await ref.read(habitLogViewsProvider.future);
       final habits = await habitRepo.activeHabits();
       final score = todayScore(habits, allLogs, habitRepo.todayKey);
+      habitProgress = score.ratio;
       if (score.total == 0) {
         habitLine = 'No habits due today';
       } else if (score.done == score.total) {
@@ -326,7 +329,8 @@ class HomeDayHeroSection extends ConsumerStatefulWidget {
       final logs = await ref.read(dailyPrayerLogsProvider.future);
       final today =
           resolveDayLog(prayerRepo.todayKey, logs, prayerRepo.todayKey);
-      final prayed = (todayRatio(today) * 5).round();
+      prayerProgress = todayRatio(today);
+      final prayed = (prayerProgress * 5).round();
       prayerLine = prayed >= 5
           ? 'All 5 prayers logged'
           : '$prayed/5 prayers · tap to finish the day';
@@ -355,6 +359,8 @@ class HomeDayHeroSection extends ConsumerStatefulWidget {
       habitLine: habitLine,
       prayerLine: prayerLine,
       budgetLine: budgetLine,
+      habitProgress: habitProgress,
+      prayerProgress: prayerProgress,
     );
   }
 }
@@ -376,15 +382,15 @@ class _HomeDayHeroSectionState extends ConsumerState<HomeDayHeroSection> {
     ref.watch(habitLogViewsProvider);
     ref.watch(dailyPrayerLogsProvider);
 
-    final now = DateTime.now();
     final c = _copy;
     return HomeDayHero(
-      greeting: homeTimeGreeting(now),
-      dateLine: DateFormat('EEEE · MMM d').format(now),
+      compactHeader: true,
       headline: c?.headline ?? 'Here\'s what matters today.',
       habitLine: c?.habitLine ?? 'Habits —',
       prayerLine: c?.prayerLine ?? 'Prayer —',
       budgetLine: c?.budgetLine,
+      habitProgress: c?.habitProgress ?? 0,
+      prayerProgress: c?.prayerProgress ?? 0,
     );
   }
 
@@ -404,10 +410,14 @@ class _HeroCopy {
     required this.habitLine,
     required this.prayerLine,
     this.budgetLine,
+    this.habitProgress = 0,
+    this.prayerProgress = 0,
   });
 
   final String headline;
   final String habitLine;
   final String prayerLine;
   final String? budgetLine;
+  final double habitProgress;
+  final double prayerProgress;
 }

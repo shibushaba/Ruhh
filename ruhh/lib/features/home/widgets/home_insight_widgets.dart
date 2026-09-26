@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ruhh/core/theme/portfolio_palette.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 
@@ -101,10 +102,16 @@ class HomeInsightTile extends StatelessWidget {
 }
 
 class HomeSectionLabel extends StatelessWidget {
-  const HomeSectionLabel({super.key, required this.title, this.subtitle});
+  const HomeSectionLabel({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+  });
 
   final String title;
   final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -112,23 +119,90 @@ class HomeSectionLabel extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: theme.titleMedium?.copyWith(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: t.textSecondary,
+          Container(
+            width: 4,
+            height: 36,
+            margin: const EdgeInsets.only(right: 12, top: 2),
+            decoration: BoxDecoration(
+              color: t.accentMint,
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(subtitle!, style: t.caption(theme)),
-          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.titleLarge?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: t.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(subtitle!, style: t.caption(theme)),
+                ],
+              ],
+            ),
+          ),
+          if (trailing != null) trailing!,
         ],
       ),
+    );
+  }
+}
+
+/// Softer home panels — rounded fill instead of wireframe borders.
+class HomeSurfaceCard extends StatelessWidget {
+  const HomeSurfaceCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.accent,
+    this.onTap,
+  });
+
+  final Widget child;
+  final EdgeInsets? padding;
+  final Color? accent;
+  final VoidCallback? onTap;
+
+  static const _radius = 16.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ruhh;
+    final wash = accent ?? t.accentMint;
+    final radius = BorderRadius.circular(_radius);
+    final box = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(wash.withValues(alpha: 0.14), t.surfacePrimary),
+            t.surfacePrimary,
+          ],
+        ),
+        border: Border.all(color: wash.withValues(alpha: 0.22)),
+        boxShadow: t.shadowCard,
+      ),
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(16),
+        child: child,
+      ),
+    );
+    if (onTap == null) return box;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onTap, borderRadius: radius, child: box),
     );
   }
 }
@@ -136,49 +210,99 @@ class HomeSectionLabel extends StatelessWidget {
 class HomeDayHero extends StatelessWidget {
   const HomeDayHero({
     super.key,
-    required this.greeting,
-    required this.dateLine,
+    this.greeting,
+    this.dateLine,
     required this.headline,
     required this.habitLine,
     required this.prayerLine,
     this.budgetLine,
+    this.habitProgress = 0,
+    this.prayerProgress = 0,
+    this.compactHeader = false,
   });
 
-  final String greeting;
-  final String dateLine;
+  final String? greeting;
+  final String? dateLine;
   final String headline;
   final String habitLine;
   final String prayerLine;
   final String? budgetLine;
+  final double habitProgress;
+  final double prayerProgress;
+
+  /// When true, greeting/date are omitted (screen header already shows them).
+  final bool compactHeader;
 
   @override
   Widget build(BuildContext context) {
     final t = context.ruhh;
     final theme = Theme.of(context).textTheme;
-    return RuhhSoftCard(
-      padding: const EdgeInsets.all(16),
+    return HomeSurfaceCard(
+      accent: t.accentLavender,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            greeting,
-            style: t.statLarge(theme),
-          ),
-          const SizedBox(height: 4),
-          Text(dateLine, style: t.caption(theme)),
-          const SizedBox(height: 14),
+          if (!compactHeader && greeting != null) ...[
+            Text(greeting!, style: t.statLarge(theme)),
+            if (dateLine != null) ...[
+              const SizedBox(height: 4),
+              Text(dateLine!, style: t.caption(theme)),
+            ],
+            const SizedBox(height: 14),
+          ],
           Text(
             headline,
-            style: theme.bodyLarge?.copyWith(color: t.textPrimary),
+            style: theme.titleMedium?.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+              color: t.textPrimary,
+            ),
           ),
-          const SizedBox(height: 12),
-          _HeroStatRow(icon: '✓', label: habitLine),
-          const SizedBox(height: 6),
-          _HeroStatRow(icon: '🕌', label: prayerLine),
-          if (budgetLine != null) ...[
-            const SizedBox(height: 6),
-            _HeroStatRow(icon: '₹', label: budgetLine!),
-          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: RuhhRadialDial(
+                  value: '${(habitProgress * 100).round()}%',
+                  label: 'Habits',
+                  progress: habitProgress,
+                  accent: const Color(0xFF34D399),
+                  size: 96,
+                ),
+              ),
+              Expanded(
+                child: RuhhRadialDial(
+                  value: '${(prayerProgress * 100).round()}%',
+                  label: 'Prayer',
+                  progress: prayerProgress,
+                  accent: const Color(0xFFA78BFA),
+                  size: 96,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: PortfolioPalette.secondary.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                children: [
+                  _HeroStatRow(icon: '✓', label: habitLine),
+                  const SizedBox(height: 6),
+                  _HeroStatRow(icon: '🕌', label: prayerLine),
+                  if (budgetLine != null) ...[
+                    const SizedBox(height: 6),
+                    _HeroStatRow(icon: '₹', label: budgetLine!),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
