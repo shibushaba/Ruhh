@@ -280,16 +280,16 @@ class _MovieHighlight extends ConsumerWidget {
     final repoAsync = ref.watch(movieRepositoryProvider);
     return repoAsync.when(
       loading: () =>
-          RuhhStatProgressCard(label: 'Watchlist', value: 'ΓÇª', progress: 0),
+          RuhhStatProgressCard(label: 'Watchlist', value: '\u2026', progress: 0),
       error: (_, __) =>
-          RuhhStatProgressCard(label: 'Watchlist', value: 'ΓÇö', progress: 0),
+          RuhhStatProgressCard(label: 'Watchlist', value: '\u2014', progress: 0),
       data: (repo) => FutureBuilder(
         future: Future.wait([repo.watchlistMovies(), repo.watchedThisMonth()]),
         builder: (context, snap) {
           if (!snap.hasData) {
             return RuhhStatProgressCard(
               label: 'Watchlist',
-              value: 'ΓÇª',
+              value: '\u2026',
               progress: 0,
             );
           }
@@ -299,7 +299,7 @@ class _MovieHighlight extends ConsumerWidget {
           final subtitle = count == 0
               ? 'Add something you want to watch'
               : watched > 0
-              ? 'Next: ${list.first.title} ┬╖ $watched this month'
+              ? 'Next: ${list.first.title} \u00b7 $watched this month'
               : 'Next: ${list.first.title}';
           return RuhhStatProgressCard(
             label: 'Watchlist',
@@ -327,30 +327,36 @@ class _BudgetHighlight extends ConsumerWidget {
     final month = DateTime(DateTime.now().year, DateTime.now().month);
     return repoAsync.when(
       loading: () =>
-          RuhhStatProgressCard(label: 'Budget', value: 'ΓÇª', progress: 0),
+          RuhhStatProgressCard(label: 'Budget', value: '\u2026', progress: 0),
       error: (_, __) =>
-          RuhhStatProgressCard(label: 'Budget', value: 'ΓÇö', progress: 0),
+          RuhhStatProgressCard(label: 'Budget', value: '\u2014', progress: 0),
       data: (repo) => FutureBuilder(
         future: repo.monthTotals(month),
         builder: (context, snap) {
           if (!snap.hasData) {
             return RuhhStatProgressCard(
               label: 'Budget',
-              value: 'ΓÇª',
+              value: '\u2026',
               progress: 0,
             );
           }
           final totals = snap.data!;
+          final balance = totals.balance;
           final progress = totals.totalIncome <= 0
               ? 0.0
-              : (totals.balance / totals.totalIncome).clamp(0.0, 1.0);
+              : (balance / totals.totalIncome).clamp(0.0, 1.0);
           final subtitle = totals.totalIncome > 0
-              ? 'Spent ${BudgetInr.format(totals.totalExpense)} ┬╖ income ${BudgetInr.format(totals.totalIncome)}'
+              ? 'Spent ${BudgetInr.format(totals.totalExpense)} \u00b7 income ${BudgetInr.format(totals.totalIncome)}'
               : 'Log income to track savings';
+          final balanceLabel = balance < 0
+              ? 'over'
+              : balance > 0
+              ? 'saved'
+              : 'balance';
           return RuhhStatProgressCard(
             label: DateFormat.yMMMM().format(month),
-            value: BudgetInr.format(totals.balance),
-            targetLabel: 'balance',
+            value: BudgetInr.format(balance.abs()),
+            targetLabel: balanceLabel,
             subtitle: subtitle,
             progress: progress,
             accent: NBMetrics.incomeGreen,
