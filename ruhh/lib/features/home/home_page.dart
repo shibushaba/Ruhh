@@ -11,6 +11,7 @@ import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/features/budget/budget_repository.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
+import 'package:ruhh/features/budget/ledger/budget_month_key.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/home/widgets/home_feed_insights.dart';
@@ -322,49 +323,39 @@ class _BudgetHighlight extends ConsumerWidget {
   final WidgetRef ref;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(budgetRefreshProvider);
-    final repoAsync = ref.watch(budgetRepositoryProvider);
     final month = DateTime(DateTime.now().year, DateTime.now().month);
-    return repoAsync.when(
-      loading: () =>
-          RuhhStatProgressCard(label: 'Budget', value: '\u2026', progress: 0),
-      error: (_, __) =>
-          RuhhStatProgressCard(label: 'Budget', value: '\u2014', progress: 0),
-      data: (repo) => FutureBuilder(
-        future: repo.monthTotals(month),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return RuhhStatProgressCard(
-              label: 'Budget',
-              value: '\u2026',
-              progress: 0,
-            );
-          }
-          final totals = snap.data!;
-          final balance = totals.balance;
-          final progress = totals.totalIncome <= 0
-              ? 0.0
-              : (balance / totals.totalIncome).clamp(0.0, 1.0);
-          final subtitle = totals.totalIncome > 0
-              ? 'Spent ${BudgetInr.format(totals.totalExpense)} \u00b7 income ${BudgetInr.format(totals.totalIncome)}'
-              : 'Log income to track savings';
-          final balanceLabel = balance < 0
-              ? 'over'
-              : balance > 0
-              ? 'saved'
-              : 'balance';
-          return RuhhStatProgressCard(
-            label: DateFormat.yMMMM().format(month),
-            value: BudgetInr.format(balance.abs()),
-            targetLabel: balanceLabel,
-            subtitle: subtitle,
-            progress: progress,
-            accent: NBMetrics.incomeGreen,
-            onTap: () => context.go('/budget'),
-            onAdd: () => context.push('/budget/add'),
-          );
-        },
+    final monthKey = budgetMonthKey(month);
+    final totalsAsync = ref.watch(budgetMonthTotalsProvider(monthKey));
+    return totalsAsync.when(
+      loading: () => RuhhStatProgressCard(
+        label: DateFormat.yMMMM().format(month),
+        value: '\u2026',
+        progress: 0,
       ),
+      error: (_, __) => RuhhStatProgressCard(
+        label: DateFormat.yMMMM().format(month),
+        value: '\u2014',
+        progress: 0,
+      ),
+      data: (totals) {
+        final balance = totals.balance;
+        final progress = totals.totalIncome <= 0
+            ? 0.0
+            : (balance / totals.totalIncome).clamp(0.0, 1.0);
+        final subtitle = totals.totalIncome > 0
+            ? 'Spent ${BudgetInr.format(totals.totalExpense)} \u00b7 income ${BudgetInr.format(totals.totalIncome)}'
+            : 'Log income to track savings';
+        return RuhhStatProgressCard(
+          label: DateFormat.yMMMM().format(month),
+          value: BudgetBalanceUi.heroAmount(totals),
+          targetLabel: BudgetBalanceUi.heroSuffix(totals),
+          subtitle: subtitle,
+          progress: progress,
+          accent: NBMetrics.incomeGreen,
+          onTap: () => context.go('/budget'),
+          onAdd: () => context.push('/budget/add'),
+        );
+      },
     );
   }
 }

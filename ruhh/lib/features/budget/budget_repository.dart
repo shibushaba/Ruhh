@@ -635,6 +635,14 @@ final budgetRepositoryProvider = FutureProvider<BudgetRepository>((ref) async {
   return repo;
 });
 
+/// Month totals for a calendar month (`YYYY-MM`). Re-fetches when [budgetRefreshProvider] bumps.
+final budgetMonthTotalsProvider =
+    FutureProvider.autoDispose.family<BudgetMonthTotals, String>((ref, monthKey) async {
+  ref.watch(budgetRefreshProvider);
+  final repo = await ref.watch(budgetRepositoryProvider.future);
+  return repo.monthTotals(budgetMonthStart(monthKey));
+});
+
 /// Bump to refresh lists after mutations.
 final budgetRefreshProvider = StateProvider<int>((ref) => 0);
 

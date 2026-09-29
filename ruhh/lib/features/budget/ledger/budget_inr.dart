@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
 
 /// Indian rupee formatting (en_IN) — Section 2 & 8.
 abstract final class BudgetInr {
@@ -29,5 +30,18 @@ abstract final class BudgetInr {
     final cleaned = input.replaceAll(RegExp(r'[₹,\s]'), '');
     if (cleaned.isEmpty) return null;
     return double.tryParse(cleaned);
+  }
+}
+
+/// Hero balance line for Home / Budget cards (amount + over/saved/balance).
+abstract final class BudgetBalanceUi {
+  static String heroAmount(BudgetMonthTotals totals) =>
+      BudgetInr.format(totals.balance.abs());
+
+  static String heroSuffix(BudgetMonthTotals totals) {
+    final balance = totals.balance;
+    if (balance < 0) return 'over';
+    if (balance > 0) return 'saved';
+    return 'balance';
   }
 }
