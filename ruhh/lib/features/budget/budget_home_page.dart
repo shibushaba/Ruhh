@@ -37,7 +37,6 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
     final refresh = ref.watch(budgetRefreshProvider);
     final repoAsync = ref.watch(budgetRepositoryProvider);
     final monthKey = budgetMonthKey(_month);
-    final totalsAsync = ref.watch(budgetMonthTotalsProvider(monthKey));
     return repoAsync.when(
       data: (repo) => FutureBuilder(
         key: ValueKey('budget-home-body-$monthKey-$refresh'),
@@ -57,6 +56,7 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
           final expenseCats = snap.data![2] as List<CategoryLocal>;
           final rows = snap.data![3] as List<BudgetLedgerRow>;
           final standing = snap.data![4] as StandingSalaryLocal?;
+          final totals = BudgetCalculations.monthTotals(rows, monthKey);
 
           final catName = {for (final c in expenseCats) c.remoteId: c.name};
           final budgetedIds = rules
@@ -130,74 +130,32 @@ class _BudgetHomePageState extends ConsumerState<BudgetHomePage> {
                     ),
                   ),
                 const SizedBox(height: 8),
-                totalsAsync.when(
-                  loading: () => const RuhhStatProgressCard(
-                    label: 'Balance',
-                    value: '\u2026',
-                    progress: 0,
-                  ),
-                  error: (_, __) => const RuhhStatProgressCard(
-                    label: 'Balance',
-                    value: '\u2014',
-                    progress: 0,
-                  ),
-                  data: (totals) => RuhhStatProgressCard(
-                    label: 'Balance',
-                    value: BudgetBalanceUi.heroAmount(totals),
-                    targetLabel: BudgetBalanceUi.heroSuffix(totals),
-                    progress: totals.totalIncome <= 0
-                        ? 0
-                        : (totals.balance / totals.totalIncome).clamp(0, 1),
-                  ),
+                RuhhStatProgressCard(
+                  label: 'Balance',
+                  value: BudgetBalanceUi.heroAmount(totals),
+                  targetLabel: BudgetBalanceUi.heroSuffix(totals),
+                  progress: totals.totalIncome <= 0
+                      ? 0
+                      : (totals.balance / totals.totalIncome).clamp(0, 1),
                 ),
                 const SizedBox(height: 16),
-                totalsAsync.when(
-                  loading: () => const RuhhTwinMetricRow(
-                    left: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Income',
-                      value: '\u2026',
-                      progress: 0,
-                    ),
-                    right: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Expense',
-                      value: '\u2026',
-                      progress: 0,
-                    ),
+                RuhhTwinMetricRow(
+                  left: RuhhStatProgressCard(
+                    compact: true,
+                    label: 'Income',
+                    value: BudgetInr.format(totals.totalIncome),
+                    progress: 1,
+                    accent: context.ruhh.accentMint,
                   ),
-                  error: (_, __) => const RuhhTwinMetricRow(
-                    left: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Income',
-                      value: '\u2014',
-                      progress: 0,
-                    ),
-                    right: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Expense',
-                      value: '\u2014',
-                      progress: 0,
-                    ),
-                  ),
-                  data: (totals) => RuhhTwinMetricRow(
-                    left: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Income',
-                      value: BudgetInr.format(totals.totalIncome),
-                      progress: 1,
-                      accent: context.ruhh.accentMint,
-                    ),
-                    right: RuhhStatProgressCard(
-                      compact: true,
-                      label: 'Expense',
-                      value: BudgetInr.format(totals.totalExpense),
-                      progress: totals.totalIncome <= 0
-                          ? 0
-                          : (totals.totalExpense / totals.totalIncome)
-                              .clamp(0, 1),
-                      accent: context.ruhh.textPrimary,
-                    ),
+                  right: RuhhStatProgressCard(
+                    compact: true,
+                    label: 'Expense',
+                    value: BudgetInr.format(totals.totalExpense),
+                    progress: totals.totalIncome <= 0
+                        ? 0
+                        : (totals.totalExpense / totals.totalIncome)
+                            .clamp(0, 1),
+                    accent: context.ruhh.textPrimary,
                   ),
                 ),
                 const SizedBox(height: NBLayout.sectionGap),

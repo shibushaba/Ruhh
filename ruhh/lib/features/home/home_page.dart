@@ -327,6 +327,7 @@ class _BudgetHighlight extends ConsumerWidget {
     final monthKey = budgetMonthKey(month);
     final totalsAsync = ref.watch(budgetMonthTotalsProvider(monthKey));
     return totalsAsync.when(
+      skipLoadingOnReload: false,
       loading: () => RuhhStatProgressCard(
         label: DateFormat.yMMMM().format(month),
         value: '\u2026',
