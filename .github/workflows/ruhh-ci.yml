@@ -1,0 +1,71 @@
+name: ruhh-ci
+
+on:
+  pull_request:
+    paths: ["ruhh/**", ".github/workflows/ruhh-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["ruhh/**", ".github/workflows/ruhh-ci.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ruhh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Placeholder .env (asset required by pubspec; no real keys in CI)
+        run: cp .env.example .env
+      - run: flutter pub get
+      - name: Format check (files touched by the security/agent project)
+        run: >
+          dart format --set-exit-if-changed
+          lib/core/services/cloud_auth_client.dart lib/core/services/app_version.dart
+          lib/core/session/secure_session_store.dart lib/core/services/agent_inbox.dart
+          lib/core/services/agent_inbox_applier.dart test/cloud_auth_client_test.dart
+          test/agent_inbox_test.dart
+      - name: Analyze (fail on errors; pre-existing warnings/infos are tracked separately)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test
+
+  edge-function:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ruhh/supabase/functions/ruhh-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno fmt --check
+      - run: deno lint
+      - run: deno check index.ts
+      - run: deno test --allow-env
+
+  database:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ruhh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start disposable local Supabase (never linked to any remote project)
+        run: supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,mailpit
+      - name: pgTAP security / inbox / agent tests
+        run: supabase test db
+      - name: Guard - S2 legacy retirement must not be in migrations
+        run: test -z "$(ls supabase/migrations | grep -i -E 'retire|s2_' || true)"
+      - if: always()
+        run: supabase stop --no-backup
