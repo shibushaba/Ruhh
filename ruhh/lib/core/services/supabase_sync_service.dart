@@ -1,4 +1,6 @@
 import 'package:isar/isar.dart';
+import 'package:ruhh/core/services/agent_inbox.dart';
+import 'package:ruhh/core/services/agent_inbox_applier.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
@@ -9,6 +11,7 @@ import 'package:ruhh/core/data/models/focus_session_local.dart';
 import 'package:ruhh/core/data/models/movie_category_local.dart';
 import 'package:ruhh/core/data/models/todo_local.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:ruhh/core/theme/nb_colors.dart';
 import 'package:ruhh/features/budget/widgets/category_display.dart';
@@ -118,7 +121,8 @@ class SupabaseSyncService {
       }
 
       if (remoteCount == 0) {
-        final payload = await _exportPayload(user, userId);
+        await _applyAgentInbox(userId);
+    final payload = await _exportPayload(user, userId);
         await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
         return SyncUserResult(
           restoredEntityCount: 0,
@@ -144,6 +148,7 @@ class SupabaseSyncService {
       legacyIsarId: legacyIsarId,
     );
 
+    await _applyAgentInbox(userId);
     final payload = await _exportPayload(user, userId);
     await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
 
@@ -194,8 +199,24 @@ class SupabaseSyncService {
       legacyIsarId: legacyIsarId,
     );
 
+    await _applyAgentInbox(userId);
     final payload = await _exportPayload(user, userId);
     await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
+  }
+
+  /// Applies queued agent/Telegram actions into Isar before the snapshot is
+  /// exported, so they are included in the push instead of being reconciled away.
+  /// Never blocks sync: failures are retried on the next run.
+  Future<void> _applyAgentInbox(String userId) async {
+    try {
+      await AgentInboxProcessor(
+        transport: SupabaseService.auth,
+        applier: RepositoryInboxApplier(_isar, userId),
+        ledger: PrefsAppliedLedger(),
+      ).process(userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('agent inbox skipped: ${e.runtimeType}');
+    }
   }
 
   Future<void> _uploadPayload({

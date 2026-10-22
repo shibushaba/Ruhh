@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ruhh/core/services/agent_inbox.dart';
 import 'package:ruhh/core/session/secure_session_store.dart';
 
 /// Transport-agnostic RPC call (Supabase PostgREST in the app, a fake in tests).
@@ -115,7 +116,7 @@ class CloudSyncAuthException implements Exception {
 ///  * no token (user logged in on an older build, or session expired/revoked) ->
 ///    legacy v1 while the server still allows it (pre-S2). After S2 the server
 ///    rejects v1 and the user is asked to sign in again (offline use continues).
-class CloudAuthClient {
+class CloudAuthClient implements InboxTransport {
   CloudAuthClient({
     required this.rpc,
     required this.store,
@@ -311,6 +312,37 @@ class CloudAuthClient {
       }
       rethrow;
     }
+  }
+
+  /// Pending agent actions; null when unavailable (no session / pre-inbox server).
+  @override
+  Future<List<dynamic>?> fetchInbox(String userId) async {
+    final call = rpc;
+    final token = await tokenFor(userId);
+    if (call == null || token == null) return null;
+    try {
+      final raw = await call('ruhh_inbox_fetch_v2', {'p_token': token});
+      return raw is List ? raw : null;
+    } on CloudRpcException catch (e) {
+      if (e.isSessionInvalid) {
+        await clearSession(userId);
+        _reauth.add(userId);
+      }
+      return null;
+    }
+  }
+
+  @override
+  Future<void> ackInbox(
+    String userId,
+    List<Map<String, dynamic>> results,
+  ) async {
+    final call = rpc;
+    final token = await tokenFor(userId);
+    if (call == null || token == null) {
+      throw const CloudSyncAuthException(sessionExpiredMessage);
+    }
+    await call('ruhh_inbox_ack_v2', {'p_token': token, 'p_results': results});
   }
 }
 

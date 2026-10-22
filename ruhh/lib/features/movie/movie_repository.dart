@@ -219,12 +219,13 @@ class MovieRepository {
     int priority = 3,
     String? categoryRemoteId,
     String note = '',
+    String? remoteId,
   }) async {
     await ensureTrackerDefaults();
     final catId =
         categoryRemoteId ?? (await defaultCategory())?.remoteId ?? '';
     final m = MovieLocal()
-      ..remoteId = const Uuid().v4()
+      ..remoteId = remoteId ?? const Uuid().v4()
       ..userId = _userId
       ..title = title
       ..mediaType = mediaType
