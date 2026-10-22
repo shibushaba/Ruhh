@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "@std/assert": "jsr:@std/assert@1"
+  },
+  "tasks": {
+    "test": "deno test --allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,RUHH_AGENT_DEFAULT_UTC_OFFSET_MIN"
+  },
+  "fmt": { "lineWidth": 120 },
+  "lint": { "rules": { "exclude": ["no-explicit-any"] } }
+}
