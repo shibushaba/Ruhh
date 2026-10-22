@@ -121,9 +121,10 @@ class SupabaseSyncService {
       }
 
       if (remoteCount == 0) {
-        await _applyAgentInbox(userId);
-    final payload = await _exportPayload(user, userId);
+        final inbox = await _applyAgentInbox(userId);
+        final payload = await _exportPayload(user, userId);
         await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
+        await _ackAgentInbox(userId, inbox);
         return SyncUserResult(
           restoredEntityCount: 0,
           startedWithEmptyLocal: true,
@@ -148,9 +149,10 @@ class SupabaseSyncService {
       legacyIsarId: legacyIsarId,
     );
 
-    await _applyAgentInbox(userId);
+    final inbox = await _applyAgentInbox(userId);
     final payload = await _exportPayload(user, userId);
     await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
+    await _ackAgentInbox(userId, inbox);
 
     final remote = await SupabaseService.pull(userId: userId, pinHash: pinHash);
     if (remote == null) {
@@ -199,24 +201,35 @@ class SupabaseSyncService {
       legacyIsarId: legacyIsarId,
     );
 
-    await _applyAgentInbox(userId);
+    final inbox = await _applyAgentInbox(userId);
     final payload = await _exportPayload(user, userId);
     await _uploadPayload(userId: userId, pinHash: pinHash, payload: payload);
+    await _ackAgentInbox(userId, inbox);
   }
+
+  AgentInboxProcessor _inboxProcessor(String userId) => AgentInboxProcessor(
+    transport: SupabaseService.auth,
+    applier: RepositoryInboxApplier(_isar, userId),
+    ledger: PrefsAppliedLedger(),
+  );
 
   /// Applies queued agent/Telegram actions into Isar before the snapshot is
   /// exported, so they are included in the push instead of being reconciled away.
   /// Never blocks sync: failures are retried on the next run.
-  Future<void> _applyAgentInbox(String userId) async {
+  Future<InboxBatch> _applyAgentInbox(String userId) async {
     try {
-      await AgentInboxProcessor(
-        transport: SupabaseService.auth,
-        applier: RepositoryInboxApplier(_isar, userId),
-        ledger: PrefsAppliedLedger(),
-      ).process(userId);
+      return await _inboxProcessor(userId).applyPending(userId);
     } catch (e) {
       if (kDebugMode) debugPrint('agent inbox skipped: ${e.runtimeType}');
+      return InboxBatch.empty;
     }
+  }
+
+  /// Only reached after [_uploadPayload] succeeded (it throws otherwise), so an
+  /// action is never acked before the cloud snapshot contains it.
+  Future<void> _ackAgentInbox(String userId, InboxBatch batch) async {
+    if (batch.isEmpty) return;
+    await _inboxProcessor(userId).acknowledge(userId, batch);
   }
 
   Future<void> _uploadPayload({

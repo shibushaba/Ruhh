@@ -121,9 +121,23 @@ class InboxRunResult {
   final bool acked;
 }
 
-/// Runs BEFORE the snapshot push so applied records are part of the snapshot
-/// (otherwise ruhh_push's reconcile would never see them, and the next import
-/// could not delete them either because they never reached the cloud tables).
+/// Outcome of applying one fetched batch locally; acknowledged only after the
+/// snapshot containing the applied records has been pushed successfully.
+class InboxBatch {
+  const InboxBatch(this.results, this.applied, this.rejected, this.failed);
+  static const empty = InboxBatch([], 0, 0, 0);
+
+  final List<Map<String, dynamic>> results;
+  final int applied;
+  final int rejected;
+  final int failed;
+  bool get isEmpty => results.isEmpty;
+}
+
+/// Order per sync: [applyPending] (Isar) -> export + push snapshot ->
+/// [acknowledge]. If the push fails nothing is acked: the rows stay pending on
+/// the server and the next run re-acks them from the ledger without
+/// re-applying (creates are also keyed by remoteId = action id).
 class AgentInboxProcessor {
   AgentInboxProcessor({
     required this.transport,
@@ -135,11 +149,9 @@ class AgentInboxProcessor {
   final InboxApplier applier;
   final AppliedLedger ledger;
 
-  Future<InboxRunResult> process(String userId) async {
+  Future<InboxBatch> applyPending(String userId) async {
     final rows = await transport.fetchInbox(userId);
-    if (rows == null || rows.isEmpty) {
-      return const InboxRunResult(0, 0, 0, false);
-    }
+    if (rows == null || rows.isEmpty) return InboxBatch.empty;
     final done = await ledger.load(userId);
     final results = <Map<String, dynamic>>[];
     final seen = <String>{};
@@ -149,7 +161,7 @@ class AgentInboxProcessor {
       final action = InboxAction.tryParse(raw);
       if (action == null) {
         final id = raw is Map ? raw['id'] : null;
-        if (InboxAction.isUuid(id)) {
+        if (InboxAction.isUuid(id) && seen.add(id as String)) {
           results.add({'id': id, 'status': 'rejected', 'error': 'malformed'});
           rejected++;
         }
@@ -162,6 +174,7 @@ class AgentInboxProcessor {
         continue;
       }
       if (!inboxEntities.contains(action.entity)) {
+        await ledger.add(userId, action.id);
         results.add({
           'id': action.id,
           'status': 'rejected',
@@ -198,16 +211,29 @@ class AgentInboxProcessor {
           failed++;
       }
     }
+    return InboxBatch(results, applied, rejected, failed);
+  }
 
-    var acked = false;
-    if (results.isNotEmpty) {
-      try {
-        await transport.ackInbox(userId, results);
-        acked = true;
-      } catch (_) {
-        // Ack lost: the ledger prevents re-application; next run re-acks.
-      }
+  /// Call only after a successful snapshot push. Never throws; false = retry
+  /// next run (the ledger prevents re-application).
+  Future<bool> acknowledge(String userId, InboxBatch batch) async {
+    if (batch.isEmpty) return false;
+    try {
+      await transport.ackInbox(userId, batch.results);
+      return true;
+    } catch (_) {
+      return false;
     }
-    return InboxRunResult(applied, rejected, failed, acked);
+  }
+
+  /// apply -> [pushSnapshot] -> ack. A failing push propagates and nothing is acked.
+  Future<InboxRunResult> process(
+    String userId, {
+    required Future<void> Function() pushSnapshot,
+  }) async {
+    final batch = await applyPending(userId);
+    await pushSnapshot();
+    final acked = await acknowledge(userId, batch);
+    return InboxRunResult(batch.applied, batch.rejected, batch.failed, acked);
   }
 }
