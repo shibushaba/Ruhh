@@ -182,11 +182,12 @@ class BudgetRepository {
     int periodLength = 1,
     DateTime? recurrenceEnd,
     String? objectiveRemoteId,
+    String? remoteId,
   }) async {
     final when = occurredAt ?? DateTime.now();
     final isScheduled = scheduleType != BudgetScheduleType.normal;
     final tx = TransactionLocal()
-      ..remoteId = _uuid.v4()
+      ..remoteId = remoteId ?? _uuid.v4()
       ..userId = _userId
       ..amount = amount
       ..isIncome = isIncome

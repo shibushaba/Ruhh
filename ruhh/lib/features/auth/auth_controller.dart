@@ -5,6 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/services/app_version.dart';
+import 'package:ruhh/core/services/cloud_auth_client.dart';
 import 'package:ruhh/core/services/cloud_sync.dart';
 import 'package:ruhh/core/services/overlay_runtime.dart';
 import 'package:ruhh/core/services/supabase_service.dart';
@@ -63,7 +65,9 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<UsernameAvailability> checkUsernameAvailability(String username) async {
+  Future<UsernameAvailability> checkUsernameAvailability(
+    String username,
+  ) async {
     final trimmed = username.trim().toLowerCase();
     if (trimmed.length < 3) {
       return UsernameAvailability.tooShort;
@@ -85,6 +89,18 @@ class AuthController extends Notifier<AuthState> {
         result == UsernameAvailability.offlineAvailable;
   }
 
+  static const updateRequiredMessage =
+      'This version of RUHH is no longer supported for cloud backup. Please update the app.';
+
+  static String _cloudLoginError(CloudAuthError? e) => switch (e) {
+    CloudAuthError.invalidCredentials => 'Incorrect username or PIN',
+    CloudAuthError.lockedOut => 'Too many attempts. Try again in 15 minutes.',
+    CloudAuthError.updateRequired => updateRequiredMessage,
+    CloudAuthError.network =>
+      'Could not reach the cloud. Check your connection and try again.',
+    _ => 'Could not sign in right now. Try again shortly.',
+  };
+
   Future<String?> signUp(String username, String pin) async {
     final trimmed = username.trim().toLowerCase();
     if (trimmed.length < 3) return 'Username too short';
@@ -93,11 +109,47 @@ class AuthController extends Notifier<AuthState> {
     final available = await isUsernameAvailable(trimmed);
     if (!available) return 'Username already taken';
 
+    final remoteId = const Uuid().v4();
+    final isar = await ref.read(isarProvider.future);
+
+    // R1: server-side registration (server generates salt + bcrypt, returns a session).
+    if (SupabaseService.client != null) {
+      final cloud = await SupabaseService.auth.register(
+        id: remoteId,
+        username: trimmed,
+        pin: pin,
+        clientVersion: await AppVersion.current(),
+      );
+      if (cloud.ok) {
+        final user = UserLocal()
+          ..username = cloud.username!
+          ..pinHash =
+              _hashPin(pin, cloud.pinSalt!) // offline unlock only
+          ..pinSalt = cloud.pinSalt!
+          ..supabaseId = cloud.userId
+          ..createdAt = DateTime.now();
+        await isar.writeTxn(() async {
+          await isar.userLocals.put(user);
+        });
+        await _persistSession(trimmed);
+        state = AuthState(username: trimmed);
+        await _syncUserData(user, user.pinHash, expectCloudRestore: false);
+        return null;
+      }
+      if (cloud.error == CloudAuthError.usernameTaken) {
+        return 'Username already taken';
+      }
+      if (cloud.error == CloudAuthError.updateRequired) {
+        return updateRequiredMessage;
+      }
+      if (cloud.error != CloudAuthError.serverOutdated) {
+        return 'Could not save account to the cloud. Check your connection and try again.';
+      }
+      // serverOutdated: server has no v2 yet -> legacy registration below.
+    }
+
     final salt = _randomSalt();
     final hash = _hashPin(pin, salt);
-    final remoteId = const Uuid().v4();
-
-    final isar = await ref.read(isarProvider.future);
     final user = UserLocal()
       ..username = trimmed
       ..pinHash = hash
@@ -137,31 +189,78 @@ class AuthController extends Notifier<AuthState> {
         .findFirst();
 
     if (user == null) {
-      final remote = await SupabaseService.fetchAuthProfile(trimmed);
-      if (remote == null) return 'User not found';
-      final hash = _hashPin(pin, remote.pinSalt);
-      if (hash != remote.pinHash) return 'Incorrect PIN';
-      user = UserLocal()
-        ..username = remote.username
-        ..pinHash = remote.pinHash
-        ..pinSalt = remote.pinSalt
-        ..supabaseId = remote.id
-        ..createdAt = DateTime.now();
+      // New device: the server verifies the PIN; no hash ever leaves the server.
+      CloudLoginResult? cloud;
+      if (SupabaseService.client != null) {
+        cloud = await SupabaseService.auth.login(
+          username: trimmed,
+          pin: pin,
+          clientVersion: await AppVersion.current(),
+        );
+        if (!cloud.ok && cloud.error != CloudAuthError.serverOutdated) {
+          return _cloudLoginError(cloud.error);
+        }
+      }
+      if (cloud != null && cloud.ok) {
+        user = UserLocal()
+          ..username = cloud.username!
+          ..pinHash =
+              _hashPin(pin, cloud.pinSalt!) // offline unlock only
+          ..pinSalt = cloud.pinSalt!
+          ..supabaseId = cloud.userId
+          ..createdAt = DateTime.now();
+      } else {
+        // Documented fallback: server without migration S1 (legacy profile check).
+        final remote = await SupabaseService.fetchAuthProfile(trimmed);
+        if (remote == null) return 'User not found';
+        final hash = _hashPin(pin, remote.pinSalt);
+        if (hash != remote.pinHash) return 'Incorrect PIN';
+        user = UserLocal()
+          ..username = remote.username
+          ..pinHash = remote.pinHash
+          ..pinSalt = remote.pinSalt
+          ..supabaseId = remote.id
+          ..createdAt = DateTime.now();
+      }
       await isar.writeTxn(() async {
         await isar.userLocals.put(user!);
       });
       await _persistSession(trimmed);
-      await _syncUserData(user, hash, expectCloudRestore: true);
+      await _syncUserData(user, user.pinHash, expectCloudRestore: true);
       state = AuthState(username: trimmed);
       return null;
     }
 
+    // Offline unlock: verified against the on-device hash only.
     final hash = _hashPin(pin, user.pinSalt);
     if (hash != user.pinHash) return 'Incorrect PIN';
 
     await _persistSession(trimmed);
     state = AuthState(username: trimmed);
+
+    // Best effort: obtain/refresh a cloud session. Failure never blocks local use.
+    String? cloudNotice;
+    if (SupabaseService.client != null) {
+      final cloud = await SupabaseService.auth.login(
+        username: trimmed,
+        pin: pin,
+        clientVersion: await AppVersion.current(),
+        expectedUserId: user.supabaseId,
+      );
+      if (cloud.error == CloudAuthError.accountMismatch) {
+        cloudNotice =
+            'Cloud sign-in skipped — the cloud account does not match this device\'s account.';
+      } else if (cloud.error == CloudAuthError.updateRequired) {
+        cloudNotice = updateRequiredMessage;
+      } else if (cloud.error == CloudAuthError.lockedOut ||
+          cloud.error == CloudAuthError.invalidCredentials) {
+        cloudNotice = 'Cloud sign-in failed — ${_cloudLoginError(cloud.error)}';
+      }
+    }
     await _syncUserData(user, hash, expectCloudRestore: false);
+    if (cloudNotice != null) {
+      ref.read(lastCloudSyncErrorProvider.notifier).state = cloudNotice;
+    }
     return null;
   }
 
@@ -199,6 +298,22 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    final username = state.username;
+    if (username != null) {
+      final isar = await ref.read(isarProvider.future);
+      final user = await isar.userLocals
+          .filter()
+          .usernameEqualTo(username)
+          .findFirst();
+      final remoteId = user?.supabaseId;
+      if (remoteId != null && remoteId.isNotEmpty) {
+        // Revokes the server session; local data stays on the device.
+        // Never blocks logout (storage or network failures are swallowed).
+        try {
+          await SupabaseService.auth.logout(remoteId);
+        } catch (_) {}
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(ruhhSessionUsernameKey);
     state = const AuthState(loading: false);
@@ -221,5 +336,6 @@ class AuthController extends Notifier<AuthState> {
   }
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);

@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ruhh/core/services/cloud_auth_client.dart';
+import 'package:ruhh/core/services/supabase_sync_service.dart'
+    show CloudSyncPullFailedException;
+import 'package:ruhh/core/session/secure_session_store.dart';
 import 'package:ruhh/features/auth/username_availability.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -36,6 +40,24 @@ class SupabasePushResult {
 class SupabaseService {
   static bool _initialized = false;
 
+  /// Session-based auth/sync (R1). RPC transport is attached in [initialize].
+  static final CloudAuthClient auth = CloudAuthClient(
+    rpc: null,
+    store: SecureSessionStore(),
+  );
+
+  static Future<dynamic> _rpc(String fn, Map<String, dynamic> params) async {
+    final c = client;
+    if (c == null) {
+      throw const CloudRpcException('not_configured', 'not configured');
+    }
+    try {
+      return await c.rpc(fn, params: params);
+    } on PostgrestException catch (e) {
+      throw CloudRpcException(e.code, e.message);
+    }
+  }
+
   static bool _hasValidConfig(String? url, String? key) {
     if (url == null || key == null || url.isEmpty || key.isEmpty) {
       return false;
@@ -58,6 +80,7 @@ class SupabaseService {
     }
     await Supabase.initialize(url: url!, anonKey: key!);
     _initialized = true;
+    auth.rpc = _rpc;
   }
 
   static SupabaseClient? get client =>
@@ -137,20 +160,20 @@ class SupabaseService {
     }
   }
 
+  /// Downloads the cloud snapshot. Uses the session token (v2) when available;
+  /// falls back to legacy v1 only where [CloudAuthClient] allows it.
   static Future<Map<String, dynamic>?> pull({
     required String userId,
     required String pinHash,
   }) async {
-    final c = client;
-    if (c == null) return null;
+    if (client == null) return null;
     try {
-      final raw = await c.rpc(
-        'ruhh_pull',
-        params: {'p_user_id': userId, 'p_pin_hash': pinHash},
-      );
-      if (raw == null) return null;
-      return Map<String, dynamic>.from(raw as Map);
-    } catch (_) {
+      return await auth.pull(userId: userId, legacyPinHash: pinHash);
+    } on CloudSyncAuthException catch (e) {
+      // Surface "sign in again" instead of a generic pull failure.
+      throw CloudSyncPullFailedException(e.message);
+    } catch (e) {
+      if (kDebugMode) debugPrint('ruhh pull failed: $e');
       return null;
     }
   }
@@ -168,19 +191,12 @@ class SupabaseService {
       );
     }
     try {
-      await c.rpc(
-        'ruhh_push',
-        params: {
-          'p_user_id': userId,
-          'p_pin_hash': pinHash,
-          'p_payload': payload,
-        },
-      );
+      await auth.push(userId: userId, legacyPinHash: pinHash, payload: payload);
       return const SupabasePushResult(ok: true);
-    } on PostgrestException catch (e) {
-      if (kDebugMode) {
-        debugPrint('ruhh_push failed: ${e.message} (${e.code})');
-      }
+    } on CloudSyncAuthException catch (e) {
+      return SupabasePushResult(ok: false, errorMessage: e.message);
+    } on CloudRpcException catch (e) {
+      if (kDebugMode) debugPrint('ruhh push failed: ${e.code}');
       final msg = e.message.toLowerCase();
       if (msg.contains('unauthorized')) {
         return const SupabasePushResult(
@@ -196,11 +212,9 @@ class SupabaseService {
               'Backup data format error — update the app and sync again.',
         );
       }
-      return SupabasePushResult(
+      return const SupabasePushResult(
         ok: false,
-        errorMessage: e.message.isNotEmpty
-            ? e.message
-            : 'Could not upload to cloud backup.',
+        errorMessage: 'Could not upload to cloud backup.',
       );
     } catch (e) {
       if (kDebugMode) debugPrint('ruhh_push failed: $e');
