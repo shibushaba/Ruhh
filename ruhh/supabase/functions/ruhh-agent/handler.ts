@@ -153,7 +153,9 @@ export function createHandler(deps: HandlerDeps) {
           : "internal",
       );
       if (err.code === "inbox_full") err.status = 503;
-      if (err.code.startsWith("proposal_") || err.code === "target_not_found") err.status = 409;
+      if (!(e instanceof ApiError) && (err.code.startsWith("proposal_") || err.code === "target_not_found")) {
+        err.status = 409;
+      }
       status = err.status;
       audit.error_code = err.code;
       if (audit.outcome === "error" && status === 401) audit.outcome = "denied";
