@@ -54,6 +54,12 @@ class RepositoryInboxApplier implements InboxApplier {
       case ('transaction', 'update'):
         final tx = await _tx(p['id']);
         if (tx == null) return const InboxOutcome.rejected('target_not_found');
+        final expected = p['expected'];
+        if (expected != null &&
+            (expected is! Map || !expectedMatches(tx, expected))) {
+          // Edited on the phone after the proposal: never overwrite the user's edit.
+          return const InboxOutcome.rejected('conflict');
+        }
         final amount = p['amount'];
         if (amount != null) {
           if (amount is! num || amount <= 0) {
@@ -138,6 +144,20 @@ class RepositoryInboxApplier implements InboxApplier {
         return const InboxOutcome.applied();
     }
     return const InboxOutcome.rejected('unsupported_op');
+  }
+
+  /// Precondition for agent edits: the local transaction must still have the
+  /// values the proposal was created against (compared the way they are
+  /// exported to the cloud: an empty title is exported as the category).
+  static bool expectedMatches(TransactionLocal tx, Map<dynamic, dynamic> e) {
+    final amount = e['amount'];
+    if (amount is! num || (tx.amount - amount.toDouble()).abs() > 1e-9) {
+      return false;
+    }
+    final exportedTitle = tx.title.isNotEmpty ? tx.title : tx.category;
+    return tx.category == (e['category'] ?? '') &&
+        exportedTitle == (e['title'] ?? '') &&
+        tx.note == (e['note'] ?? '');
   }
 
   Future<TransactionLocal?> _tx(Object? remoteId) async {

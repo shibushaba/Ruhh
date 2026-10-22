@@ -32,6 +32,45 @@ export function timingSafeEqualHex(a: string, b: string): boolean {
 
 const TOKEN = /^ruhh_agent_[0-9a-f]{64}$/;
 
+/** Canonical JSON (sorted keys) so the same params always hash the same. */
+export function canonicalJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(o[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(v ?? null);
+}
+
+/** Reads at most [max] bytes; a larger (also chunked / no content-length) body is refused early. */
+export async function readBodyCapped(req: Request, max: number): Promise<string> {
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > max) {
+        await reader.cancel().catch(() => {});
+        throw new ApiError(413, "body_too_large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const buf = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    buf.set(c, off);
+    off += c.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(buf);
+}
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -94,8 +133,13 @@ export function createHandler(deps: HandlerDeps) {
       // --- body ---
       const len = Number(req.headers.get("content-length") ?? "0");
       if (len > MAX_BODY_BYTES) throw new ApiError(413, "body_too_large");
-      const raw = await req.text();
-      if (enc.encode(raw).length > MAX_BODY_BYTES) throw new ApiError(413, "body_too_large");
+      let raw: string;
+      try {
+        raw = await readBodyCapped(req, MAX_BODY_BYTES);
+      } catch (e) {
+        if (e instanceof ApiError) throw e;
+        throw new ApiError(400, "invalid_body");
+      }
       let parsed: unknown;
       try {
         parsed = JSON.parse(raw);
@@ -120,12 +164,18 @@ export function createHandler(deps: HandlerDeps) {
 
       // --- idempotent replay for writes ---
       const idem = deps.idempotentOps?.has(op) ?? false;
+      const paramsHash = idem ? await sha256Hex(`${op}\n${canonicalJson(params)}`) : "";
       if (idem) {
         const prev = await deps.db.getReplay(cred.id, request_id);
         if (prev) {
+          // Same request_id must mean the same op + params; anything else is a client bug
+          // or an attempt to get a stored response for a different action.
+          if (prev.op !== op || prev.params_hash !== paramsHash) {
+            throw new ApiError(409, "request_id_reused");
+          }
           audit.outcome = "replay";
-          body = prev;
-          return json(200, prev);
+          body = prev.response;
+          return json(200, prev.response);
         }
       }
 
@@ -141,7 +191,7 @@ export function createHandler(deps: HandlerDeps) {
         OP_TIMEOUT_MS,
       );
       body = { ok: true, request_id, op, data: result.data, meta: result.meta };
-      if (idem) await deps.db.saveReplay(cred.id, request_id, op, body);
+      if (idem) await deps.db.saveReplay(cred.id, request_id, op, paramsHash, body);
       audit.outcome = "ok";
       await deps.db.touchCredential(cred.id).catch(() => {});
       return json(200, body);

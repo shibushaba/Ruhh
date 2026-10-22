@@ -35,6 +35,8 @@ create table if not exists public.ruhh_agent_requests (
   credential_id uuid not null references public.ruhh_agent_credentials(id) on delete cascade,
   request_id text not null check (char_length(request_id) between 8 and 64),
   op text not null,
+  -- sha256(op + canonical params): a reused request_id with different op/params is refused (409)
+  params_hash text check (params_hash is null or params_hash ~ '^[0-9a-f]{64}$'),
   response jsonb not null,
   created_at timestamptz not null default now(),
   primary key (credential_id, request_id)

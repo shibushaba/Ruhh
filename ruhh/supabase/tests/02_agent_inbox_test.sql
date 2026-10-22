@@ -24,16 +24,16 @@ select throws_ok($q$select public.ruhh_inbox_enqueue('00000000-0000-4000-8000-00
 
 select is(jsonb_array_length(public.ruhh_inbox_fetch_v2((select a from tk))), 1, 'owner fetches pending action');
 select is(jsonb_array_length(public.ruhh_inbox_fetch_v2((select b from tk))), 0, 'other user sees nothing');
-select is(public.ruhh_inbox_ack_v2((select b from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied'))),
-  0, 'other user cannot ack someone else''s action');
+select is(public.ruhh_inbox_ack_v2((select b from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied')))->0->>'result',
+  'not_pending', 'other user cannot ack someone else''s action');
 
 -- failed ack keeps it pending (retry) until 5 attempts
 select public.ruhh_inbox_ack_v2((select a from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'failed', 'error', 'io_error')));
 select is((select status from ruhh_agent_inbox where id = (select (r->>'id')::uuid from e1)), 'pending', 'failed attempt stays pending for retry');
-select is(public.ruhh_inbox_ack_v2((select a from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied'))),
-  1, 'owner acks applied');
-select is(public.ruhh_inbox_ack_v2((select a from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied'))),
-  0, 'second ack is a no-op (idempotent)');
+select is(public.ruhh_inbox_ack_v2((select a from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied')))->0->>'result',
+  'updated', 'owner acks applied');
+select is(public.ruhh_inbox_ack_v2((select a from tk), jsonb_build_array(jsonb_build_object('id', (select r->>'id' from e1), 'status', 'applied')))->0->>'result',
+  'not_pending', 'second ack is a no-op (idempotent)');
 select is(jsonb_array_length(public.ruhh_inbox_fetch_v2((select a from tk))), 0, 'applied action no longer fetched');
 
 create temp table e2 as select public.ruhh_inbox_enqueue('00000000-0000-4000-8000-0000000000a1', 'movie', 'create', '{"title":"X"}', 'req-0003-abc') as r;

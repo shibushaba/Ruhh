@@ -454,6 +454,9 @@ class CloudAuthClient implements InboxTransport {
       });
       final status = raw is Map ? raw['status'] : null;
       if (status == 'executed') return ProposalDecisionResult.executed;
+      if (status == 'rejected' && raw is Map && raw['reason'] == 'conflict') {
+        return ProposalDecisionResult.conflict;
+      }
       if (status == 'rejected') return ProposalDecisionResult.rejected;
       return ProposalDecisionResult.failed;
     } on CloudRpcException catch (e) {

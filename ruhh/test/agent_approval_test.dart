@@ -73,6 +73,18 @@ void main() {
     },
   );
 
+  test('stale edit comes back as a committed conflict rejection', () async {
+    handlers['ruhh_proposal_decide_v2'] = (_) => {
+      'status': 'rejected',
+      'reason': 'conflict',
+    };
+    final p = AgentProposal.tryParse(row())!;
+    expect(
+      await client.decideProposal(userId, p, approve: true),
+      ProposalDecisionResult.conflict,
+    );
+  });
+
   test('server rejections map to safe results', () async {
     final p = AgentProposal.tryParse(row())!;
     for (final (msg, want) in [

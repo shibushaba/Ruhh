@@ -153,9 +153,21 @@ Deno.test("edits/deletes create proposals, never direct changes", async () => {
   assertEquals(e.json.error.code, "missing_param");
 });
 
+function seedTx(db: { tables: Record<string, Record<string, unknown>[]> }) {
+  db.tables.transactions = [{
+    id: TX,
+    user_id: ALICE,
+    amount: 5,
+    category: "Food",
+    title: "Tea",
+    note: "",
+  }];
+}
+
 Deno.test("agent can never approve: no op, no hash, no approve RPC, no approve scope", async () => {
   const { db, call } = await setup(ops, IDEMPOTENT_OPS);
   const props = inboxRpc(db);
+  seedTx(db);
   const r = await call({ op: "tx.edit", request_id: "req-p-0011", params: { id: TX, amount: 12 } });
   assertEquals(r.status, 200);
   const dump = JSON.stringify(r.json);
@@ -211,6 +223,59 @@ Deno.test("agent reject uses the reject-only RPC and is single use", async () =>
   });
   assertEquals(b.json.error.code, "proposal_already_decided");
   assert(db.rpcCalls.every((c) => c.fn !== "ruhh_agent_proposal_decide"));
+});
+
+Deno.test("tx.edit carries the current values as a precondition (stale -> conflict later)", async () => {
+  const { db, call } = await setup(ops, IDEMPOTENT_OPS);
+  inboxRpc(db);
+  seedTx(db);
+  const r = await call({ op: "tx.edit", request_id: "req-p-0041", params: { id: TX, amount: 12 } });
+  assertEquals(r.status, 200);
+  const create = db.rpcCalls.find((c) => c.fn === "ruhh_agent_proposal_create")!;
+  assertEquals(create.args.p_params, {
+    amount: 12,
+    expected: { amount: 5, category: "Food", title: "Tea", note: "" },
+  });
+  assert(!String(create.args.p_summary).includes("expected"));
+  // missing (or another user's) transaction -> 404 before any proposal
+  db.tables.transactions = [];
+  const m = await call({ op: "tx.edit", request_id: "req-p-0042", params: { id: TX, amount: 12 } });
+  assertEquals(m.status, 404);
+});
+
+Deno.test("request_id reuse with a different op or params -> 409, nothing executed", async () => {
+  const { db, call } = await setup(ops, IDEMPOTENT_OPS);
+  inboxRpc(db);
+  await call({ op: "tx.add", request_id: "req-r-0001", params: { amount: 5, category: "Tea" } });
+  const p = await call({ op: "tx.add", request_id: "req-r-0001", params: { amount: 500, category: "Tea" } });
+  assertEquals(p.status, 409);
+  assertEquals(p.json.error.code, "request_id_reused");
+  const o = await call({ op: "movie.add_watchlist", request_id: "req-r-0001", params: { title: "X" } });
+  assertEquals(o.status, 409);
+  // key order does not matter for a genuine replay
+  const same = await call({ op: "tx.add", request_id: "req-r-0001", params: { category: "Tea", amount: 5 } });
+  assertEquals(same.status, 200);
+  assertEquals(db.rpcCalls.filter((c) => c.fn === "ruhh_inbox_enqueue").length, 1);
+});
+
+Deno.test("streamed body without content-length is capped", async () => {
+  const { db, call } = await setup(ops, IDEMPOTENT_OPS);
+  inboxRpc(db);
+  const big = new TextEncoder().encode(
+    JSON.stringify({ op: "tx.add", request_id: "req-s-0001", params: { title: "x".repeat(10000) } }),
+  );
+  let pulled = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(c) {
+      if (pulled >= big.length) return c.close();
+      c.enqueue(big.slice(pulled, pulled + 1024));
+      pulled += 1024;
+    },
+  });
+  const r = await call("", TOKEN_A, { body: stream });
+  assertEquals(r.status, 413);
+  assert(pulled < big.length, "stopped reading early");
+  assertEquals(db.rpcCalls.length, 0);
 });
 
 Deno.test("proposal on another user's / missing target -> 409 target_not_found", async () => {

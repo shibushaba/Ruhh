@@ -1,5 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { type AgentDb, ALLOWED_RPCS, ALLOWED_TABLES, type AuditRow, type Credential, type QuerySpec } from "./db.ts";
+import {
+  type AgentDb,
+  ALLOWED_RPCS,
+  ALLOWED_TABLES,
+  type AuditRow,
+  type Credential,
+  type QuerySpec,
+  type Replay,
+} from "./db.ts";
 
 /** Service-role adapter. The key is read from the function environment only. */
 export function createSupabaseDb(): AgentDb {
@@ -51,14 +59,14 @@ export function createSupabaseDb(): AgentDb {
       return (data ?? []) as unknown as Record<string, unknown>[];
     },
     async getReplay(credentialId, requestId) {
-      const { data, error } = await sb.from("ruhh_agent_requests").select("response")
+      const { data, error } = await sb.from("ruhh_agent_requests").select("op,params_hash,response")
         .eq("credential_id", credentialId).eq("request_id", requestId).maybeSingle();
       if (error) fail(error);
-      return data ? (data as { response: unknown }).response : null;
+      return data ? (data as unknown as Replay) : null;
     },
-    async saveReplay(credentialId, requestId, op, response) {
+    async saveReplay(credentialId, requestId, op, paramsHash, response) {
       await sb.from("ruhh_agent_requests").upsert(
-        { credential_id: credentialId, request_id: requestId, op, response },
+        { credential_id: credentialId, request_id: requestId, op, params_hash: paramsHash, response },
         { onConflict: "credential_id,request_id", ignoreDuplicates: true },
       );
     },

@@ -134,6 +134,18 @@ begin
   if not public.ruhh_agent_target_exists(p_user_id, v_p.action, v_p.target) then
     raise exception 'target_not_found';
   end if;
+  -- Edit precondition: the transaction must still have the values the proposal was made
+  -- against. Stale -> the proposal is rejected (committed, not raised) and nothing executes.
+  if v_p.action = 'tx.edit' and v_p.params ? 'expected' and not exists (
+      select 1 from public.transactions t
+      where t.id = v_p.target and t.user_id = p_user_id
+        and t.amount = (v_p.params->'expected'->>'amount')::numeric
+        and t.category = coalesce(v_p.params->'expected'->>'category', '')
+        and t.title = coalesce(v_p.params->'expected'->>'title', '')
+        and t.note = coalesce(v_p.params->'expected'->>'note', '')) then
+    update public.ruhh_agent_proposals set status = 'rejected', decided_at = now() where id = v_p.id;
+    return jsonb_build_object('proposal_id', v_p.id, 'status', 'rejected', 'reason', 'conflict');
+  end if;
 
   v_entity := case when v_p.action like 'tx.%' then 'transaction' else 'movie' end;
   v_op := case when v_p.action like '%.delete' then 'delete' else 'update' end;

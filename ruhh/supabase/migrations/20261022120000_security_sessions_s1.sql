@@ -170,6 +170,15 @@ begin
       'min_supported_version', v_min);
   end if;
 
+  -- Username rules (same as registration: 3..64 chars, no control characters). Invalid names
+  -- are refused without touching ruhh_login_attempts, so junk input cannot grow the table.
+  -- A legacy account created by the old app with a longer name keeps working.
+  if char_length(v_key) < 3 or v_key ~ '[[:cntrl:]]'
+     or (char_length(v_key) > 64
+         and not exists (select 1 from public.users u where lower(u.username) = v_key)) then
+    return jsonb_build_object('ok', false, 'error', 'invalid_credentials');
+  end if;
+
   select count(*) into v_fails
   from public.ruhh_login_attempts a
   where a.username_key = v_key
@@ -241,8 +250,11 @@ begin
     return jsonb_build_object('ok', false, 'error', 'update_required',
       'min_supported_version', v_min);
   end if;
-  if char_length(v_username) < 3 or char_length(v_username) > 64 then
+  if char_length(v_username) < 3 then
     return jsonb_build_object('ok', false, 'error', 'username_too_short');
+  end if;
+  if char_length(v_username) > 64 or v_username ~ '[[:cntrl:]]' then
+    return jsonb_build_object('ok', false, 'error', 'username_invalid');
   end if;
   if coalesce(p_pin, '') !~ '^[0-9]{4,12}$' then
     return jsonb_build_object('ok', false, 'error', 'invalid_pin');

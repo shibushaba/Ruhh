@@ -36,7 +36,7 @@ if ($env:RUHH_SMOKE_WRITES -eq '1') {
   $fetch = Rpc 'ruhh_inbox_fetch_v2' @{ p_token = $tok }
   "app inbox_fetch pending=$(@($fetch).Count)"
   $ack = Rpc 'ruhh_inbox_ack_v2' @{ p_token = $tok; p_results = @(@{ id = $fetch[0].id; status = 'applied' }) }
-  "app inbox_ack updated=$ack"
+  "app inbox_ack result=$($ack[0].result)"
   $txid = $pull.transactions[0].id
   $p = Agent 'tx.delete' @{ id = $txid } 'smoke-w-0002'
   "agent tx.delete -> proposal status=$($p.data.status) needs_approval=$($p.data.requires_approval)"

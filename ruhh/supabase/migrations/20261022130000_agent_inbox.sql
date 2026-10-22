@@ -96,8 +96,10 @@ $$;
 
 -- App: acknowledge results. Only touches the caller's own pending rows (idempotent).
 -- p_results: [{"id": uuid, "status": "applied"|"failed"|"rejected", "error": short code}]
+-- Each item is validated on its own; a bad item never aborts the batch. Returns one result per
+-- input item: {"id", "result": "updated"|"not_pending"|"invalid_id"|"invalid_status"}.
 create or replace function public.ruhh_inbox_ack_v2(p_token text, p_results jsonb)
-returns int
+returns jsonb
 language plpgsql
 volatile
 security definer
@@ -106,16 +108,24 @@ as $$
 declare
   v_user uuid := public.ruhh_session_user(p_token);
   r jsonb;
-  v_n int := 0;
   v_count int;
   v_status text;
+  v_id text;
+  v_out jsonb := '[]'::jsonb;
 begin
   if p_results is null or jsonb_typeof(p_results) <> 'array' or jsonb_array_length(p_results) > 100 then
     raise exception 'invalid_results' using errcode = '22023';
   end if;
   for r in select * from jsonb_array_elements(p_results) loop
+    v_id := case when jsonb_typeof(r) = 'object' then r->>'id' else null end;
+    if v_id is null
+       or v_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      v_out := v_out || jsonb_build_array(jsonb_build_object('id', left(v_id, 40), 'result', 'invalid_id'));
+      continue;
+    end if;
     v_status := r->>'status';
-    if v_status not in ('applied', 'failed', 'rejected') or (r->>'id') !~ '^[0-9a-fA-F-]{36}$' then
+    if v_status is null or v_status not in ('applied', 'failed', 'rejected') then
+      v_out := v_out || jsonb_build_array(jsonb_build_object('id', v_id, 'result', 'invalid_status'));
       continue;
     end if;
     update public.ruhh_agent_inbox i
@@ -127,11 +137,12 @@ begin
           else 'pending' end,
         applied_at = case when v_status = 'applied' then now() else i.applied_at end,
         error = case when v_status = 'applied' then null else left(r->>'error', 64) end
-    where i.id = (r->>'id')::uuid and i.user_id = v_user and i.status = 'pending';
+    where i.id = v_id::uuid and i.user_id = v_user and i.status = 'pending';
     get diagnostics v_count = row_count;
-    v_n := v_n + v_count;
+    v_out := v_out || jsonb_build_array(jsonb_build_object('id', v_id,
+      'result', case when v_count > 0 then 'updated' else 'not_pending' end));
   end loop;
-  return v_n;
+  return v_out;
 end;
 $$;
 

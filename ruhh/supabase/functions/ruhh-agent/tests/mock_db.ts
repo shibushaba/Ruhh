@@ -1,10 +1,18 @@
-import { type AgentDb, ALLOWED_RPCS, ALLOWED_TABLES, type AuditRow, type Credential, type QuerySpec } from "../db.ts";
+import {
+  type AgentDb,
+  ALLOWED_RPCS,
+  ALLOWED_TABLES,
+  type AuditRow,
+  type Credential,
+  type QuerySpec,
+  type Replay,
+} from "../db.ts";
 
 export class MockDb implements AgentDb {
   creds: Credential[] = [];
   tables: Record<string, Record<string, unknown>[]> = {};
   audits: AuditRow[] = [];
-  replays = new Map<string, unknown>();
+  replays = new Map<string, Replay>();
   rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
   rpcImpl: (fn: string, args: Record<string, unknown>) => unknown = () => null;
   selects: { userId: string; spec: QuerySpec }[] = [];
@@ -47,8 +55,8 @@ export class MockDb implements AgentDb {
   getReplay(c: string, r: string) {
     return Promise.resolve(this.replays.get(`${c}:${r}`) ?? null);
   }
-  saveReplay(c: string, r: string, _op: string, resp: unknown) {
-    if (!this.replays.has(`${c}:${r}`)) this.replays.set(`${c}:${r}`, resp);
+  saveReplay(c: string, r: string, op: string, paramsHash: string, resp: unknown) {
+    if (!this.replays.has(`${c}:${r}`)) this.replays.set(`${c}:${r}`, { op, params_hash: paramsHash, response: resp });
     return Promise.resolve();
   }
   rpc(fn: string, args: Record<string, unknown>) {

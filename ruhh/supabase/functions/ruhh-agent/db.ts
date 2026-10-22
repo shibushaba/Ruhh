@@ -31,6 +31,12 @@ export interface AuditRow {
   duration_ms: number;
 }
 
+export interface Replay {
+  op: string;
+  params_hash: string | null;
+  response: unknown;
+}
+
 export interface AgentDb {
   credentialByHash(hash: string): Promise<Credential | null>;
   touchCredential(id: string): Promise<void>;
@@ -38,8 +44,15 @@ export interface AgentDb {
   audit(row: AuditRow): Promise<void>;
   /** Always scoped: implementations MUST add user_id = userId. */
   select(userId: string, spec: QuerySpec): Promise<Record<string, unknown>[]>;
-  getReplay(credentialId: string, requestId: string): Promise<unknown | null>;
-  saveReplay(credentialId: string, requestId: string, op: string, response: unknown): Promise<void>;
+  /** Stored response for (credential, request_id) with the op + params hash it was made for. */
+  getReplay(credentialId: string, requestId: string): Promise<Replay | null>;
+  saveReplay(
+    credentialId: string,
+    requestId: string,
+    op: string,
+    paramsHash: string,
+    response: unknown,
+  ): Promise<void>;
   rpc(fn: string, args: Record<string, unknown>): Promise<unknown>;
 }
 

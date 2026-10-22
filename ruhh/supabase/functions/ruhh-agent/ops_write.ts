@@ -153,7 +153,7 @@ export const writeOps: Record<string, OpDef> = {
 
   "tx.edit": {
     scope: "write",
-    run(ctx, p) {
+    async run(ctx, p) {
       onlyKeys(p, ["id", "amount", "category", "title", "note"]);
       const id = uuid(p, "id")!;
       const changes: Record<string, unknown> = {};
@@ -164,8 +164,26 @@ export const writeOps: Record<string, OpDef> = {
         if (v !== undefined) changes[k] = v;
       }
       if (Object.keys(changes).length === 0) throw new ApiError(400, "missing_param", "changes");
+      // Precondition: the proposal carries the transaction's current values; approval and the
+      // app both refuse to apply if the transaction changed in between (stale -> conflict).
+      // (updated_at cannot be used: every snapshot push rewrites it.)
+      const cur = await ctx.db.select(ctx.userId, {
+        table: "transactions",
+        columns: "id,amount,category,title,note",
+        eq: { id },
+        limit: 1,
+      });
+      if (cur.length === 0) throw new ApiError(404, "target_not_found");
+      const c = cur[0]!;
+      changes.expected = {
+        amount: Number(c.amount),
+        category: String(c.category ?? ""),
+        title: String(c.title ?? ""),
+        note: String(c.note ?? ""),
+      };
       const summary = "Edit transaction: " +
-        Object.entries(changes).map(([k, v]) => `${k} → ${String(v).slice(0, 40)}`).join(", ");
+        Object.entries(changes).filter(([k]) => k !== "expected")
+          .map(([k, v]) => `${k} → ${String(v).slice(0, 40)}`).join(", ");
       return propose(ctx, "tx.edit", id, changes, summary);
     },
   },
