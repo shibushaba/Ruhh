@@ -304,7 +304,10 @@ class AuthController extends Notifier<AuthState> {
       final remoteId = user?.supabaseId;
       if (remoteId != null && remoteId.isNotEmpty) {
         // Revokes the server session; local data stays on the device.
-        await SupabaseService.auth.logout(remoteId);
+        // Never blocks logout (storage or network failures are swallowed).
+        try {
+          await SupabaseService.auth.logout(remoteId);
+        } catch (_) {}
       }
     }
     final prefs = await SharedPreferences.getInstance();

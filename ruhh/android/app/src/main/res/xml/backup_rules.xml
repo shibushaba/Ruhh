@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 6–11 auto backup. Everything is still backed up EXCEPT flutter_secure_storage:
+     its values are encrypted with an Android Keystore key that is never backed up, so a
+     restored copy cannot be decrypted (it would break cloud sign-in after a restore).
+     After a restore the user signs in again with their PIN; local data restores normally. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+</full-backup-content>

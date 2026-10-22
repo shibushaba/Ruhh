@@ -193,21 +193,41 @@ class CloudAuthClient implements InboxTransport {
     }
   }
 
-  Future<void> saveSession(CloudLoginResult result) async {
-    await store.write(tokenKey(result.userId!), result.token!);
-    if (result.expiresAt != null) {
-      await store.write(
-        expiryKey(result.userId!),
-        result.expiresAt!.toUtc().toIso8601String(),
-      );
+  /// Reads a secure value; an unreadable value (decrypt failure after a backup
+  /// restore, broken keystore) clears the session and asks for a PIN sign-in.
+  Future<String?> _read(String userId, String key) async {
+    try {
+      return await store.read(key);
+    } catch (_) {
+      await clearSession(userId);
+      _reauth.add(userId);
+      return null;
+    }
+  }
+
+  /// Returns false when secure storage is unusable (the session is then not
+  /// kept; cloud sync asks for a fresh sign-in later, local use continues).
+  Future<bool> saveSession(CloudLoginResult result) async {
+    try {
+      await store.write(tokenKey(result.userId!), result.token!);
+      if (result.expiresAt != null) {
+        await store.write(
+          expiryKey(result.userId!),
+          result.expiresAt!.toUtc().toIso8601String(),
+        );
+      }
+      return true;
+    } catch (_) {
+      await clearSession(result.userId!);
+      return false;
     }
   }
 
   /// Returns a usable token or null; expired tokens are removed locally.
   Future<String?> tokenFor(String userId) async {
-    final token = await store.read(tokenKey(userId));
+    final token = await _read(userId, tokenKey(userId));
     if (token == null || token.isEmpty) return null;
-    final exp = DateTime.tryParse(await store.read(expiryKey(userId)) ?? '');
+    final exp = DateTime.tryParse(await _read(userId, expiryKey(userId)) ?? '');
     if (exp != null && !exp.isAfter(_now())) {
       await clearSession(userId);
       _reauth.add(userId);
@@ -216,14 +236,25 @@ class CloudAuthClient implements InboxTransport {
     return token;
   }
 
+  /// Never throws: a storage failure must not block logout or re-login.
   Future<void> clearSession(String userId) async {
-    await store.delete(tokenKey(userId));
-    await store.delete(expiryKey(userId));
+    for (final k in [tokenKey(userId), expiryKey(userId)]) {
+      try {
+        await store.delete(k);
+      } catch (_) {}
+    }
   }
 
   /// Revokes the server session (best effort) and always clears the local token.
+  /// Never throws.
   Future<void> logout(String userId) async {
-    final token = await store.read(tokenKey(userId));
+    String? token;
+    try {
+      token = await store.read(tokenKey(userId));
+    } catch (_) {
+      token =
+          null; // unreadable: nothing to revoke from here; expires server-side
+    }
     await clearSession(userId);
     final call = rpc;
     if (token == null || call == null) return;
