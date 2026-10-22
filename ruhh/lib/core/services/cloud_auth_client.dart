@@ -344,6 +344,142 @@ class CloudAuthClient implements InboxTransport {
     }
     await call('ruhh_inbox_ack_v2', {'p_token': token, 'p_results': results});
   }
+
+  /// Pending proposals for the user's own session (approval is user-only:
+  /// the agent API has no approve operation).
+  Future<List<AgentProposal>> listProposals(String userId) async {
+    final call = rpc;
+    final token = await tokenFor(userId);
+    if (call == null || token == null) {
+      throw const CloudSyncAuthException(
+        sessionExpiredMessage,
+        reauthRequired: true,
+      );
+    }
+    try {
+      final raw = await call('ruhh_proposals_list_v2', {'p_token': token});
+      if (raw is! List) return const [];
+      return raw
+          .map(AgentProposal.tryParse)
+          .whereType<AgentProposal>()
+          .toList();
+    } on CloudRpcException catch (e) {
+      if (e.isSessionInvalid) {
+        await clearSession(userId);
+        _reauth.add(userId);
+        throw const CloudSyncAuthException(
+          sessionExpiredMessage,
+          reauthRequired: true,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<ProposalDecisionResult> decideProposal(
+    String userId,
+    AgentProposal proposal, {
+    required bool approve,
+  }) async {
+    final call = rpc;
+    final token = await tokenFor(userId);
+    if (call == null || token == null) {
+      return ProposalDecisionResult.sessionRequired;
+    }
+    try {
+      final raw = await call('ruhh_proposal_decide_v2', {
+        'p_token': token,
+        'p_proposal_id': proposal.id,
+        'p_params_hash': proposal.paramsHash,
+        'p_decision': approve ? 'approve' : 'reject',
+      });
+      final status = raw is Map ? raw['status'] : null;
+      if (status == 'executed') return ProposalDecisionResult.executed;
+      if (status == 'rejected') return ProposalDecisionResult.rejected;
+      return ProposalDecisionResult.failed;
+    } on CloudRpcException catch (e) {
+      if (e.isSessionInvalid) {
+        await clearSession(userId);
+        _reauth.add(userId);
+        return ProposalDecisionResult.sessionRequired;
+      }
+      final m = e.message;
+      if (m.contains('proposal_expired')) return ProposalDecisionResult.expired;
+      if (m.contains('proposal_already_decided')) {
+        return ProposalDecisionResult.alreadyDecided;
+      }
+      if (m.contains('proposal_hash_mismatch')) {
+        return ProposalDecisionResult.changed;
+      }
+      if (m.contains('proposal_conflict')) {
+        return ProposalDecisionResult.conflict;
+      }
+      if (m.contains('target_not_found')) {
+        return ProposalDecisionResult.targetMissing;
+      }
+      if (m.contains('proposal_not_found')) {
+        return ProposalDecisionResult.notFound;
+      }
+      return ProposalDecisionResult.failed;
+    } catch (_) {
+      return ProposalDecisionResult.failed;
+    }
+  }
+}
+
+/// A pending agent proposal as shown on the in-app approval screen.
+class AgentProposal {
+  const AgentProposal({
+    required this.id,
+    required this.action,
+    required this.summary,
+    required this.paramsHash,
+    required this.params,
+    required this.target,
+    required this.expiresAt,
+  });
+
+  final String id;
+  final String action;
+  final String summary;
+  final String paramsHash;
+  final Map<String, dynamic> params;
+
+  /// Server's description of the current target (null if it no longer exists).
+  final Map<String, dynamic>? target;
+  final DateTime? expiresAt;
+
+  static AgentProposal? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final id = raw['id'], action = raw['action'], hash = raw['params_hash'];
+    if (id is! String || action is! String || hash is! String) return null;
+    return AgentProposal(
+      id: id,
+      action: action,
+      summary: raw['summary'] is String ? raw['summary'] as String : action,
+      paramsHash: hash,
+      params: raw['params'] is Map
+          ? Map<String, dynamic>.from(raw['params'] as Map)
+          : const {},
+      target: raw['target'] is Map
+          ? Map<String, dynamic>.from(raw['target'] as Map)
+          : null,
+      expiresAt: DateTime.tryParse(raw['expires_at'] as String? ?? ''),
+    );
+  }
+}
+
+enum ProposalDecisionResult {
+  executed,
+  rejected,
+  expired,
+  alreadyDecided,
+  changed,
+  targetMissing,
+  conflict,
+  notFound,
+  sessionRequired,
+  failed,
 }
 
 /// Compares dotted versions ("1.0.31", "1.0.31+32"). Unparseable => treated as 0.

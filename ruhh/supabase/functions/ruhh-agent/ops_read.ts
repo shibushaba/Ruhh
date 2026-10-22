@@ -21,7 +21,7 @@ export interface OpResult {
 }
 
 export interface OpDef {
-  scope: "read" | "write" | "approve";
+  scope: "read" | "write";
   run(ctx: OpContext, p: Params): Promise<OpResult>;
 }
 

@@ -81,7 +81,7 @@ Steps:
    secrets (`RUHH_AGENT_DEFAULT_UTC_OFFSET_MIN=330`; `RUHH_AGENT_WRITES` stays `off`),
    mint a read-only credential in the SQL editor, connect Grok Bot, run checklist G.
 7. **[GATE] agent writes** — only after checklist H passes on staging *and* prod read-only
-   use has been verified: set `RUHH_AGENT_WRITES=on` and mint a `{read,write,approve}`
+   use has been verified: set `RUHH_AGENT_WRITES=on` and mint a `{read,write}`
    credential; revoke the read-only one.
 
 ## Rollback (accounts for sessions and app versions)

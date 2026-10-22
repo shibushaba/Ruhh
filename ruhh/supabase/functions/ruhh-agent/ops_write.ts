@@ -6,11 +6,11 @@ import { ApiError, bool, day, num, oneOf, onlyKeys, str, uuid } from "./validate
 //  * AUTO (queued immediately, reversible, low risk): tx.add, habit.mark_done,
 //    prayer.set_status, movie.add_watchlist.
 //  * PROPOSAL (needs exact single-use approval within 15 min): tx.edit, tx.delete, movie.delete.
+//    The agent can NEVER approve: approval happens only in the RUHH app with the user's own
+//    session (ruhh_proposal_decide_v2). The agent never receives params_hash.
 //  * NEVER offered: payments/transfers, bulk changes, wallets/categories/todos (local-only),
 //    schema/security/deployment actions, raw SQL.
 // All writes only enqueue into ruhh_agent_inbox; the app applies them before its next push.
-
-const HEX64 = /^[0-9a-f]{64}$/;
 
 function today(ctx: OpContext): string {
   return new Date(ctx.now.getTime() + ctx.utcOffsetMinutes * 60000).toISOString().slice(0, 10);
@@ -64,18 +64,23 @@ async function propose(
     p_target: target,
     p_params: params,
     p_summary: summary,
-  }) as { proposal_id: string; params_hash: string; summary: string; expires_at: string; status: string };
+  }) as { proposal_id: string; params_hash?: string; summary: string; expires_at: string; status: string };
   return {
     data: {
-      ...r,
+      proposal_id: r.proposal_id,
+      summary: r.summary,
+      expires_at: r.expires_at,
+      status: r.status,
       requires_approval: true,
-      approve_with: { op: "proposal.approve", params: { proposal_id: r.proposal_id, params_hash: r.params_hash } },
+      approve_in: "RUHH app → Settings → Agent approvals (the user approves on the phone)",
     },
     meta: {
       range: null,
       modules: [action.startsWith("tx.") ? "budget" : "movie"],
       coverage: {},
-      notes: ["Nothing has changed yet. Ask the user to confirm this exact action within 15 minutes."],
+      notes: [
+        "Nothing has changed yet. The user must open the RUHH app and approve it within 15 minutes; the agent cannot approve.",
+      ],
     },
   };
 }
@@ -205,40 +210,13 @@ export const writeOps: Record<string, OpDef> = {
     },
   },
 
-  "proposal.approve": {
-    scope: "approve",
-    async run(ctx, p) {
-      onlyKeys(p, ["proposal_id", "params_hash"]);
-      const id = uuid(p, "proposal_id")!;
-      const hash = str(p, "params_hash", 64, true)!;
-      if (!HEX64.test(hash)) throw new ApiError(400, "invalid_param", "params_hash");
-      const r = await ctx.db.rpc("ruhh_agent_proposal_decide", {
-        p_user_id: ctx.userId,
-        p_proposal_id: id,
-        p_decision: "approve",
-        p_params_hash: hash,
-      });
-      return {
-        data: r,
-        meta: {
-          range: null,
-          modules: [],
-          coverage: {},
-          notes: ["Approved action queued; applies on the next app sync."],
-        },
-      };
-    },
-  },
-
   "proposal.reject": {
     scope: "write",
     async run(ctx, p) {
       onlyKeys(p, ["proposal_id"]);
-      const r = await ctx.db.rpc("ruhh_agent_proposal_decide", {
+      const r = await ctx.db.rpc("ruhh_agent_proposal_reject", {
         p_user_id: ctx.userId,
         p_proposal_id: uuid(p, "proposal_id")!,
-        p_decision: "reject",
-        p_params_hash: null,
       });
       return { data: r, meta: { range: null, modules: [], coverage: {}, notes: [] } };
     },
@@ -253,6 +231,5 @@ export const IDEMPOTENT_OPS = new Set([
   "tx.edit",
   "tx.delete",
   "movie.delete",
-  "proposal.approve",
   "proposal.reject",
 ]);

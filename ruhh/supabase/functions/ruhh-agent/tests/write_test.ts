@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
+import { ALLOWED_RPCS } from "../db.ts";
 import { readOps } from "../ops_read.ts";
 import { IDEMPOTENT_OPS, writeOps } from "../ops_write.ts";
 import { ALICE, seed, setup, TOKEN_A, TOKEN_A_RO } from "./helpers.ts";
@@ -38,13 +39,11 @@ function inboxRpc(db: { rpcImpl: (fn: string, a: Record<string, unknown>) => unk
         status: "pending",
       };
     }
-    if (fn === "ruhh_agent_proposal_decide") {
+    if (fn === "ruhh_agent_proposal_reject") {
       const p = proposals.get(String(a.p_proposal_id));
       if (!p || p.user !== a.p_user_id) throw new Error("proposal_not_found");
       if (p.status !== "pending") throw new Error("proposal_already_decided");
-      if (p.expired) throw new Error("proposal_expired");
-      if (a.p_decision === "approve" && a.p_params_hash !== p.hash) throw new Error("proposal_hash_mismatch");
-      p.status = a.p_decision === "approve" ? "executed" : "rejected";
+      p.status = "rejected";
       return { proposal_id: a.p_proposal_id, status: p.status };
     }
     throw new Error("unexpected");
@@ -52,7 +51,7 @@ function inboxRpc(db: { rpcImpl: (fn: string, a: Record<string, unknown>) => unk
   return proposals;
 }
 
-Deno.test("read-only credential cannot write or approve (403)", async () => {
+Deno.test("read-only credential cannot write (403)", async () => {
   const { db, call } = await setup(ops, IDEMPOTENT_OPS);
   inboxRpc(db);
   const r = await call(
@@ -154,35 +153,64 @@ Deno.test("edits/deletes create proposals, never direct changes", async () => {
   assertEquals(e.json.error.code, "missing_param");
 });
 
-Deno.test("approval: exact hash, single use; altered hash and replays rejected", async () => {
+Deno.test("agent can never approve: no op, no hash, no approve RPC, no approve scope", async () => {
   const { db, call } = await setup(ops, IDEMPOTENT_OPS);
   const props = inboxRpc(db);
   const r = await call({ op: "tx.edit", request_id: "req-p-0011", params: { id: TX, amount: 12 } });
-  const { proposal_id, params_hash } = r.json.data;
-  const altered = await call({
-    op: "proposal.approve",
-    request_id: "req-p-0012",
-    params: { proposal_id, params_hash: "0".repeat(64) },
+  assertEquals(r.status, 200);
+  const dump = JSON.stringify(r.json);
+  assert(!dump.includes("params_hash") && !dump.includes("f".repeat(64)), "hash never returned to the agent");
+  assert(!dump.includes("approve_with"));
+  assertEquals(r.json.data.requires_approval, true);
+  // every approve-like op name is unknown
+  for (const op of ["proposal.approve", "proposal.decide", "proposal.execute", "approve"]) {
+    const x = await call({
+      op,
+      request_id: `req-x-${op.length.toString().padStart(4, "0")}`,
+      params: { proposal_id: r.json.data.proposal_id, params_hash: "f".repeat(64) },
+    });
+    assertEquals(x.status, 400, op);
+    assertEquals(x.json.error.code, "unknown_op");
+  }
+  assert(!Object.keys(ops).some((k) => /approve|decide|execute/.test(k)));
+  assert(!ALLOWED_RPCS.has("ruhh_agent_proposal_decide"));
+  assert(Object.values(ops).every((d) => d.scope === "read" || d.scope === "write"));
+  // the DB layer refuses the approve RPC even if called directly
+  await assertRejects(() => db.rpc("ruhh_agent_proposal_decide", {}), Error, "rpc_not_allowed");
+  // proposal.list never exposes params or hashes
+  db.tables.ruhh_agent_proposals = [{
+    id: r.json.data.proposal_id,
+    user_id: ALICE,
+    action: "tx.edit",
+    summary: "s",
+    status: "pending",
+    params_hash: "f".repeat(64),
+    params: { amount: 12 },
+    expires_at: "2099-01-01T00:00:00Z",
+    created_at: "2026-10-22T06:00:00Z",
+  }];
+  const l = await call({ op: "proposal.list", request_id: "req-p-0019", params: {} });
+  assert(!JSON.stringify(l.json).includes("f".repeat(64)));
+  assertEquals(props.get(r.json.data.proposal_id)!.status, "pending", "still pending: only the app can approve");
+});
+
+Deno.test("agent reject uses the reject-only RPC and is single use", async () => {
+  const { db, call } = await setup(ops, IDEMPOTENT_OPS);
+  inboxRpc(db);
+  const r = await call({ op: "tx.delete", request_id: "req-p-0031", params: { id: TX } });
+  const a = await call({
+    op: "proposal.reject",
+    request_id: "req-p-0032",
+    params: { proposal_id: r.json.data.proposal_id },
   });
-  assertEquals(altered.status, 409);
-  assertEquals(altered.json.error.code, "proposal_hash_mismatch");
-  const ok = await call({ op: "proposal.approve", request_id: "req-p-0013", params: { proposal_id, params_hash } });
-  assertEquals(ok.json.data.status, "executed");
-  const again = await call({ op: "proposal.approve", request_id: "req-p-0014", params: { proposal_id, params_hash } });
-  assertEquals(again.json.error.code, "proposal_already_decided");
-  // same request id replay returns the original response, not a second execution
-  const replay = await call({ op: "proposal.approve", request_id: "req-p-0013", params: { proposal_id, params_hash } });
-  assertEquals(replay.json.data.status, "executed");
-  assertEquals(db.rpcCalls.filter((c) => c.fn === "ruhh_agent_proposal_decide").length, 3);
-  // expired
-  const r2 = await call({ op: "tx.delete", request_id: "req-p-0015", params: { id: TX } });
-  props.get(r2.json.data.proposal_id)!.expired = true;
-  const exp = await call({
-    op: "proposal.approve",
-    request_id: "req-p-0016",
-    params: { proposal_id: r2.json.data.proposal_id, params_hash: r2.json.data.params_hash },
+  assertEquals(a.json.data.status, "rejected");
+  const b = await call({
+    op: "proposal.reject",
+    request_id: "req-p-0033",
+    params: { proposal_id: r.json.data.proposal_id },
   });
-  assertEquals(exp.json.error.code, "proposal_expired");
+  assertEquals(b.json.error.code, "proposal_already_decided");
+  assert(db.rpcCalls.every((c) => c.fn !== "ruhh_agent_proposal_decide"));
 });
 
 Deno.test("proposal on another user's / missing target -> 409 target_not_found", async () => {

@@ -16,7 +16,7 @@ export async function setup(ops: Record<string, OpDef>, idempotentOps?: Set<stri
       id: "cred-a",
       user_id: ALICE,
       token_hash: await sha256Hex(TOKEN_A),
-      scopes: ["read", "write", "approve"],
+      scopes: ["read", "write"],
       expires_at: null,
       revoked_at: null,
     },

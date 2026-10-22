@@ -1,5 +1,10 @@
 -- Sensitive agent actions (edits/deletes) become proposals that need an exact,
 -- single-use, expiring approval. Execution only enqueues into ruhh_agent_inbox.
+--
+-- Approval authority: ONLY the user's own app session (ruhh_sessions token, obtained by
+-- PIN login on the phone) can approve, via ruhh_proposal_decide_v2. The agent (service
+-- role inside ruhh-agent) can create, list (without params_hash) and reject proposals,
+-- but has no EXECUTE on the approve path at all.
 
 create table if not exists public.ruhh_agent_proposals (
   id uuid primary key default gen_random_uuid(),
@@ -142,9 +147,97 @@ begin
 end;
 $$;
 
+-- Agent-side reject (service role). Rejecting is always safe; it can never execute.
+create or replace function public.ruhh_agent_proposal_reject(p_user_id uuid, p_proposal_id uuid)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+begin
+  return public.ruhh_agent_proposal_decide(p_user_id, p_proposal_id, 'reject', null);
+end;
+$$;
+
+-- Readable description of the proposal target for the approval screen (cloud copy).
+create or replace function public.ruhh_agent_target_describe(p_user uuid, p_action text, p_target uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when p_action in ('tx.edit', 'tx.delete') then (
+      select jsonb_build_object('kind', 'transaction', 'amount', t.amount, 'is_income', t.is_income,
+        'category', t.category, 'title', t.title, 'note', left(t.note, 120), 'occurred_at', t.occurred_at)
+      from public.transactions t where t.id = p_target and t.user_id = p_user)
+    when p_action = 'movie.delete' then (
+      select jsonb_build_object('kind', 'movie', 'title', m.title, 'media_type', m.media_type)
+      from public.movies m where m.id = p_target and m.user_id = p_user)
+    else null end;
+$$;
+
+-- App (user session): pending, unexpired proposals of the session's own user.
+create or replace function public.ruhh_proposals_list_v2(p_token text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := public.ruhh_session_user(p_token);
+begin
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', p.id, 'action', p.action, 'summary', p.summary, 'params', p.params,
+      'params_hash', p.params_hash, 'target_id', p.target,
+      'target', public.ruhh_agent_target_describe(p.user_id, p.action, p.target),
+      'created_at', p.created_at, 'expires_at', p.expires_at) order by p.created_at desc)
+    from public.ruhh_agent_proposals p
+    where p.user_id = v_user and p.status = 'pending' and p.expires_at > now()
+  ), '[]'::jsonb);
+end;
+$$;
+
+-- App (user session): approve or reject. All checks (owner, pending, expiry, exact hash,
+-- target state, single use under row lock) are in ruhh_agent_proposal_decide.
+create or replace function public.ruhh_proposal_decide_v2(
+  p_token text,
+  p_proposal_id uuid,
+  p_params_hash text,
+  p_decision text
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := public.ruhh_session_user(p_token);
+begin
+  if p_decision is null or p_decision not in ('approve', 'reject') then
+    raise exception 'proposal_bad_decision' using errcode = '22023';
+  end if;
+  return public.ruhh_agent_proposal_decide(v_user, p_proposal_id, p_decision, p_params_hash);
+end;
+$$;
+
 revoke all on function public.ruhh_agent_params_hash(text, uuid, jsonb) from public, anon, authenticated;
 revoke all on function public.ruhh_agent_target_exists(uuid, text, uuid) from public, anon, authenticated;
+revoke all on function public.ruhh_agent_target_describe(uuid, text, uuid) from public, anon, authenticated;
 revoke all on function public.ruhh_agent_proposal_create(uuid, uuid, text, uuid, jsonb, text) from public, anon, authenticated;
-revoke all on function public.ruhh_agent_proposal_decide(uuid, uuid, text, text) from public, anon, authenticated;
+-- decide is internal: no API role (including service_role, i.e. the agent) may call it.
+revoke all on function public.ruhh_agent_proposal_decide(uuid, uuid, text, text) from public, anon, authenticated, service_role;
+revoke all on function public.ruhh_agent_proposal_reject(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.ruhh_agent_proposal_create(uuid, uuid, text, uuid, jsonb, text) to service_role;
-grant execute on function public.ruhh_agent_proposal_decide(uuid, uuid, text, text) to service_role;
+grant execute on function public.ruhh_agent_proposal_reject(uuid, uuid) to service_role;
+
+-- service_role (the agent's runtime) is explicitly excluded from the user-session API.
+revoke all on function public.ruhh_proposals_list_v2(text) from public, service_role;
+revoke all on function public.ruhh_proposal_decide_v2(text, uuid, text, text) from public, service_role;
+grant execute on function public.ruhh_proposals_list_v2(text) to anon, authenticated;
+grant execute on function public.ruhh_proposal_decide_v2(text, uuid, text, text) to anon, authenticated;

@@ -54,8 +54,9 @@ export const ALLOWED_TABLES = new Set([
   "ruhh_agent_proposals",
 ]);
 
+// ruhh_agent_proposal_decide (approve) is deliberately absent: the agent cannot approve.
 export const ALLOWED_RPCS = new Set([
   "ruhh_inbox_enqueue",
   "ruhh_agent_proposal_create",
-  "ruhh_agent_proposal_decide",
+  "ruhh_agent_proposal_reject",
 ]);

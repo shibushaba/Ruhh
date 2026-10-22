@@ -22,10 +22,13 @@ String formatLastCloudSync(DateTime? at) {
   final now = DateTime.now();
   final time = DateFormat.jm().format(local);
   final sameDay =
-      local.year == now.year && local.month == now.month && local.day == now.day;
+      local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
   if (sameDay) return 'Last sync: today at $time';
   final yesterday = now.subtract(const Duration(days: 1));
-  final wasYesterday = local.year == yesterday.year &&
+  final wasYesterday =
+      local.year == yesterday.year &&
       local.month == yesterday.month &&
       local.day == yesterday.day;
   if (wasYesterday) return 'Last sync: yesterday at $time';
@@ -51,7 +54,10 @@ class SettingsPage extends ConsumerWidget {
               title: 'Modules',
               subtitle: 'Turn trackers on or off for this account.',
               child: NBCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 child: _SettingsSwitch(
                   title: 'Budget tracker',
                   subtitle: 'Expenses, goals, and accounts',
@@ -116,7 +122,10 @@ class SettingsPage extends ConsumerWidget {
             NBSection(
               title: 'Appearance',
               child: NBCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 child: _SettingsSwitch(
                   title: 'Dark mode',
                   value: settings.darkMode,
@@ -137,6 +146,22 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: NBLayout.sectionGap),
+            if (SupabaseService.client != null) ...[
+              NBSection(
+                title: 'Agent approvals',
+                subtitle:
+                    'Edits and deletes requested through the RUHH agent wait here for your approval.',
+                child: NBCard(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    title: const Text('Review pending requests'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/settings/agent-approvals'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: NBLayout.sectionGap),
+            ],
             NBSection(
               title: 'Cloud backup',
               subtitle: SupabaseService.client == null
@@ -158,9 +183,7 @@ class SettingsPage extends ConsumerWidget {
                                 SupabaseService.client == null
                                     ? 'Not configured'
                                     : 'Cloud configured',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: t.textPrimary),
                               ),
                               const SizedBox(height: 4),
@@ -195,9 +218,7 @@ class SettingsPage extends ConsumerWidget {
                               formatLastCloudSync(
                                 ref.watch(lastCloudSyncAtProvider),
                               ),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(color: t.textPrimary),
                             ),
                             if (ref.watch(cloudSyncBusyProvider))
@@ -229,9 +250,7 @@ class SettingsPage extends ConsumerWidget {
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Text(
                                   ref.watch(lastCloudSyncErrorProvider)!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(color: t.textSecondary),
                                 ),
                               ),
@@ -253,14 +272,12 @@ class SettingsPage extends ConsumerWidget {
                                     content: Text(
                                       ok
                                           ? formatLastCloudSync(
-                                              ref.read(
-                                                lastCloudSyncAtProvider,
-                                              ),
+                                              ref.read(lastCloudSyncAtProvider),
                                             )
                                           : (ref.read(
-                                                    lastCloudSyncErrorProvider,
-                                                  ) ??
-                                                  'Sync could not complete'),
+                                                  lastCloudSyncErrorProvider,
+                                                ) ??
+                                                'Sync could not complete'),
                                     ),
                                   ),
                                 );
@@ -297,7 +314,8 @@ class _LocalBackupSection extends ConsumerStatefulWidget {
   const _LocalBackupSection();
 
   @override
-  ConsumerState<_LocalBackupSection> createState() => _LocalBackupSectionState();
+  ConsumerState<_LocalBackupSection> createState() =>
+      _LocalBackupSectionState();
 }
 
 class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
@@ -325,10 +343,7 @@ class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
       return;
     }
     final backupAsync = ref.read(ruhhFileBackupServiceProvider);
-    final service = backupAsync.maybeWhen(
-      data: (s) => s,
-      orElse: () => null,
-    );
+    final service = backupAsync.maybeWhen(data: (s) => s, orElse: () => null);
     if (service == null) {
       final service2 = await ref.read(ruhhFileBackupServiceProvider.future);
       await _exportWith(service2, user);
@@ -337,7 +352,10 @@ class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
     await _exportWith(service, user);
   }
 
-  Future<void> _exportWith(RuhhFileBackupService service, UserLocal user) async {
+  Future<void> _exportWith(
+    RuhhFileBackupService service,
+    UserLocal user,
+  ) async {
     final settings = ref.read(settingsControllerProvider);
     final file = await service.exportBackupCsv(
       user: user,
@@ -417,9 +435,9 @@ class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -462,7 +480,10 @@ class _SettingsSwitch extends StatelessWidget {
     return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       dense: true,
-      title: Text(title, style: theme.titleMedium?.copyWith(color: t.textPrimary)),
+      title: Text(
+        title,
+        style: theme.titleMedium?.copyWith(color: t.textPrimary),
+      ),
       subtitle: subtitle != null
           ? Text(subtitle!, style: t.caption(theme))
           : null,

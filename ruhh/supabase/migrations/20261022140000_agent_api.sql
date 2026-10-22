@@ -5,8 +5,10 @@ create table if not exists public.ruhh_agent_credentials (
   user_id uuid not null references public.users(id) on delete cascade,
   token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
   label text not null default 'agent' check (char_length(label) <= 64),
+  -- No 'approve' scope exists: an agent credential can never approve a proposal.
+  -- Approval requires the user's own app session (ruhh_proposal_decide_v2).
   scopes text[] not null default array['read']
-    check (scopes <@ array['read', 'write', 'approve']::text[] and cardinality(scopes) > 0),
+    check (scopes <@ array['read', 'write']::text[] and cardinality(scopes) > 0),
   created_at timestamptz not null default now(),
   expires_at timestamptz,
   revoked_at timestamptz,

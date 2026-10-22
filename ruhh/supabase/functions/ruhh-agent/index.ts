@@ -1,6 +1,6 @@
 // Supabase Edge Function: ruhh-agent.
 // Auth: "Authorization: Bearer ruhh_agent_<64 hex>" — a dedicated, revocable agent
-// credential (ruhh_agent_credentials, scopes read/write/approve). verify_jwt is disabled in
+// credential (ruhh_agent_credentials, scopes read/write; approval only in the app). verify_jwt is disabled in
 // config.toml because this function performs its own authentication; the service role
 // key is read from the function environment and never leaves it.
 // Writes never touch synced tables: they enqueue into ruhh_agent_inbox (see ops_write.ts).

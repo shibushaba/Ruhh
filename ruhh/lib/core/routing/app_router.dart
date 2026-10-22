@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ruhh/core/motion/page_transitions.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
+import 'package:ruhh/features/settings/agent_approvals_page.dart';
 import 'package:ruhh/features/auth/login_page.dart';
 import 'package:ruhh/features/auth/signup_page.dart';
 import 'package:ruhh/features/auth/welcome_auth_page.dart';
@@ -63,22 +64,13 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/splash',
-          builder: (_, __) => const SplashPage(),
-        ),
+        GoRoute(path: '/splash', builder: (_, __) => const SplashPage()),
         GoRoute(
           path: '/auth/welcome',
           builder: (_, __) => const WelcomeAuthPage(),
         ),
-        GoRoute(
-          path: '/auth/login',
-          builder: (_, __) => const LoginPage(),
-        ),
-        GoRoute(
-          path: '/auth/signup',
-          builder: (_, __) => const SignupPage(),
-        ),
+        GoRoute(path: '/auth/login', builder: (_, __) => const LoginPage()),
+        GoRoute(path: '/auth/signup', builder: (_, __) => const SignupPage()),
         GoRoute(
           path: '/onboarding',
           builder: (_, __) => const OnboardingPage(),
@@ -100,6 +92,12 @@ class AppRouter {
               ruhhPage(child: const NotificationSettingsPage(), state: s),
         ),
         GoRoute(
+          path: '/settings/agent-approvals',
+          parentNavigatorKey: rootNavigatorKey,
+          pageBuilder: (c, s) =>
+              ruhhPage(child: const AgentApprovalsPage(), state: s),
+        ),
+        GoRoute(
           path: '/settings/overlay',
           parentNavigatorKey: rootNavigatorKey,
           pageBuilder: (c, s) =>
@@ -111,10 +109,7 @@ class AppRouter {
           branches: [
             StatefulShellBranch(
               routes: [
-                GoRoute(
-                  path: '/home',
-                  builder: (_, __) => const HomePage(),
-                ),
+                GoRoute(path: '/home', builder: (_, __) => const HomePage()),
                 GoRoute(
                   path: '/analytics',
                   builder: (_, __) => const AnalyticsPage(),
@@ -128,21 +123,22 @@ class AppRouter {
                   builder: (context, state) {
                     final tab =
                         int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
-                            0;
+                        0;
                     return BudgetPage(initialTab: tab.clamp(0, 4));
                   },
                   routes: [
                     GoRoute(
                       path: 'add',
-                      pageBuilder: (c, s) => ruhhPage(
-                          child: const AddTransactionPage(), state: s),
+                      pageBuilder: (c, s) =>
+                          ruhhPage(child: const AddTransactionPage(), state: s),
                     ),
                     GoRoute(
                       path: 'edit/:id',
                       pageBuilder: (c, s) => ruhhPage(
                         child: AddTransactionPage(
-                          transactionId:
-                              int.tryParse(s.pathParameters['id'] ?? ''),
+                          transactionId: int.tryParse(
+                            s.pathParameters['id'] ?? '',
+                          ),
                         ),
                         state: s,
                       ),
@@ -158,7 +154,7 @@ class AppRouter {
                   builder: (context, state) {
                     final tab =
                         int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
-                            0;
+                        0;
                     return HabitPage(initialTab: tab.clamp(0, 2));
                   },
                   routes: [
@@ -170,9 +166,7 @@ class AppRouter {
                     GoRoute(
                       path: 'edit/:id',
                       pageBuilder: (c, s) => ruhhPage(
-                        child: HabitFormPage(
-                          remoteId: s.pathParameters['id'],
-                        ),
+                        child: HabitFormPage(remoteId: s.pathParameters['id']),
                         state: s,
                       ),
                     ),
@@ -196,7 +190,7 @@ class AppRouter {
                   builder: (context, state) {
                     final tab =
                         int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
-                            0;
+                        0;
                     return PrayerPage(initialTab: tab.clamp(0, 2));
                   },
                   routes: [
@@ -215,7 +209,7 @@ class AppRouter {
                   builder: (context, state) {
                     final tab =
                         int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
-                            0;
+                        0;
                     return MoviePage(initialTab: tab.clamp(0, 1));
                   },
                   routes: [
@@ -236,13 +230,16 @@ class AppRouter {
                     GoRoute(
                       path: 'categories',
                       pageBuilder: (c, s) => ruhhPage(
-                          child: const MovieCategoriesPage(), state: s),
+                        child: const MovieCategoriesPage(),
+                        state: s,
+                      ),
                     ),
                     GoRoute(
                       path: 'detail/:mediaType/:tmdbId',
                       builder: (context, state) {
-                        final id =
-                            int.tryParse(state.pathParameters['tmdbId'] ?? '');
+                        final id = int.tryParse(
+                          state.pathParameters['tmdbId'] ?? '',
+                        );
                         final type =
                             state.pathParameters['mediaType'] ?? 'movie';
                         if (id == null) {

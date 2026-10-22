@@ -58,6 +58,9 @@ Manual (staging, synthetic accounts only). Tick each with date + build.
 ## H. Agent writes (only after E passes; `RUHH_AGENT_WRITES=on` on staging)
 - [ ] "Add ₹120 tea expense" → queued → appears after app sync → still there after restart
 - [ ] "Mark Read done today", "Asr prayed on time", "Add Dune to watchlist" → applied once
-- [ ] "Delete that transaction" → proposal shown; approve with exact id+hash → applied
-- [ ] approve twice / after 15 min / with altered hash → rejected
+- [ ] "Delete that transaction" → bot replies "approve in the app"; bot response has no params_hash
+- [ ] bot asked to approve → it cannot (no op exists; `proposal.approve` → 400 unknown_op)
+- [ ] RUHH → Settings → Agent approvals shows the readable summary; Approve → applied after sync
+- [ ] approve twice / after 15 min / after editing the transaction → rejected with a clear message
+- [ ] a second phone signed in as another user sees no proposals of the first user
 - [ ] payments, transfers, bulk edits, wallet/todo changes → refused

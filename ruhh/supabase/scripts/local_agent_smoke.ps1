@@ -20,7 +20,7 @@ $payload = @{ transactions = @(@{ id = [guid]::NewGuid().ToString(); amount = 42
 Rpc 'ruhh_push_v2' @{ p_token = $tok; p_payload = $payload } | Out-Null
 $pull = Rpc 'ruhh_pull_v2' @{ p_token = $tok }
 "pull_v2 transactions=$($pull.transactions.Count) habits=$($pull.habits.Count) prayers=$($pull.prayer_logs.Count)"
-$cred = Sql "select ruhh_agent_credential_create('$uid','smoke',array['read','write','approve'],1)::text" | ConvertFrom-Json
+$cred = Sql "select ruhh_agent_credential_create('$uid','smoke',array['read','write'],1)::text" | ConvertFrom-Json
 $ah = @{ Authorization = "Bearer $($cred.token)"; 'Content-Type' = 'application/json' }
 function Agent($op, $params, $rid) { try { Invoke-RestMethod -Method Post -Uri "$api/functions/v1/ruhh-agent" -Headers $ah -Body (@{ op = $op; params = $params; request_id = $rid } | ConvertTo-Json -Depth 6 -Compress) } catch { $r = $_.ErrorDetails.Message; if ($r) { $r | ConvertFrom-Json } else { throw } } }
 $s = Agent 'budget.summary' @{ from = '2026-10-01'; to = '2026-10-31'; utc_offset_minutes = 330 } 'smoke-0001'
@@ -40,12 +40,16 @@ if ($env:RUHH_SMOKE_WRITES -eq '1') {
   $txid = $pull.transactions[0].id
   $p = Agent 'tx.delete' @{ id = $txid } 'smoke-w-0002'
   "agent tx.delete -> proposal status=$($p.data.status) needs_approval=$($p.data.requires_approval)"
-  $alt = Agent 'proposal.approve' @{ proposal_id = $p.data.proposal_id; params_hash = ('0' * 64) } 'smoke-w-0003'
-  "approve with altered hash -> $($alt.error.code)"
-  $ok = Agent 'proposal.approve' @{ proposal_id = $p.data.proposal_id; params_hash = $p.data.params_hash } 'smoke-w-0004'
-  "approve exact -> ok=$($ok.ok) status=$($ok.data.status)"
-  $again = Agent 'proposal.approve' @{ proposal_id = $p.data.proposal_id; params_hash = $p.data.params_hash } 'smoke-w-0005'
-  "approve replay (new request id) -> $($again.error.code)"
+  "agent response contains params_hash: $([bool]($p | ConvertTo-Json -Depth 6 | Select-String 'params_hash'))"
+  $agentApprove = Agent 'proposal.approve' @{ proposal_id = $p.data.proposal_id; params_hash = ('f' * 64) } 'smoke-w-0003'
+  "agent proposal.approve -> $($agentApprove.error.code) (must be unknown_op)"
+  $list = Rpc 'ruhh_proposals_list_v2' @{ p_token = $tok }
+  $mine = @($list) | Where-Object { $_.id -eq $p.data.proposal_id }
+  "app proposals_list_v2 sees proposal=$([bool]$mine) target_kind=$($mine.target.kind)"
+  try { Rpc 'ruhh_proposal_decide_v2' @{ p_token = $tok; p_proposal_id = $mine.id; p_params_hash = ('0' * 64); p_decision = 'approve' } | Out-Null; 'app approve altered hash: ACCEPTED (BAD)' } catch { "app approve altered hash -> $(($_.ErrorDetails.Message | ConvertFrom-Json).message)" }
+  $ok = Rpc 'ruhh_proposal_decide_v2' @{ p_token = $tok; p_proposal_id = $mine.id; p_params_hash = $mine.params_hash; p_decision = 'approve' }
+  "app approve exact (user session) -> status=$($ok.status)"
+  try { Rpc 'ruhh_proposal_decide_v2' @{ p_token = $tok; p_proposal_id = $mine.id; p_params_hash = $mine.params_hash; p_decision = 'approve' } | Out-Null; 'app approve replay: ACCEPTED (BAD)' } catch { "app approve replay -> $(($_.ErrorDetails.Message | ConvertFrom-Json).message)" }
 }
 Sql "update ruhh_agent_credentials set revoked_at = now() where id = '$($cred.credential_id)'" | Out-Null
 $rv = Agent 'habit.list' @{} 'smoke-0004'
