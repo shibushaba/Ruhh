@@ -19,13 +19,16 @@ Sibling directories at the repo root (`Budget-Tracker`, `Habit-Tracker`, etc.) a
 
 ## Supabase
 
-Migrations live in `supabase/migrations/`. Apply to your linked project:
+Migrations live in `supabase/migrations/`. **Do not `supabase link` a working copy to
+production and do not use `--linked`.** Remote changes follow `docs/SECURITY_ROLLOUT.md`
+(guard step, explicit `--project-ref` / `--db-url "$RUHH_TARGET_DB_URL"`, owner approval).
+Local development:
 
 ```bash
-# CLI token: create at supabase.com/dashboard (never commit sbp_ tokens)
-$env:SUPABASE_ACCESS_TOKEN="sbp_..."
-supabase link --project-ref gmmfimwumtbneynsyimz
-supabase db push
+supabase start            # disposable local stack
+supabase db reset --local # applies all migrations locally
+supabase test db          # pgTAP
+supabase stop --no-backup
 ```
 
 The app uses RPCs (`ruhh_register_user`, `ruhh_pull`, `ruhh_push`, …) with the **anon** key in `.env`. Personal access tokens are for CLI/admin only.
