@@ -43,6 +43,64 @@ void main() {
     client = CloudAuthClient(rpc: rpc.call, store: store, now: () => now);
   });
 
+  group('account binding', () {
+    test(
+      'session for a different cloud account is discarded and revoked',
+      () async {
+        rpc.handlers['ruhh_login'] = (_) => okLogin();
+        rpc.handlers['ruhh_logout'] = (_) => true;
+        final r = await client.login(
+          username: 'alice',
+          pin: '123456',
+          clientVersion: '1.0.31',
+          expectedUserId: '00000000-0000-4000-8000-0000000000ff',
+        );
+        expect(r.ok, isFalse);
+        expect(r.error, CloudAuthError.accountMismatch);
+        expect(store.values, isEmpty);
+        expect(rpc.calls.last.$1, 'ruhh_logout');
+        expect(rpc.calls.last.$2, {'p_token': token});
+      },
+    );
+
+    test('username mismatch in the response is rejected', () async {
+      rpc.handlers['ruhh_login'] = (_) => okLogin();
+      rpc.handlers['ruhh_logout'] = (_) => true;
+      final r = await client.login(
+        username: 'bob',
+        pin: '123456',
+        clientVersion: '1.0.31',
+      );
+      expect(r.error, CloudAuthError.accountMismatch);
+      expect(store.values, isEmpty);
+    });
+
+    test('matching local id stores the session', () async {
+      rpc.handlers['ruhh_login'] = (_) => okLogin();
+      final r = await client.login(
+        username: ' Alice ',
+        pin: '123456',
+        clientVersion: '1.0.31',
+        expectedUserId: userId,
+      );
+      expect(r.ok, isTrue);
+      expect(store.values[CloudAuthClient.tokenKey(userId)], token);
+    });
+
+    test('register returning another id is rejected', () async {
+      rpc.handlers['ruhh_register_user_v2'] = (_) => okLogin();
+      rpc.handlers['ruhh_logout'] = (_) => true;
+      final r = await client.register(
+        id: '00000000-0000-4000-8000-0000000000ff',
+        username: 'alice',
+        pin: '123456',
+        clientVersion: '1.0.31',
+      );
+      expect(r.error, CloudAuthError.accountMismatch);
+      expect(store.values, isEmpty);
+    });
+  });
+
   group('login', () {
     test('success stores token in session store, not the PIN', () async {
       rpc.handlers['ruhh_login'] = (_) => okLogin();

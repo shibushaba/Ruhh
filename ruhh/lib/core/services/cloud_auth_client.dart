@@ -38,6 +38,9 @@ enum CloudAuthError {
   usernameTooShort,
   invalidPin,
   serverOutdated,
+
+  /// The cloud account returned is not the account this device holds locally.
+  accountMismatch,
   network,
   notConfigured,
   unknown,
@@ -143,32 +146,43 @@ class CloudAuthClient implements InboxTransport {
   static const legacyRetiredMessage =
       'Cloud backup needs a fresh sign-in — log out and sign in again with your PIN.';
 
+  /// [expectedUserId]: the local account's cloud id (existing-device login).
+  /// A session for any other account is discarded, never stored.
   Future<CloudLoginResult> login({
     required String username,
     required String pin,
     required String clientVersion,
-  }) => _authCall('ruhh_login', {
-    'p_username': username,
-    'p_pin': pin,
-    'p_client_version': clientVersion,
-  });
+    String? expectedUserId,
+  }) => _authCall(
+    'ruhh_login',
+    {'p_username': username, 'p_pin': pin, 'p_client_version': clientVersion},
+    expectedUserId: expectedUserId,
+    expectedUsername: username,
+  );
 
   Future<CloudLoginResult> register({
     required String id,
     required String username,
     required String pin,
     required String clientVersion,
-  }) => _authCall('ruhh_register_user_v2', {
-    'p_id': id,
-    'p_username': username,
-    'p_pin': pin,
-    'p_client_version': clientVersion,
-  });
+  }) => _authCall(
+    'ruhh_register_user_v2',
+    {
+      'p_id': id,
+      'p_username': username,
+      'p_pin': pin,
+      'p_client_version': clientVersion,
+    },
+    expectedUserId: id,
+    expectedUsername: username,
+  );
 
   Future<CloudLoginResult> _authCall(
     String fn,
-    Map<String, dynamic> params,
-  ) async {
+    Map<String, dynamic> params, {
+    String? expectedUserId,
+    String? expectedUsername,
+  }) async {
     final call = rpc;
     if (call == null) {
       return const CloudLoginResult.failure(CloudAuthError.notConfigured);
@@ -180,7 +194,21 @@ class CloudAuthClient implements InboxTransport {
       }
       serverSupportsV2 = true;
       final result = CloudLoginResult.fromJson(Map<String, dynamic>.from(raw));
-      if (result.ok) await saveSession(result);
+      if (!result.ok) return result;
+      final idMismatch =
+          expectedUserId != null && result.userId != expectedUserId;
+      final nameMismatch =
+          expectedUsername != null &&
+          result.username?.toLowerCase() !=
+              expectedUsername.trim().toLowerCase();
+      if (idMismatch || nameMismatch) {
+        // Never store a session for another account; best-effort revoke it.
+        try {
+          await call('ruhh_logout', {'p_token': result.token});
+        } catch (_) {}
+        return const CloudLoginResult.failure(CloudAuthError.accountMismatch);
+      }
+      await saveSession(result);
       return result;
     } on CloudRpcException catch (e) {
       if (e.isFunctionMissing) {

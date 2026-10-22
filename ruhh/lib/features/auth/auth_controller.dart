@@ -245,8 +245,12 @@ class AuthController extends Notifier<AuthState> {
         username: trimmed,
         pin: pin,
         clientVersion: await AppVersion.current(),
+        expectedUserId: user.supabaseId,
       );
-      if (cloud.error == CloudAuthError.updateRequired) {
+      if (cloud.error == CloudAuthError.accountMismatch) {
+        cloudNotice =
+            'Cloud sign-in skipped — the cloud account does not match this device\'s account.';
+      } else if (cloud.error == CloudAuthError.updateRequired) {
         cloudNotice = updateRequiredMessage;
       } else if (cloud.error == CloudAuthError.lockedOut ||
           cloud.error == CloudAuthError.invalidCredentials) {
