@@ -49,7 +49,7 @@ Copy `ruhh\.env.example` → `ruhh\.env` and set:
 
 ## Supabase (already linked)
 
-Project ref: `gmmfimwumtbneynsyimz` — migrations in `supabase/migrations/`.
+Project ref: `gmmfimwumtbneynsyimz` — migrations in `supabase/migrations/`. Remote includes `movie_categories` sync (`20261112150000`).
 
 ## Android overlay
 
