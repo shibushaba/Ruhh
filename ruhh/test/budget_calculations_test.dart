@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/features/budget/ledger/budget_calculations.dart';
 import 'package:ruhh/features/budget/ledger/budget_category_ids.dart';
+import 'package:ruhh/features/budget/ledger/budget_inr.dart';
 
 void main() {
   test('Section 6 worked example', () {
@@ -102,5 +103,17 @@ void main() {
       BudgetCalculations.monthTotals(withExtraCredit, month).totalExpense,
       4200,
     );
+  });
+
+  test('hero balance shows minus when over income', () {
+    const totals = BudgetMonthTotals(
+      totalIncome: 10000,
+      totalExpense: 12000,
+      balance: -2000,
+      salaryAmount: 10000,
+      creditTotal: 0,
+    );
+    expect(BudgetBalanceUi.heroAmount(totals), '-₹2,000');
+    expect(BudgetBalanceUi.heroSuffix(totals), 'over');
   });
 }

@@ -173,6 +173,16 @@ class _DailyAyahCard extends ConsumerWidget {
                       height: 1.6,
                     ),
               ),
+              if (ayah.textEn != null && ayah.textEn!.trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  ayah.textEn!.trim(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        height: 1.45,
+                        color: context.ruhh.textSecondary,
+                      ),
+                ),
+              ],
               if (meta.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(

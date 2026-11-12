@@ -35,8 +35,13 @@ abstract final class BudgetInr {
 
 /// Hero balance line for Home / Budget cards (amount + over/saved/balance).
 abstract final class BudgetBalanceUi {
-  static String heroAmount(BudgetMonthTotals totals) =>
-      BudgetInr.format(totals.balance.abs());
+  static String heroAmount(BudgetMonthTotals totals) {
+    final balance = totals.balance;
+    if (balance < 0) {
+      return '-${BudgetInr.format(balance.abs())}';
+    }
+    return BudgetInr.format(balance);
+  }
 
   static String heroSuffix(BudgetMonthTotals totals) {
     final balance = totals.balance;

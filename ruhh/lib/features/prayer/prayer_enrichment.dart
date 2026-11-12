@@ -13,7 +13,21 @@ final dailyAyahProvider = FutureProvider<DailyAyah?>((ref) async {
   ref.watch(prayerRefreshProvider);
   final telawa = ref.watch(telawaServiceProvider);
   final islamic = ref.watch(islamicAppServiceProvider);
-  return await telawa.randomAyah() ?? await islamic.randomAyah();
+  var ayah = await telawa.randomAyah() ?? await islamic.randomAyah();
+  if (ayah == null) return null;
+  if (ayah.textEn == null || ayah.textEn!.trim().isEmpty) {
+    final en = await islamic.simpleEnglishForKey(ayah.ayahKey);
+    if (en != null && en.isNotEmpty) {
+      ayah = DailyAyah(
+        ayahKey: ayah.ayahKey,
+        textAr: ayah.textAr,
+        textEn: en,
+        surahNameEn: ayah.surahNameEn,
+        source: ayah.source,
+      );
+    }
+  }
+  return ayah;
 });
 
 final todaySunTimesProvider = FutureProvider<SunTimes?>((ref) async {
