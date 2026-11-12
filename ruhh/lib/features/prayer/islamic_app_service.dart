@@ -10,12 +10,18 @@ class IslamicAppService {
   /// Saheeh International — short, plain English.
   static const simpleEnglishTranslationId = 20;
 
+  Uri _verseUri(String path, {Map<String, String>? query}) {
+    return Uri.parse('$_base/$path').replace(queryParameters: query);
+  }
+
   Future<DailyAyah?> randomAyah() async {
     final res = await http.get(
-      Uri.parse(
-        '$_base/verses/random?translations=$simpleEnglishTranslationId',
+      _verseUri(
+        'verses/random',
+        query: {'translations': '$simpleEnglishTranslationId'},
       ),
-    );
+      headers: const {'Accept': 'application/json', 'User-Agent': 'RUHH/1.0'},
+    ).timeout(const Duration(seconds: 20));
     if (res.statusCode != 200) return null;
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final data = body['data'] as Map<String, dynamic>?;
@@ -33,10 +39,12 @@ class IslamicAppService {
   Future<String?> simpleEnglishForKey(String ayahKey) async {
     if (ayahKey.isEmpty) return null;
     final res = await http.get(
-      Uri.parse(
-        '$_base/verses/by_key/$ayahKey?translations=$simpleEnglishTranslationId',
+      _verseUri(
+        'verses/by_key/${Uri.encodeComponent(ayahKey)}',
+        query: {'translations': '$simpleEnglishTranslationId'},
       ),
-    );
+      headers: const {'Accept': 'application/json', 'User-Agent': 'RUHH/1.0'},
+    ).timeout(const Duration(seconds: 20));
     if (res.statusCode != 200) return null;
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final data = body['data'] as Map<String, dynamic>?;

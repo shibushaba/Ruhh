@@ -1,7 +1,7 @@
 name: ruhh
 description: RUHH — unified life tracker (budget, habit, prayer, movie).
 publish_to: 'none'
-version: 1.0.32+33
+version: 1.0.33+34
 
 environment:
   sdk: ^3.12.2
@@ -45,6 +45,7 @@ dependencies:
   shimmer: ^3.0.0
   confetti: ^0.8.0
   lottie: ^3.6.1
+  package_info_plus: ^8.3.0
   neubrutalism_ui:
     path: ../UI
 

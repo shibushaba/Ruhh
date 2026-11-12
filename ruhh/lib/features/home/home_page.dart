@@ -393,6 +393,8 @@ class _BudgetHighlight extends ConsumerWidget {
         final progress = totals.totalIncome <= 0
             ? 0.0
             : (balance / totals.totalIncome).clamp(0.0, 1.0);
+        final balanceAccent =
+            balance < 0 ? context.ruhh.accentCoral : NBMetrics.incomeGreen;
         final subtitle = totals.totalIncome > 0
             ? 'Spent ${BudgetInr.format(totals.totalExpense)} \u00b7 income ${BudgetInr.format(totals.totalIncome)}'
             : 'Log income to track savings';
@@ -402,7 +404,7 @@ class _BudgetHighlight extends ConsumerWidget {
           targetLabel: BudgetBalanceUi.heroSuffix(totals),
           subtitle: subtitle,
           progress: progress,
-          accent: NBMetrics.incomeGreen,
+          accent: balanceAccent,
           onTap: () => context.go('/budget'),
           onAdd: () => context.push('/budget/add'),
         );

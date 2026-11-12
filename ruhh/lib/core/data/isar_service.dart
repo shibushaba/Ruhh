@@ -82,10 +82,7 @@ class IsarService {
   }
 
   static Future<void> repairMovieCollections(Isar isar) async {
-    await isar.writeTxn(() async {
-      await isar.movieLocals.clear();
-      await isar.movieCategoryLocals.clear();
-    });
+    await _repairCorruptMovieCollectionsIfNeeded(isar);
   }
 
   /// Clears every local collection (dev / reset). App must restart Isar after this.

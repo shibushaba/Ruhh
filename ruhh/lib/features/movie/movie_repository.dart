@@ -246,8 +246,8 @@ class MovieRepository {
 
   // --- Tracker (manual watchlist) ---
 
-  Future<void> ensureTrackerDefaults() async {
-    var cats = await _categoriesForUser();
+  Future<void> ensureTrackerDefaults({bool skipCategoryRepair = false}) async {
+    var cats = await _categoriesForUser(repairOnCorrupt: !skipCategoryRepair);
     if (cats.isEmpty) {
       await _isar.writeTxn(() async {
         for (var i = 0; i < defaultMovieCategoryNames.length; i++) {
@@ -264,7 +264,7 @@ class MovieRepository {
           await _isar.movieCategoryLocals.put(c);
         }
       });
-      cats = await _categoriesForUser();
+      cats = await _categoriesForUser(repairOnCorrupt: false);
     }
     await _isar.writeTxn(() async {
       for (final c in cats) {
@@ -308,6 +308,39 @@ class MovieRepository {
     if (dirty) {
       await _isar.writeTxn(() => _isar.movieLocals.putAll(movies));
     }
+    cats = await _categoriesForUser(repairOnCorrupt: false);
+    await _rebuildOrphanCategoriesFromMovies(cats);
+  }
+
+  Future<void> _rebuildOrphanCategoriesFromMovies(
+    List<MovieCategoryLocal> cats,
+  ) async {
+    final byId = {for (final c in cats) c.remoteId: c};
+    final movies = await all();
+    final orphans = <String>{};
+    for (final m in movies) {
+      final id = m.categoryRemoteId.trim();
+      if (id.isNotEmpty && !byId.containsKey(id)) {
+        orphans.add(id);
+      }
+    }
+    if (orphans.isEmpty) return;
+    await _isar.writeTxn(() async {
+      var sortOrder = cats.length;
+      for (final id in orphans) {
+        final c = MovieCategoryLocal()
+          ..remoteId = id
+          ..userId = _userId
+          ..name = 'Restored list'
+          ..colorValue = defaultMovieCategoryColors.last.toARGB32()
+          ..emoji = '🎬'
+          ..isCustom = true
+          ..isArchived = false
+          ..sortOrder = sortOrder++;
+        await _isar.movieCategoryLocals.put(c);
+      }
+    });
+    _markCloudBackupNeeded();
   }
 
   Stream<List<MovieCategoryLocal>> watchCategories() async* {
@@ -318,14 +351,20 @@ class MovieRepository {
     }
   }
 
-  Future<List<MovieCategoryLocal>> _categoriesForUser() async {
+  Future<List<MovieCategoryLocal>> _categoriesForUser({
+    bool repairOnCorrupt = true,
+  }) async {
     try {
       final rows = await _isar.movieCategoryLocals.where().findAll();
       final mine = rows.where((c) => c.userId == _userId).toList();
       mine.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       return mine;
-    } catch (e) {
+    } on RangeError catch (_) {
+      if (!repairOnCorrupt) return [];
       await IsarService.repairMovieCollections(_isar);
+      await ensureTrackerDefaults(skipCategoryRepair: true);
+      return _categoriesForUser(repairOnCorrupt: false);
+    } catch (_) {
       return [];
     }
   }

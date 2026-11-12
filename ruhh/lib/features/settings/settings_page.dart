@@ -15,6 +15,7 @@ import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:intl/intl.dart';
 import 'package:ruhh/features/auth/auth_controller.dart';
 import 'package:ruhh/features/settings/settings_controller.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 String formatLastCloudSync(DateTime? at) {
   if (at == null) return 'No successful sync yet this session';
@@ -283,6 +284,22 @@ class SettingsPage extends ConsumerWidget {
               onPressed: () async {
                 await ref.read(authControllerProvider.notifier).logout();
                 if (context.mounted) context.go('/auth/welcome');
+              },
+            ),
+            const SizedBox(height: 24),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snap) {
+                final v = snap.data?.version ?? '…';
+                final b = snap.data?.buildNumber ?? '';
+                final label = b.isEmpty ? 'v$v' : 'v$v ($b)';
+                return Text(
+                  'App $label',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: t.textSecondary,
+                      ),
+                );
               },
             ),
             const RuhhNavClearance(extra: 16),

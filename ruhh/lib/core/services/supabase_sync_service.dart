@@ -326,6 +326,7 @@ class SupabaseSyncService {
     'prayer_logs',
     'movies',
     'books',
+    'movie_categories',
   ];
 
   bool _ownsUserId(String recordUserId, String canonical, Id legacyIsarId) {
@@ -347,6 +348,8 @@ class SupabaseSyncService {
     final prayers = await _prayersForUser(userId, legacyIsarId);
     final movies = await _moviesForUser(userId, legacyIsarId);
     final books = await _booksForUser(userId, legacyIsarId);
+    final movieCategories =
+        await _movieCategoriesForUser(userId, legacyIsarId);
     final objectives = await _objectivesForUser(userId, legacyIsarId);
     final limits = await _categoryLimitsForUser(userId, legacyIsarId);
     return txs.length +
@@ -355,6 +358,7 @@ class SupabaseSyncService {
         prayers.length +
         movies.length +
         books.length +
+        movieCategories.length +
         objectives.length +
         limits.length;
   }
@@ -398,6 +402,12 @@ class SupabaseSyncService {
         if (b.userId == legacy) {
           b.userId = canonical;
           await _isar.bookLocals.put(b);
+        }
+      }
+      for (final mc in await _isar.movieCategoryLocals.where().findAll()) {
+        if (mc.userId == legacy) {
+          mc.userId = canonical;
+          await _isar.movieCategoryLocals.put(mc);
         }
       }
       for (final o in await _isar.objectiveLocals.where().findAll()) {
@@ -593,6 +603,8 @@ class SupabaseSyncService {
     final prayers = await _prayerLogsForExport(userId, legacyIsarId);
     final movies = await _moviesForUser(userId, legacyIsarId);
     final books = await _booksForUser(userId, legacyIsarId);
+    final movieCategories =
+        await _movieCategoriesForUser(userId, legacyIsarId);
     final objectives = await _objectivesForUser(userId, legacyIsarId);
     final categoryLimits = await _categoryLimitsForUser(userId, legacyIsarId);
 
@@ -609,6 +621,7 @@ class SupabaseSyncService {
       'prayer_logs': prayers.map(_prayerJson).toList(),
       'movies': movies.map(_movieJson).toList(),
       'books': books.map(_bookJson).toList(),
+      'movie_categories': movieCategories.map(_movieCategoryJson).toList(),
     };
   }
 
@@ -850,6 +863,20 @@ class SupabaseSyncService {
         locals: (await _prayersForUser(userId, legacyIsarId))
             .map((e) => (remoteId: e.remoteId, id: e.id)),
         deleteById: _isar.prayerLogLocals.delete,
+      );
+
+      for (final row in (remote['movie_categories'] as List? ?? [])) {
+        final m = row as Map<String, dynamic>;
+        await _upsertMovieCategoryFromRemote(userId, m);
+      }
+
+      await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
+        remote: remote,
+        listKey: 'movie_categories',
+        locals: (await _movieCategoriesForUser(userId, legacyIsarId))
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.movieCategoryLocals.delete,
       );
 
       for (final row in (remote['movies'] as List? ?? [])) {
@@ -1485,23 +1512,10 @@ class SupabaseSyncService {
       }
 
       for (final row in (payload['movie_categories'] as List? ?? [])) {
-        final m = row as Map<String, dynamic>;
-        final remoteId = m['id'] as String;
-        final mc = MovieCategoryLocal()
-          ..remoteId = remoteId
-          ..userId = userId
-          ..name = m['name'] as String
-          ..colorValue = (m['color_value'] as num?)?.toInt() ?? 0
-          ..emoji = m['emoji'] as String? ?? ''
-          ..isCustom = m['is_custom'] as bool? ?? false
-          ..isArchived = m['is_archived'] as bool? ?? false
-          ..sortOrder = (m['sort_order'] as num?)?.toInt() ?? 0;
-        final existing = await _isar.movieCategoryLocals
-            .filter()
-            .remoteIdEqualTo(remoteId)
-            .findFirst();
-        if (existing != null) mc.id = existing.id;
-        await _isar.movieCategoryLocals.put(mc);
+        await _upsertMovieCategoryFromRemote(
+          userId,
+          row as Map<String, dynamic>,
+        );
       }
 
       for (final row in (payload['todos'] as List? ?? [])) {
@@ -1668,12 +1682,35 @@ class SupabaseSyncService {
   Map<String, dynamic> _movieCategoryJson(MovieCategoryLocal c) => {
         'id': c.remoteId,
         'name': c.name,
-        'color_value': c.colorValue,
+        'color_value': _colorValueForCloudSync(c.colorValue),
         'emoji': c.emoji,
         'is_custom': c.isCustom,
         'is_archived': c.isArchived,
         'sort_order': c.sortOrder,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
+
+  Future<void> _upsertMovieCategoryFromRemote(
+    String userId,
+    Map<String, dynamic> m,
+  ) async {
+    final remoteId = m['id'] as String;
+    final mc = MovieCategoryLocal()
+      ..remoteId = remoteId
+      ..userId = userId
+      ..name = m['name'] as String
+      ..colorValue = _colorValueFromCloudSync(m['color_value'])
+      ..emoji = m['emoji'] as String? ?? ''
+      ..isCustom = m['is_custom'] as bool? ?? false
+      ..isArchived = m['is_archived'] as bool? ?? false
+      ..sortOrder = (m['sort_order'] as num?)?.toInt() ?? 0;
+    final existing = await _isar.movieCategoryLocals
+        .filter()
+        .remoteIdEqualTo(remoteId)
+        .findFirst();
+    if (existing != null) mc.id = existing.id;
+    await _isar.movieCategoryLocals.put(mc);
+  }
 
   Map<String, dynamic> _todoJson(TodoLocal t) => {
         'id': t.remoteId,
