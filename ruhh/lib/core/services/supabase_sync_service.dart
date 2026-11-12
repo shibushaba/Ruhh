@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
+import 'package:ruhh/core/data/models/book_local.dart';
 import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
@@ -324,6 +325,7 @@ class SupabaseSyncService {
     'habit_completions',
     'prayer_logs',
     'movies',
+    'books',
   ];
 
   bool _ownsUserId(String recordUserId, String canonical, Id legacyIsarId) {
@@ -344,6 +346,7 @@ class SupabaseSyncService {
     final completions = await _completionsForUser(userId, legacyIsarId);
     final prayers = await _prayersForUser(userId, legacyIsarId);
     final movies = await _moviesForUser(userId, legacyIsarId);
+    final books = await _booksForUser(userId, legacyIsarId);
     final objectives = await _objectivesForUser(userId, legacyIsarId);
     final limits = await _categoryLimitsForUser(userId, legacyIsarId);
     return txs.length +
@@ -351,6 +354,7 @@ class SupabaseSyncService {
         completions.length +
         prayers.length +
         movies.length +
+        books.length +
         objectives.length +
         limits.length;
   }
@@ -388,6 +392,12 @@ class SupabaseSyncService {
         if (m.userId == legacy) {
           m.userId = canonical;
           await _isar.movieLocals.put(m);
+        }
+      }
+      for (final b in await _isar.bookLocals.where().findAll()) {
+        if (b.userId == legacy) {
+          b.userId = canonical;
+          await _isar.bookLocals.put(b);
         }
       }
       for (final o in await _isar.objectiveLocals.where().findAll()) {
@@ -552,6 +562,11 @@ class SupabaseSyncService {
     return all.where((m) => _ownsUserId(m.userId, userId, legacyIsarId)).toList();
   }
 
+  Future<List<BookLocal>> _booksForUser(String userId, Id legacyIsarId) async {
+    final all = await _isar.bookLocals.where().findAll();
+    return all.where((b) => _ownsUserId(b.userId, userId, legacyIsarId)).toList();
+  }
+
   Future<List<ObjectiveLocal>> _objectivesForUser(
     String userId,
     Id legacyIsarId,
@@ -577,6 +592,7 @@ class SupabaseSyncService {
     final completions = await _completionsForUser(userId, legacyIsarId);
     final prayers = await _prayerLogsForExport(userId, legacyIsarId);
     final movies = await _moviesForUser(userId, legacyIsarId);
+    final books = await _booksForUser(userId, legacyIsarId);
     final objectives = await _objectivesForUser(userId, legacyIsarId);
     final categoryLimits = await _categoryLimitsForUser(userId, legacyIsarId);
 
@@ -592,6 +608,7 @@ class SupabaseSyncService {
       'habit_completions': completions.map(_completionJson).toList(),
       'prayer_logs': prayers.map(_prayerJson).toList(),
       'movies': movies.map(_movieJson).toList(),
+      'books': books.map(_bookJson).toList(),
     };
   }
 
@@ -874,6 +891,39 @@ class SupabaseSyncService {
         deleteById: _isar.movieLocals.delete,
       );
 
+      for (final row in (remote['books'] as List? ?? [])) {
+        final m = row as Map<String, dynamic>;
+        final bk = BookLocal()
+          ..remoteId = m['id'] as String
+          ..userId = userId
+          ..openLibraryKey = m['open_library_key'] as String?
+          ..title = m['title'] as String
+          ..author = m['author'] as String?
+          ..coverUrl = m['cover_url'] as String?
+          ..firstPublishYear = (m['first_publish_year'] as num?)?.toInt()
+          ..description = m['description'] as String?
+          ..status = BookStatus.values.byName(m['status'] as String)
+          ..pageCount = (m['page_count'] as num?)?.toInt()
+          ..userRating = (m['user_rating'] as num?)?.toDouble()
+          ..note = m['note'] as String? ?? ''
+          ..finishedAt = DateTime.tryParse(m['finished_at'] as String? ?? '')
+          ..addedAt = DateTime.tryParse(m['updated_at'] as String? ?? '') ??
+              DateTime.now();
+        final existing =
+            await _isar.bookLocals.filter().remoteIdEqualTo(bk.remoteId).findFirst();
+        if (existing != null) bk.id = existing.id;
+        await _isar.bookLocals.put(bk);
+      }
+
+      await _purgeLocalsMissingFromRemote(
+        enabled: allowDeleteReconcile,
+        remote: remote,
+        listKey: 'books',
+        locals: (await _booksForUser(userId, legacyIsarId))
+            .map((e) => (remoteId: e.remoteId, id: e.id)),
+        deleteById: _isar.bookLocals.delete,
+      );
+
       await _ensureCategoriesForImportedTransactions(userId, legacyIsarId);
     });
   }
@@ -1088,6 +1138,22 @@ class SupabaseSyncService {
         'updated_at': m.addedAt.toUtc().toIso8601String(),
       };
 
+  Map<String, dynamic> _bookJson(BookLocal b) => {
+        'id': b.remoteId,
+        'open_library_key': b.openLibraryKey,
+        'title': b.title,
+        'author': b.author,
+        'cover_url': b.coverUrl,
+        'first_publish_year': b.firstPublishYear,
+        'description': b.description,
+        'status': b.status.name,
+        'page_count': b.pageCount,
+        'user_rating': b.userRating,
+        'note': b.note,
+        'finished_at': b.finishedAt?.toUtc().toIso8601String(),
+        'updated_at': b.addedAt.toUtc().toIso8601String(),
+      };
+
   List<int> _intList(dynamic value) {
     if (value is List) {
       return value.map((e) => (e as num).toInt()).toList();
@@ -1259,6 +1325,9 @@ class SupabaseSyncService {
       }
       for (final m in await _moviesForUser(userId, legacyIsarId)) {
         await _isar.movieLocals.delete(m.id);
+      }
+      for (final b in await _booksForUser(userId, legacyIsarId)) {
+        await _isar.bookLocals.delete(b.id);
       }
       for (final w in await _walletsForUser(userId, legacyIsarId)) {
         await _isar.walletLocals.delete(w.id);

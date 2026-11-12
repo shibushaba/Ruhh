@@ -16,6 +16,8 @@ import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/habit/tracker/habit_calculations.dart';
 import 'package:ruhh/features/home/widgets/home_feed_insights.dart';
 import 'package:ruhh/features/home/widgets/home_insight_widgets.dart';
+import 'package:ruhh/core/data/models/book_local.dart';
+import 'package:ruhh/features/book/book_repository.dart';
 import 'package:ruhh/features/movie/movie_repository.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
@@ -37,6 +39,7 @@ class HomePage extends ConsumerWidget {
             ref.invalidate(dailyPrayerLogsProvider);
             ref.invalidate(budgetRepositoryProvider);
             ref.invalidate(movieRepositoryProvider);
+            ref.invalidate(bookRepositoryProvider);
             bumpHabitRefresh(ref);
             bumpBudgetRefresh(ref);
           },
@@ -202,6 +205,8 @@ class _ModuleHighlights extends ConsumerWidget {
         ),
         SizedBox(height: t.spaceStackGap),
         _MovieHighlight(ref: this.ref),
+        SizedBox(height: t.spaceStackGap),
+        _BookHighlight(ref: this.ref),
         if (budgetEnabled) ...[
           SizedBox(height: t.spaceStackGap),
           _BudgetHighlight(ref: this.ref),
@@ -311,6 +316,51 @@ class _MovieHighlight extends ConsumerWidget {
             accent: NBColors.movie,
             onTap: () => context.go('/movie'),
             onAdd: () => context.push('/movie/add'),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BookHighlight extends ConsumerWidget {
+  const _BookHighlight({required this.ref});
+  final WidgetRef ref;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repoAsync = ref.watch(bookRepositoryProvider);
+    return repoAsync.when(
+      loading: () =>
+          RuhhStatProgressCard(label: 'Reading list', value: '\u2026', progress: 0),
+      error: (_, __) =>
+          RuhhStatProgressCard(label: 'Reading list', value: '\u2014', progress: 0),
+      data: (repo) => FutureBuilder(
+        future: Future.wait([repo.wantToRead(), repo.finishedThisMonth()]),
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return RuhhStatProgressCard(
+              label: 'Reading list',
+              value: '\u2026',
+              progress: 0,
+            );
+          }
+          final list = snap.data![0] as List<BookLocal>;
+          final finished = snap.data![1] as int;
+          final count = list.length;
+          final subtitle = count == 0
+              ? 'Search Open Library to add a book'
+              : finished > 0
+              ? 'Next: ${list.first.title} \u00b7 $finished this month'
+              : 'Next: ${list.first.title}';
+          return RuhhStatProgressCard(
+            label: 'Reading list',
+            value: '$count',
+            targetLabel: 'books',
+            subtitle: subtitle,
+            progress: (count / 20).clamp(0, 1),
+            accent: NBColors.book,
+            onTap: () => context.go('/book'),
+            onAdd: () => context.push('/book/add'),
           );
         },
       ),

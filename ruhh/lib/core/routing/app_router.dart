@@ -14,6 +14,9 @@ import 'package:ruhh/features/habit/habit_page.dart';
 import 'package:ruhh/features/home/analytics_page.dart';
 import 'package:ruhh/features/home/home_page.dart';
 import 'package:ruhh/features/home/home_shell.dart';
+import 'package:ruhh/features/book/book_edit_page.dart';
+import 'package:ruhh/features/book/book_page.dart';
+import 'package:ruhh/features/book/book_search_page.dart';
 import 'package:ruhh/features/movie/movie_categories_page.dart';
 import 'package:ruhh/features/movie/movie_detail_page.dart';
 import 'package:ruhh/features/movie/movie_form_page.dart';
@@ -252,6 +255,35 @@ class AppRouter {
                         }
                         return MovieDetailPage(mediaType: type, tmdbId: id);
                       },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/book',
+                  builder: (context, state) {
+                    final tab =
+                        int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
+                            0;
+                    return BookPage(initialTab: tab.clamp(0, 1));
+                  },
+                  routes: [
+                    GoRoute(
+                      path: 'add',
+                      pageBuilder: (c, s) =>
+                          ruhhPage(child: const BookSearchPage(), state: s),
+                    ),
+                    GoRoute(
+                      path: 'edit/:remoteId',
+                      pageBuilder: (c, s) => ruhhPage(
+                        child: BookEditPage(
+                          remoteId: s.pathParameters['remoteId'] ?? '',
+                        ),
+                        state: s,
+                      ),
                     ),
                   ],
                 ),

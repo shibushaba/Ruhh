@@ -36,6 +36,10 @@ abstract final class AppIcons {
   static IconData movie({bool filled = false}) =>
       filled ? _fill(0xe8c2) : _regular(0xe8c2);
 
+  /// Phosphor "book".
+  static IconData book({bool filled = false}) =>
+      filled ? _fill(0xe0ee) : _regular(0xe0ee);
+
   static IconData settings({bool filled = false}) =>
       filled ? _fill(0xe272) : _regular(0xe272);
 
@@ -133,6 +137,8 @@ abstract final class AppIcons {
   static IconData emptyPrayerDuotone() => _duotone(0xe58e);
 
   static IconData emptyMovieDuotone() => _duotone(0xe8c2);
+
+  static IconData emptyBookDuotone() => _duotone(0xe0ee);
 
   static IconData emptyBudgetDuotone() => _duotone(0xe68a);
 }

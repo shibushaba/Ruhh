@@ -11,6 +11,7 @@ abstract final class NBColors {
   static const habit = Color(0xFF4ADE80);
   static const prayer = Color(0xFFA78BFA);
   static const movie = Color(0xFFFB7185);
+  static const book = Color(0xFFFBBF24);
 
   static Color canvas(Brightness brightness) =>
       brightness == Brightness.dark

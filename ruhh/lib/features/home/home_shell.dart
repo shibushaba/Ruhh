@@ -74,6 +74,16 @@ class HomeShell extends ConsumerWidget {
 
     ),
 
+    RuhhNavDestination(
+
+      icon: AppIcons.book(),
+
+      selectedIcon: AppIcons.book(filled: true),
+
+      path: '/book',
+
+    ),
+
   ];
 
 

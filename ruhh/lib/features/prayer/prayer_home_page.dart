@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
+import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/widgets/nb_layout.dart';
 import 'package:ruhh/core/widgets/ruhh_scroll_insets.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
+import 'package:ruhh/features/prayer/prayer_enrichment.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_calculations.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
@@ -18,6 +21,16 @@ class PrayerHomePage extends ConsumerStatefulWidget {
 
 class _PrayerHomePageState extends ConsumerState<PrayerHomePage> {
   bool _showStar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.invalidate(dailyAyahProvider);
+      ref.invalidate(todaySunTimesProvider);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +67,10 @@ class _PrayerHomePageState extends ConsumerState<PrayerHomePage> {
                           ratio: todayRatio(today),
                           today: today,
                         ),
+                        const SizedBox(height: 16),
+                        const _DailyAyahCard(),
+                        const SizedBox(height: 12),
+                        const _SunTimesCard(),
                         const SizedBox(height: 16),
                         RuhhSoftCard(
                           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
@@ -113,6 +130,146 @@ class _PrayerHomePageState extends ConsumerState<PrayerHomePage> {
           },
         );
       },
+    );
+  }
+}
+
+class _DailyAyahCard extends ConsumerWidget {
+  const _DailyAyahCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ayahAsync = ref.watch(dailyAyahProvider);
+    return ayahAsync.when(
+      loading: () => const RuhhSoftCard(
+        child: SizedBox(
+          height: 48,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (ayah) {
+        if (ayah == null || ayah.textAr.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final meta = [
+          if (ayah.surahNameEn != null && ayah.surahNameEn!.isNotEmpty)
+            ayah.surahNameEn,
+          if (ayah.ayahKey.isNotEmpty) ayah.ayahKey,
+        ].join(' · ');
+        return RuhhSoftCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Ayah of the day',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                ayah.textAr,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      height: 1.6,
+                    ),
+              ),
+              if (meta.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  meta,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 4),
+              Text(
+                'via ${ayah.source}',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: context.ruhh.textSecondary,
+                    ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SunTimesCard extends ConsumerWidget {
+  const _SunTimesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sunAsync = ref.watch(todaySunTimesProvider);
+    final fmt = DateFormat.jm();
+    return sunAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (sun) {
+        if (sun == null) return const SizedBox.shrink();
+        return RuhhSoftCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Sun & twilight',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SunMetric(
+                      label: 'Dawn',
+                      value: fmt.format(sun.civilTwilightBegin),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SunMetric(
+                      label: 'Sunrise',
+                      value: fmt.format(sun.sunrise),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SunMetric(
+                      label: 'Sunset',
+                      value: fmt.format(sun.sunset),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SunMetric(
+                      label: 'Dusk',
+                      value: fmt.format(sun.civilTwilightEnd),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SunMetric extends StatelessWidget {
+  const _SunMetric({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(value, style: Theme.of(context).textTheme.titleMedium),
+      ],
     );
   }
 }
