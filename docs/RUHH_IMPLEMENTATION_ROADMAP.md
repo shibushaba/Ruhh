@@ -174,6 +174,8 @@ The owner approved Phase 1 on 16 November 2026. The design is written. The app i
 
 Decision 5 superseded the optional prayer-XP row that this roadmap used to propose. Prayer is outside the ledger. There is no toggle.
 
+A second review on 16 November 2026 refined the frames, the workflows, recurring periods, quest identity, the ledger lifecycle, the level simulation, the Monday date, and the in-app Grok surface. The record is `RUHH_OWNER_DECISIONS.md`. Phase 1 is still design only.
+
 Gate A is planned in `RUHH_DATA_BOUNDARIES.md` and was not executed. No production database was read.
 
 The order in section 10 still holds, with two edits from the owner: Grok's **contract** is Phase 1 (done here) and Grok's **build** stays after the domain services and Gate A. Schema work still waits on Gate A.

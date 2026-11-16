@@ -9,7 +9,7 @@ Light frames use a faint ink hairline on white cards. The shipped token `borderH
 The sample life is consistent:
 
 - 12 Nov is the level-up moment: 990 XP, then +40 for the milestone "Validate the idea", total 1,030, level 8 because level 8 starts at 1,020.
-- 16 Nov is the resting desk: 1,094 lifetime XP, level 8, title "Keeping promises", 161 XP to level 9. The goal "Build a software business" is 1 of 6 milestones.
+- 16 November 2026 is a Monday. The resting desk that day: 1,094 lifetime XP, level 8, title "Finding your rhythm", 161 XP to level 9. The goal "Build a software business" is 1 of 6 milestones. "Read books" is a recurring yearly goal, 2026 period, 3 of 12.
 
 The curve is `floor(50 * (level - 1) ^ 1.55)` in `RUHH_UX_ARCHITECTURE.md`.
 
@@ -24,6 +24,15 @@ The curve is `floor(50 * (level - 1) ^ 1.55)` in `RUHH_UX_ARCHITECTURE.md`.
 | Achievements | [png](png/achievements-dark.png) | [png](png/achievements-light.png) |
 | Season | [png](png/season-dark.png) | [png](png/season-light.png) |
 | Domains | [png](png/domains-dark.png) | [png](png/domains-light.png) |
+| Recurring measurable goal | [png](png/measure-dark.png) | [png](png/measure-light.png) |
+| Create a goal | [png](png/create-goal-dark.png) | [png](png/create-goal-light.png) |
+| Edit milestones | [png](png/milestones-dark.png) | [png](png/milestones-light.png) |
+| Create a project | [png](png/create-project-dark.png) | [png](png/create-project-light.png) |
+| Custom quest | [png](png/create-quest-dark.png) | [png](png/create-quest-light.png) |
+| Complete a goal | [png](png/goal-done-dark.png) | [png](png/goal-done-light.png) |
+| Undo | [png](png/undo-dark.png) | [png](png/undo-light.png) |
+| Grok, in the app | [png](png/grok-dark.png) | [png](png/grok-light.png) |
+| XP balance chart | [png](png/xp-balance.png) | same chart |
 
 Regenerate HTML with `python3 docs/designs/build_screens.py` from the repo root. PNGs were captured with headless Chrome at 390×844, device scale 2.
 
@@ -68,3 +77,23 @@ DM Sans and Outfit files in `fonts/` are the SIL Open Font License builds from G
 ## Domains
 
 ![Domains, dark](png/domains-dark.png)
+
+## Create a goal
+
+![Create a goal, dark](png/create-goal-dark.png)
+
+## Complete a goal
+
+![Complete a goal, dark](png/goal-done-dark.png)
+
+## Undo
+
+![Undo, dark](png/undo-dark.png)
+
+## Grok in the app
+
+![Grok, dark](png/grok-dark.png)
+
+## A recurring goal
+
+![Read books, dark](png/measure-dark.png)

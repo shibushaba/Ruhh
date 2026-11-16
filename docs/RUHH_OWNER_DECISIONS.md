@@ -40,11 +40,25 @@ The Phase 0 roadmap suggested optional prayer XP, default off. Decision 5 remove
 
 The Phase 0 roadmap suggested designing Grok in a later phase. Decision 10 pulls the contract into Phase 1 and leaves the build for after the domain services and Gate A.
 
+## Refinements after the first Phase 1 review
+
+**Date:** 16 November 2026, second pass. The direction stands. These rows are what changed before Phase 1 is offered as complete. Still no app code, no SQL, no Gate A, no Phase 2.
+
+| # | Refinement | Where it landed |
+| --- | --- | --- |
+| R1 | Keep the desk. Give progression more personality: a level seal, a milestone stepper with "you are here", stamps that separate Habit, Quest, Project, and Goal, and Home actions for New goal and Domains. Motion is specified, including reduced motion. Not a new theme. | Frames, `docs/designs/MOTION.md` |
+| R2 | Design the missing journeys, not only the desk: create goal, edit milestones, create project, custom quest, goal-completion confirm, undo. | `RUHH_WORKFLOWS.md` and the matching frames |
+| R3 | A recurring goal has separate periods. Each period has its own progress and completion history. Measurable goals and milestones carry `current_value` and `target_value`. The UI uses the same fields. | `RUHH_UX_ARCHITECTURE.md`, `RUHH_DATA_BOUNDARIES.md`, `measure-*.png` |
+| R4 | A generated quest's identity is source plus window, unique per user. One daily habit produces one quest for that date. Undoing the source puts the quest back in agreement with it. | UX architecture, data boundaries, `undo-*.png` |
+| R5 | Ledger: `source_ref` unique per user, one open award, one reversal per award, a new generation if the fact is completed again, cache is the sum of signed amounts, duplicate requests across devices return the existing row. Append-only, outside snapshot delete. | `RUHH_DATA_BOUNDARIES.md` |
+| R6 | Amounts 8 / 6 / 40 / 60 / 24 stay provisional. A simulation of four usage profiles is published for 30 days, 90 days, 1 year, and 2 years. Levels 7–11 are titled **Finding your rhythm**. Other titles stay provisional. | `RUHH_XP_BALANCE.md`, `docs/tools/xp_level_sim.py` |
+| R7 | The sample day is Monday 16 November 2026. | Planner frame and the other frames that name "today" |
+| R8 | Grok's primary surface is in-app. The contract stays independent of that surface so another channel can be added later. Confirmation rules and the service boundary are unchanged. | `RUHH_GROK_INTEGRATION.md`, `grok-*.png` |
+
 ## Still open, and not blockers for reading this design
 
-1. **Starting XP amounts and title words.** The table in `RUHH_UX_ARCHITECTURE.md` is the spec to build from. Change the integers or the titles before implementation if you want different ones. The rules around them (once, never negative, prayer excluded, no double pay) are locked.
-2. **Where the Grok conversation is shown.** The command contract does not depend on Telegram or on an in-app thread. Pick the surface when implementation is allowed. The unmerged branch assumed a bot plus an in-app approval screen. That assumption is not adopted.
-3. **Todos.** Whether they later become project tasks is an evaluation, not a Phase 1 decision. Focus stays a later utility evaluation. Neither is in the frames.
+1. **The other title words, and whether the provisional amounts should change after reading the simulation.** Levels 7–11 are decided. The integers are still the ones to build from unless you mark different ones. The rules around them stay locked.
+2. **Todos.** Whether they later become project tasks is an evaluation, not a Phase 1 decision. Focus stays a later utility evaluation. Neither is in the frames.
 
 ## Explicitly not decided, because Phase 2 is not approved
 

@@ -20,13 +20,14 @@ Names are recommendations for a later migration, not statements that these table
 | Record | Owns | Must not own |
 | --- | --- | --- |
 | `life_domains` | id, user, name, sort, accent key from the existing palette, archived_at | Goal rows. Archiving does not delete children. |
-| `goals` | id, user, domain id, title, description, type (short, medium, long, recurring, open), priority, start, optional target, status, notes | Money amounts. Progress is derived. |
-| `goal_milestones` | id, goal id, title, sort, status (not started, in progress, done, dropped), optional date, optional numeric target and current value, optional predecessor milestone id | Habit completion rows. |
+| `goals` | id, user, domain id, title, description, type (short, medium, long, recurring, open), priority, start, optional end, status, notes, optional `cadence` (week, month, year, custom) when type is recurring, optional `target_value` and `current_value` (numbers, no currency) | Money amounts and currency. INR stays on the budget objective. For a recurring goal, `current_value` and `target_value` mirror the open period. They are not a second history. |
+| `goal_periods` | id, goal id, `period_key` (for example `2026` or `2026-11`), start, end, `target_value`, `current_value`, status (open, completed, missed, skipped), completed_at | A copy of the parent goal. Closing a period does not delete it and does not pay `goal:{id}:done`. |
+| `goal_milestones` | id, goal id, title, sort, status (not started, in progress, done, dropped), optional date, optional `target_value` and `current_value`, optional predecessor milestone id | Habit completion rows. |
 | `projects` | id, user, title, status, notes, optional goal id, optional milestone id | A second copy of tasks. |
 | `project_tasks` | id, project id, title, optional parent task id (one level), optional date, done_at | XP. |
 | `goal_links` | goal or milestone id, kind (`habit`, `book`, `movie`, `budget_objective`), target id | The target's own fields. A link is a pointer. |
-| `quests` | id, user, title, window (day, week, month), status (proposed, active, done, expired, dismissed), source kind and source id | A private completion flag that disagrees with the source. |
-| `xp_events` | id, user, source_ref unique, kind, amount (from the rules, not from the client), created_at, optional reversal_of | A mutable balance column as the source of truth. |
+| `quests` | id, user, title, `quest_key` unique per user, window (day, week, month), `window_key`, status (proposed, active, done, expired, dismissed), source kind and source id | A second quest for the same source and window. A completion flag that disagrees with the source. |
+| `xp_events` | id, user, `logical_key`, `source_ref` unique per user, generation, kind, amount (from the rules, signed), created_at, optional `reversal_of` | A mutable balance. Deletes. A second open award for the same `logical_key`. |
 | `progression_rules` | one row per kind: amount, and whether it can reverse | Per-screen copies of the amounts. |
 | `user_progression` | cached level and lifetime sum, rebuildable by replaying non-reversed events | An independently editable XP number. |
 | `achievements` | definition: key, category, rarity, rule, optional XP amount | Per-user state. |
@@ -34,19 +35,41 @@ Names are recommendations for a later migration, not statements that these table
 | `seasons` | name, start, planned end, status (active, paused, completed, abandoned) | Any field that resets XP. |
 | `season_items` | season id, kind, target id | Copies of those targets. |
 
-Lifetime XP is the sum of `xp_events.amount` where the event is not reversed and is not itself a reversal that has been cancelled. Level is `threshold` applied to that sum. Both can be recomputed. The cache exists so Home does not scan the ledger on every frame.
+Lifetime XP is the sum of every `xp_events.amount`. Awards are positive. A reversal is a new row whose amount is the negative of the award it points at. Level is `threshold` applied to that sum. The cache on `user_progression` is rewritten in the same transaction as the insert. If the cache and the sum ever disagree, the sum wins and the cache is rebuilt. Nothing edits the cache by itself.
 
 ## 3. How the ledger stays safe
 
-Recommended write path, when implementation is someday approved:
+The ledger is append-only. It is not part of snapshot reconcile-delete. Unique scope for `source_ref` is **per user**: two people may carry the same string; one person may not. The same rule applies to `quest_key` and to `request_id`.
 
-1. A single progression service accepts a **domain fact** ("habit H completed on date D"), not an XP number.
-2. It builds `source_ref` from the fact. Examples: `habit:{habitId}:{yyyy-mm-dd}`, `milestone:{id}:done`, `goal:{id}:done`, `project:{id}:done`, `quest:{id}:done`, `achievement:{id}`.
-3. Insert is idempotent on `source_ref`. A second call returns the existing event.
-4. The amount is read from `progression_rules`. The caller cannot pass 40.
-5. Undo inserts a new row with `reversal_of` set and its own `source_ref` of `reversal:{original source_ref}`. It does not delete the original.
-6. This insert is **not** part of the snapshot entity arrays. A push of habits must not be able to omit XP rows and delete them.
-7. The server, not only the phone, enforces the unique `source_ref`. A buggy client cannot double-pay.
+### Names
+
+| Name | Meaning | Example |
+| --- | --- | --- |
+| `logical_key` | The real-world fact. Stable. | `habit:{habitId}:2026-11-16` |
+| `source_ref` | One row. Unique per user. Includes the generation. | `habit:{habitId}:2026-11-16#1` |
+| Reversal ref | One row that cancels exactly one award. | `reversal:habit:{habitId}:2026-11-16#1` |
+| `quest_key` | One quest for one source and one window. | `habit:{habitId}:day:2026-11-16` |
+
+An award is **open** when no reversal row points at it. At most one award for a `logical_key` is open.
+
+### Guarantees
+
+- **One open award.** Completing a fact inserts the next generation only when no open award exists for that `logical_key`. A second request, from the same phone or another, returns the open row and writes nothing. Note `already_recorded`.
+- **One reversal per award.** `reversal_of` is unique per user. A second undo returns the existing reversal.
+- **Reverse, then complete again.** Allowed. The first award stays in the table with its reversal (net zero). The new completion inserts generation `#2` and pays again. It does not reuse `#1`.
+- **Amounts.** Read from `progression_rules`. The caller cannot pass 8 or 40.
+- **Duplicates across devices.** `UNIQUE (user_id, source_ref)` and the “one open award” check run on the server, inside one transaction. Two offline phones that both complete the same habit converge on one open award when they sync. `UNIQUE (user_id, request_id)` on the command log makes a retry of the same request return the first result even before the ledger is read.
+- **Snapshot.** A push of habits must not be able to omit XP rows and delete them. After the habit fact itself is saved, the progression service runs `ensure(fact)`: completed and no open award → next generation; not completed and an open award → one reversal; otherwise no-op. That is how undo and redo stay aligned with the source. The habit row may still be last-write-wins per id. The ledger follows the fact. It is not last-write-wins.
+
+Worked habit, Monday 16 November 2026:
+
+1. Complete. Insert `#1` amount +8. Cache adds 8. Quest `habit:{id}:day:2026-11-16` becomes done.
+2. Other device, different `request_id`, same fact. Open award exists. Return `#1`. Cache unchanged. Quest stays done.
+3. Unmark. Insert the reversal, amount −8. Cache adds −8. The window is still today, so the quest returns to active. If the window had already ended, the quest would be expired, not left done.
+4. Unmark again. The reversal already exists. Return it.
+5. Complete again the same day. Insert `#2` amount +8. Quest returns to done. Net for the day is +8, not +16.
+
+Milestone, project, goal, custom quest, and achievement use the same generation and reversal rules. Their `logical_key` values are `milestone:{id}:done`, `project:{id}:done`, `goal:{id}:done`, `quest:{id}:done`, `achievement:{id}`. A proxy quest never has its own award, so undo of the habit does not also reverse a quest award. Closing a recurring period does not write `goal:{id}:done`.
 
 Double-pay rules, same as the UX doc:
 
@@ -58,7 +81,7 @@ Double-pay rules, same as the UX doc:
 
 | User action | Record that changes | XP source_ref |
 | --- | --- | --- |
-| Check a habit on Home, in Habit, in the planner, or via Grok | `HabitCompletionLocal` for that habit and day, then the derived log | `habit:{id}:{date}` once |
+| Check a habit on Home, in Habit, in the planner, or via Grok | `HabitCompletionLocal` for that habit and day, then the derived log | `habit:{id}:{date}#n` once while open |
 | Check a quest that points at that habit | Same habit completion. Quest status becomes done. | The habit ref only |
 | Check a task | `project_tasks.done_at` | None, until the project or milestone rule pays |
 | Check a quest that points at that task | Same task. Quest status becomes done. | None from the quest if the task is the source |

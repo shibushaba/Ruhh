@@ -6,7 +6,11 @@
 
 The unmerged branch `origin/feature/security-session-agent` has a `ruhh-agent` function, an inbox, and an in-app approval screen. Its own note says Grok is not connected and writes default off. That branch is a **candidate implementation sketch**, reviewed only as part of Gate A (`RUHH_DATA_BOUNDARIES.md`). This contract does not copy its operation list. In particular it does not include `prayer.set_status` as a write, and it does not let the client send an XP amount.
 
-Where the conversation is drawn (inside the app, or in some later chat) is open. The contract does not depend on that choice.
+**Primary surface, decided 16 November 2026:** RUHH's own in-app experience. Home has an Ask control. It opens a desk screen, not a new tab. The sample is `docs/designs/png/grok-dark.png` and `grok-light.png`: the person's sentence, then a proposal card that says nothing is saved, then Not now and Confirm.
+
+The command contract does not know which surface called it. Telegram, or anything later, would be another client of the same operations, the same confirms, and the same refusal list. Adding a channel must not add a second writer.
+
+Confirm on that screen is `proposals.confirm`. It is the same confirmation rule as any other client. Grok still does not write the database and still does not compute XP. The proposal card shows the goal the service would create. It does not show an XP number the model picked.
 
 ## 1. Place in the system
 
@@ -182,7 +186,7 @@ Every confirm stores: `request_id`, `proposal_id`, op name, user id, time, and t
 
 ## 10. What is explicitly later
 
-- Issuing credentials, deploying an edge function, choosing Telegram or an in-app thread.
+- Issuing credentials and deploying an edge function. The in-app surface is the primary client. Other channels stay possible later and are not designed here.
 - Rebasing `feature/security-session-agent`.
 - Letting low-risk completes run without a confirm. The owner's rule for this design is confirmation for consequential writes. Habit completion writes XP, so it is consequential. A future decision could relax that for a single unambiguous habit. This contract does not.
 

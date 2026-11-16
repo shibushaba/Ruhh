@@ -104,7 +104,9 @@ No seventh tab. Analytics stays unlinked until a later insights phase. Dead scre
 
 ## 4. Home and My Journey
 
-Home's title is Home. The first card is My Journey: level, title, lifetime XP, the bar to the next level, and the active season if one exists. Under it, one quiet line when the person has been away. The sample says "Three quiet days. Nothing was taken back." That is the tone. It is not a scolding.
+Home's title is Home. The header also has **Ask**, which opens the in-app Grok surface. It is not a seventh tab. The first card is My Journey: a level seal, the title, a short trail of levels walked, lifetime XP, the bar to the next level, and the active season if one exists. Under it, one quiet line when the person has been away. The sample says "Three quiet days. Nothing was taken back." That is the tone. It is not a scolding.
+
+Today's rows are stamped Habit, Quest, or Prayer so they are not one list. Goals are stamped Goal and, when they have milestones, show the path as small squares. Under the goals, **New goal** and **Domains** are always visible. Domains are not only reachable by knowing a gesture.
 
 Then Today: habits still due, quests that point at real work, prayer as a count with the words "not part of XP". Then up to three active goals, each with a milestone fraction or an explicit target such as "3 of 12 books". Then the person can open domains from this area in the implementation; the frame keeps the goals visible and puts domain management on its own screen so Home does not become a grid of eight charts.
 
@@ -172,9 +174,23 @@ Completing every task **asks** whether the project is done. Completing the proje
 
 Frame: `project-dark.png`, `project-light.png`.
 
-### Explicit targets that are not milestones
+### Measurable values
 
-"Read 12 books this year" uses a numeric target on the goal (12) and a current value (3). Books linked from the shelf are resources. Marking a book read does not by itself increment the goal. The person, or a confirmed Grok proposal, records the count. This avoids a silent score when someone logs a movie or a book for fun.
+Any goal or milestone may carry `current_value` and `target_value`. They are plain numbers. They are not a currency. A Financial Growth goal may show a number and a link to an INR budget objective. The rupees stay on the objective.
+
+"Read books" in the sample is a **recurring** yearly goal, not a single bar that forgets last year.
+
+- The goal stays open across years.
+- Each year is a `goal_period` with its own `current_value`, `target_value`, and status.
+- The goal's own `current_value` and `target_value` mirror the **open** period, so Home can show "2026 · 3 of 12" without pretending that is the whole history.
+- 2025 can be completed at 9 of 12 and stay on the record. 2024 can be missed at 4 of 12. Missing a period removes no XP.
+- Logging a book on the shelf does not increment the period. The person records the count.
+- Completing a period does not complete the goal and does not pay the goal award of 60. That award is only when the person ends the goal itself, after the confirmation sheet.
+- A non-recurring measurable goal (a one-time "save toward 50,000", with the money still in Budget) uses `current_value` and `target_value` on the goal and has no periods.
+
+Frame: `measure-dark.png`, `measure-light.png`.
+
+A milestone may also have a target, such as "five paying customers" with `target_value` 5. That does not turn the milestone into a goal.
 
 ## 7. Habits
 
@@ -185,6 +201,19 @@ Checking the habit anywhere writes `HabitCompletionLocal` for that habit and loc
 Vacations and excused days stay excused. They are not punishments.
 
 ## 8. Quests
+
+A generated quest is not a permanent object hanging off a habit. Its identity is one source and one time window:
+
+`quest_key = {source_kind}:{source_id}:{window}:{window_key}`
+
+| Source | Window | Key |
+| --- | --- | --- |
+| Habit scheduled on Monday 16 November 2026 | day | `habit:{habitId}:day:2026-11-16` |
+| Task due that day | day | `task:{taskId}:day:2026-11-16` |
+| Milestone inside the next seven days | week | `milestone:{id}:week:2026-W47` |
+| Custom quest the person writes for today | day | `custom:{questId}:day:2026-11-16` |
+
+`quest_key` is unique per user. Generating today's plan upserts those keys. It does not insert a second row. Tomorrow's habit is a different key. There is no single quest that lives for the life of the habit.
 
 ```mermaid
 stateDiagram-v2
@@ -208,6 +237,17 @@ Generation, once a day when the app opens or the planner opens:
 - The user may write a custom quest. That is `proposed` until they confirm it. A custom quest with no source can award the small quest amount once, because nothing else will pay.
 
 Dismiss and expire do not delete the habit, the task, the book, or any XP already stored.
+
+### When the source is undone
+
+The quest follows the source. It does not keep its own private "done".
+
+- Habit completion removed, and the window is still open: the quest returns to active.
+- Habit completion removed, and the window has ended: the quest becomes expired. It is not left done.
+- Completing the habit again uses the same `quest_key` and marks that quest done again. No second quest.
+- The XP side of the same undo is a reversal, then a new generation if they complete it again. See `RUHH_DATA_BOUNDARIES.md`. The quest award is not a second payment when the quest's source is the habit or the task.
+
+Frame for the undo sheet: `undo-dark.png`, `undo-light.png`.
 
 Weekly and monthly quests use the same object and a wider window, still counted from real schedules ("4 of the 5 days this habit was planned"). They are not a stack of extra tasks.
 
@@ -283,12 +323,14 @@ Quiet labels, not ranks of worth. They change with level and can be edited later
 | --- | --- |
 | 1–3 | Beginning |
 | 4–6 | Showing up |
-| 7–11 | Keeping promises |
+| 7–11 | Finding your rhythm |
 | 12–19 | In motion |
 | 20–34 | The long view |
 | 35 and above | Still here |
 
-The sample is level 8, so the title is "Keeping promises" on both sides of the level-up. The number changes. The title does not have to, and in this case it does not. That is intentional: a level is not a new personality.
+The sample is level 8, so the title is "Finding your rhythm" on both sides of the level-up. The owner set that band on 16 November 2026. The other titles stay provisional. The number changes. The title does not have to, and in this case it does not. That is intentional: a level is not a new personality.
+
+The provisional amounts are unchanged. What they do over 30 days, 90 days, a year, and two years is in `RUHH_XP_BALANCE.md`.
 
 ### Showing the award
 
@@ -338,11 +380,14 @@ A gap in the path is a labeled pause. The sample gap is "28–30 Oct · away. St
 
 ## 15. Motion and accessibility, for a later build
 
+Timings, the level sequence, and reduced motion are in `docs/designs/MOTION.md`. Short version: fills and the level seal move in under half a second, specks are optional, and reduced motion keeps every state change and drops the travel.
+
 - Entrance of the Home list can keep the existing stagger.
-- The level card is the only new burst, and it respects a future reduced-motion setting.
-- Every icon-only control in these frames gets a name in implementation (the nav already has paths; the back control is "Back").
-- Dates are local calendar dates, consistent with habit `dateKey`.
+- Every icon-only control in these frames gets a name in implementation (the nav already has paths; the back control is "Back", Ask is "Ask").
+- Dates are local calendar dates, consistent with habit `dateKey`. The sample "today" is Monday 16 November 2026.
 - Both themes are drawn. Dark is the default, matching `SettingsController`.
+
+Stamps (Habit, Quest, Project, Goal, Prayer) are words plus a colour, so the difference survives without relying on hue alone. Goals, quests, and projects are different objects. The stamps are how the desk says so.
 
 ## 16. Out of this design
 
