@@ -1,5 +1,7 @@
 # RUHH architecture (Phase 0 audit)
 
+**Phase 1 note:** the approved module boundaries, workflows, and frames are in `RUHH_UX_ARCHITECTURE.md`. This file remains the audit of what 1.0.34 actually does.
+
 **Date:** 16 November 2026
 **Tree audited:** `main` at `71cd0553` ("Release v1.0.34 after movie_categories Supabase migration on remote."), version `1.0.34+35` in `ruhh/pubspec.yaml`.
 **Method:** read-only inspection of this repository. No application code was changed. The production Supabase project was not queried. Database facts below are from SQL and Dart in the repo; anything inferred is marked.

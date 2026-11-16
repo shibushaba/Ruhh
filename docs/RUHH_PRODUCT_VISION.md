@@ -1,6 +1,6 @@
 # RUHH product vision
 
-**Status:** Phase 0 record of the owner's vision. No product behavior was changed to match it.
+**Status:** Phase 0 record of the owner's vision, still the target. Phase 1 (16 November 2026) locked the owner's decisions in `RUHH_OWNER_DECISIONS.md` and designed the experience. The app is unchanged.
 **Source:** the owner's product-evolution brief (November 2026). This file restates that vision so later phases have one place to read it. It is not a claim that the current app already does these things. What the app actually does is in `docs/RUHH_ARCHITECTURE.md`.
 
 **Audited tree:** `main` at `71cd0553` (RUHH 1.0.34). This checkout was not compared to a live database.
@@ -45,17 +45,17 @@ These are product systems, not a mandate to rename tables. Existing modules stay
 
 ## Sensitive activities
 
-Prayer is the clearest case. Any XP attached to it is optional. The product must never imply that a person's spiritual worth is a number. The same restraint applies to any later domain where a score would be humiliating or theological.
+Prayer is outside the XP engine entirely for the initial design. There is no prayer XP toggle. The product must never imply that a person's spiritual worth is a number. The old prayer-points code is not reused. See decision 5 in `RUHH_OWNER_DECISIONS.md`.
 
 ## Home
 
 Home answers four questions in a few seconds: Where am I? What matters today? What progress am I making? What is next?
 
-It stays personal. It is not a corporate analytics dashboard. Progressive disclosure: the day first, the lifetime behind it. The brief asks to keep a "My Space / living room" feeling where it fits. The current app does not use those words; Home is a desk-grid dashboard titled "Home". Phase 1 has to decide how that feeling shows up without throwing away the visual identity that actually shipped. See `docs/RUHH_DESIGN_SYSTEM.md`.
+It stays personal. It is not a corporate analytics dashboard. Progressive disclosure: the day first, the lifetime behind it. The owner kept the screen title **Home** and placed **My Journey** inside it. The desk grid stays. See `docs/RUHH_DESIGN_SYSTEM.md` and `docs/RUHH_UX_ARCHITECTURE.md`.
 
 ## Grok Bot
 
-Grok is a conversational way into the same system, not a second system. It can propose a goal from a sentence ("I want to learn React in 3 months"), check real records ("I finished today's workout"), and summarize a month from stored data. Reads can run immediately. Reversible, low-risk writes may run when the user has allowed them. Destructive or consequential changes wait for an explicit confirmation. It never invents a success, never writes XP outside the central engine, and never bypasses the app's own services. Every write is auditable.
+Grok is a conversational way into the same system, not a second system. The Phase 1 contract is `docs/RUHH_GROK_INTEGRATION.md`. Reads run immediately. Creates and completions are proposals until the person confirms. Prayer is not written and is not scored. Grok never computes XP and never writes the database except through RUHH's own services. Implementation waits until those services and Gate A exist.
 
 ## How the product should feel
 
@@ -73,4 +73,4 @@ Premium, calm, modern, slightly playful. Gamified without looking like a cartoon
 
 ## Where the current app stands relative to this vision
 
-The shipped app (1.0.34) is a personal tracker: budget, habits, prayer, movies, and books, with a home dashboard, offline storage, and optional cloud backup. It has streaks, a prayer history, and budget savings goals. It does not have life domains, lifetime goals, milestones, projects, quests, a central XP ledger, levels, seasons, or a connected Grok Bot. Those gaps are listed in `docs/RUHH_IMPLEMENTATION_ROADMAP.md`. The vision is the target. Phase 0 does not start building it.
+The shipped app (1.0.34) is a personal tracker: budget, habits, prayer, movies, and books, with a home dashboard, offline storage, and optional cloud backup. It has streaks, a prayer history, and budget savings goals. It does not have life domains, lifetime goals, milestones, projects, quests, a central XP ledger, levels, seasons, or a connected Grok Bot. Those gaps are listed in `docs/RUHH_IMPLEMENTATION_ROADMAP.md`. The vision is the target. Phase 1 designed it and stopped. The app still does not contain it.

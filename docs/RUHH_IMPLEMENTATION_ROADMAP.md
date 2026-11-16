@@ -1,7 +1,7 @@
 # RUHH implementation roadmap (Phase 0)
 
 **Date:** 16 November 2026
-**Status:** audit and proposed Phase 1 only. No application code, migrations, or database changes were made.
+**Status:** Phase 0 audit, plus a pointer to the Phase 1 design. No application code, migrations, or database changes were made in either phase.
 **Companion docs:** `RUHH_PRODUCT_VISION.md`, `RUHH_ARCHITECTURE.md`, `RUHH_DATABASE_DESIGN.md`, `RUHH_DESIGN_SYSTEM.md`.
 
 The twelve audit headings from the brief are answered here in short, with pointers to the doc that holds the evidence. Phase 1 is specified in full at the end. Work stops there until the owner approves.
@@ -97,7 +97,7 @@ These are absent. They are the product in `RUHH_PRODUCT_VISION.md`. They are not
 | Grok | After the ledger and the write path exist. Reads first. Confirmations for anything consequential. Never a private XP write. |
 | Notifications | Milestone due, habit reminder (exists), weekly summary, achievement, goal completed. Opt-in, no guilt copy. |
 
-Prayer completion may later emit an **optional** progression event. It must not be required, and the dead negative point table must not be wired in.
+Prayer does not emit XP. Decision 5 removed the optional toggle this audit had suggested. The dead negative point table must not be wired in.
 
 ## 10. Recommended order
 
@@ -106,7 +106,7 @@ The brief's phases are right. Two gates are inserted so later phases do not set 
 | Step | What | Code? |
 | --- | --- | --- |
 | **Phase 0** | This audit. | Docs only. This PR. |
-| **Phase 1** | Architecture and UX, specified below. Still no production behavior. | Docs and, only if the owner asks, static wireframe images. No Dart, no SQL. |
+| **Phase 1** | Architecture, workflows, Grok contract, and static frames. Done as design. | Docs and PNGs only. No Dart, no SQL. |
 | **Gate A** | Owner chooses auth: stay on v1 PIN-hash RPCs, or revive `feature/security-session-agent` onto current `main` (sessions, then retire v1). New cloud tables wait on this. | A later phase, explicitly approved. |
 | **Phase 2** | Database foundation: domains, goals, milestones, projects, tasks, quests, XP ledger, achievements, seasons. Additive migrations, rollback, empty-payload behavior decided per table. Repair the known dropped columns in their own migration. | After approval. |
 | **Phase 3** | Goals, milestones, projects on top of Phase 2. Link, do not replace, budget objectives and books. | |
@@ -115,7 +115,7 @@ The brief's phases are right. Two gates are inserted so later phases do not set 
 | **Phase 6** | XP and levels. Only the ledger awards points. Island coins stay out. | |
 | **Phase 7** | Home and the visual layer: journey header, today list, using existing tokens. | |
 | **Phase 8** | Seasons. They reference existing ids. They delete nothing. | |
-| **Phase 9** | Grok. Start from the unmerged agent's read/approve shape, retargeted at current tables plus the new ones. Reads before writes. | |
+| **Phase 9** | Build Grok against `RUHH_GROK_INTEGRATION.md`, after Gate A and the domain services. The contract itself is already written. | |
 | **Phase 10** | Insights from the ledger and the existing stats. | |
 | **Phase 11** | CI on `main`, backup/restore drill, accessibility, copy, reduced motion. | |
 
@@ -130,7 +130,7 @@ Phases 7's visual work can be sketched in Phase 1, but the widgets land after th
 | Extending PIN-hash RPCs | `ruhh_fetch_auth_profile` returns the hash (`20260318120000_ruhh_init.sql`). | Gate A before new tables. |
 | Snapshot delete eats a ledger | `ruhh_push` removes ids missing from the payload when any entity array is present (`20261112150000_movie_categories_sync.sql`). | XP table is insert-only, not part of reconcile-delete. |
 | Overloading budget objectives | Same sync array, money columns, orphaned UI. | New `goals` table. Optional link column to `objective` id. |
-| Prayer score becomes moral score | Dead `setStatus` uses −4 for missed. Live tracker has no points. | Do not call it. XP for prayer stays optional and positive-only if it ever exists. |
+| Prayer score becomes moral score | Dead `setStatus` uses −4 for missed. Live tracker has no points. | Do not call it. Prayer stays outside the ledger. |
 | Island coins vanish with the streak | Streak bonuses are recomputed from the current streak, not stored as events (`island_ledger.dart`). Spent coins persist. | Leave unrouted. Do not import it into the engine. |
 | Cloud restore is partial | Wallets, categories, periods, salary, and the dropped columns. | Document it. Fix columns before a feature depends on them. Do not promise a full restore. |
 | Two devices | Last push wins, whole snapshot. | Say so in UX. Do not pretend there is merge. |
@@ -160,181 +160,23 @@ Nothing here is edited in Phase 0 or, as proposed, in Phase 1. This is the map f
 
 ---
 
-## Proposed Phase 1 — product architecture and UX
+## Phase 1 — designed, not built
 
-Phase 1, as defined in the brief, is architecture and UX. It does **not** implement screens in the app, add dependencies, or migrate the database. Approving Phase 1 means approving the following design work. It does not approve Phases 2–11.
+The owner approved Phase 1 on 16 November 2026. The design is written. The app is not changed. Phase 2 is not started.
 
-### Outcome
+| Deliverable | Document |
+| --- | --- |
+| Decisions | `RUHH_OWNER_DECISIONS.md` |
+| Modules, navigation, workflows, XP, achievements, seasons | `RUHH_UX_ARCHITECTURE.md` |
+| Frames, dark and light | `docs/designs/README.md` |
+| Grok contract | `RUHH_GROK_INTEGRATION.md` |
+| Data boundaries and Gate A plan | `RUHH_DATA_BOUNDARIES.md` |
 
-A single design pack the owner can mark up:
+Decision 5 superseded the optional prayer-XP row that this roadmap used to propose. Prayer is outside the ledger. There is no toggle.
 
-1. Module boundaries (below, ready for confirmation).
-2. Navigation and home structure, drawn with the tokens in `RUHH_DESIGN_SYSTEM.md`.
-3. Written workflows for goals, milestones, projects, and quests.
-4. Progression rules, including what never awards XP.
-5. A list of decisions that are still the owner's.
+Gate A is planned in `RUHH_DATA_BOUNDARIES.md` and was not executed. No production database was read.
 
-If the owner wants pictures, they are static frames in the docs, using the real hex values, radius 0/2, DM Sans, and the desk grid. They are not a Flutter prototype and they are not a copy of another app.
-
-### Module boundaries (proposal)
-
-```mermaid
-flowchart LR
-  home[Home journey]
-  domains[Life domains]
-  goals[Goals and milestones]
-  projects[Projects and tasks]
-  habits[Habit engine existing]
-  prayer[Prayer existing]
-  budget[Budget existing]
-  shelves[Movies and books existing]
-  quests[Quests]
-  xp[XP ledger]
-
-  home --> domains
-  home --> quests
-  domains --> goals
-  goals --> projects
-  goals --> habits
-  goals --> prayer
-  goals --> budget
-  goals --> shelves
-  projects --> quests
-  habits --> quests
-  quests --> xp
-  goals --> xp
-  habits --> xp
-```
-
-Rules:
-
-- **Home** stays the only top-level "where am I" surface. It is not renamed in code during Phase 1. The design may call the header "My journey" if the owner prefers that to "Home". There is no living-room illustration and no island.
-- **Bottom nav stays six icons:** Home, Budget, Habit, Prayer, Movie, Book. Goals, domains, and quests open from Home (pushed routes), not from a seventh tab.
-- **Budget** remains money. A Financial Growth goal may link to an `ObjectiveLocal` or to a category cap. The goal's progress is not the wallet balance unless the user says that is the measure.
-- **Habits** remain the habit engine. A habit may later carry a domain id. Completing it updates the habit only. A goal that *watches* the habit computes its own progress from a rule, and a single check-in never flips the goal to done.
-- **Prayer** remains the tracker. It is not a domain implementation. Spirituality as a life domain can *refer* to prayer consistency. It does not score the person.
-- **Movies and books** stay shelves. A learning goal can link a book. The book does not become a goal.
-- **Focus and Todos** stay unrouted in Phase 1. The design may reserve "project task" as the future home for a todo, but it does not promise to revive those screens.
-- **Island** is out of the product architecture. Coins are not XP.
-- **One completion, one write.** The today list does not keep its own copy of a habit check or a prayer mark. It calls the existing repository.
-
-### Navigation and home (proposal)
-
-Home, top to bottom, on the existing desk:
-
-1. **Header.** Greeting (the app already has `homeTimeGreeting`), the person's name, one line for level and title once those exist. Until Phase 6 the line is absent, not a fake "Level 1".
-2. **Today.** At most a handful of rows: habits still due, prayers still unmarked, quests due, milestone dates inside a week, project tasks due. Each row uses `RuhhInsightRow` or a sibling with the module color. Overflow is a count, not another stack of cards.
-3. **Active goals.** Up to three, each with milestone progress (done / total), not a blended life percentage. Empty state: one sentence and a way to add a goal. No sample goal.
-4. **Domains.** Eight names as a quiet list or a 2-column grid of `RuhhSoftCard`, each showing a count of open goals. No rings that pretend to be a percentage of a life.
-5. **Recent.** Last achievement or last finished milestone. Hidden when there is nothing.
-
-Budget, habit, prayer, movie, and book screens stay as they are in Phase 1's pictures. Phase 7 is when Home's code changes.
-
-`/analytics` stays unlinked until Phase 10 replaces it with facts from real tables.
-
-### Goal and milestone workflow (proposal)
-
-**Create.** From Home or from a domain. Fields: title, domain, type, why (description), priority, start, optional target date, notes. No XP field on the form. The user can add milestones immediately or later.
-
-**Types.** Short (days to a few weeks), medium (up to about a year), long (multi-year), recurring (a rhythm, not a finish line), open-ended (no date). These are labels and validation, not a different table each.
-
-**Milestone.** Title, optional date, optional numeric target, status: not started, in progress, done, dropped. Dropped is not failure copy. Reordering is manual. A milestone may depend on another milestone of the same goal (one predecessor is enough for the first version).
-
-**Progress.** The goal's displayed progress is milestones done / milestones that are not dropped. If a goal has zero milestones, progress is 0 until the user marks the goal complete themselves. Linked habits show as "supporting", with their own streak, and do not move the milestone fraction.
-
-**Complete.** The user marks the goal complete, or the last not-dropped milestone being done *asks* whether to complete the goal. It does not complete it silently.
-
-**Example the design must be able to hold** (as a worked sketch, not as seed data): "Build a software business" in Career & Business, milestones: validate the idea, build an MVP, first customer, five paying customers, repeatable sales, a steady month of revenue. Projects hang off a milestone. Habits (weekly outreach) hang off the goal and do not check the milestone.
-
-**Budget link.** A milestone "steady month of revenue" may point at a budget objective or at a category. The money module remains the record of the money.
-
-### Projects (proposal)
-
-A project has a title, status, optional goal id, optional milestone id, notes, and tasks. A task has a title, optional date, done flag. Subtasks are one level deep. A project with no goal is allowed (a move, a trip, a repair). Completing every task asks whether to complete the project. Completing a project does not complete a milestone unless the milestone's rule says "when project X is done", and that rule is explicit on the milestone.
-
-### Quest lifecycle (proposal)
-
-States: `proposed`, `active`, `done`, `expired`, `dismissed`.
-
-- A quest is created from something that already exists: today's scheduled habits, a task due today, a milestone due this week, or a custom sentence the user writes.
-- Daily generation does not invent chores. If nothing is due, the today list is empty.
-- Doing the underlying habit or task marks the quest done. Doing the quest marks the underlying record done. One write, then the quest status follows.
-- Dismissed and expired do not remove the habit, the task, or any XP already awarded for a real completion.
-- Weekly and monthly quests are the same object with a wider window ("finish 4 of 5 planned workouts"), still computed from real schedules.
-- No quest is created for opening the app.
-
-### Progression rules (proposal, for confirmation)
-
-These are the rules Phase 6 would implement. Phase 1 only freezes them on paper.
-
-| Event | XP? | Notes |
-| --- | --- | --- |
-| App open, page view, sync | Never | |
-| Habit completed on a scheduled day | Yes, once per habit per day | Unique key `habit:{id}:{date}`. Quantity habits award once when the target is met, not per increment. |
-| Habit missed or excused | No | No negative XP. Streak logic stays in `HabitLogic`. |
-| Quest done | Only if it is not already the habit or task event | If the quest is "complete habit H", the habit event is the only award. |
-| Milestone done | Yes, once | Key `milestone:{id}:done`. Reversal if the user reopens it. |
-| Goal done | Yes, once | Key `goal:{id}:done`. Smaller than the sum of its milestones so the milestone awards stay the main path. |
-| Project done | Yes, once, and only if it is not already covered by a milestone rule that names it | Avoid paying twice. |
-| Prayer marked prayed | Optional, default off | If the user turns it on: one small award per day when the day is complete, key `prayer:{date}`. Never per-prayer, never negative, never shown as a judgment. |
-| Budget transaction saved | No | Spending is not virtue. A milestone the user defined ("save X") awards when *that milestone* is marked, not when a transaction posts. |
-| Movie or book logged | No | A milestone can name a book. Logging the book does not award XP by itself. |
-| Streak threshold 7 / 30 / 100 / 365 | Achievement, once ever | Not the island coin table. Lifetime best is kept when the current streak breaks. |
-| Island coins | Never imported | |
-
-Level is one function of lifetime XP (sum of non-reversed events), stored in one place. The curve is configurable constants in one module, not literals in widgets. The UI can show the last few events in plain language ("+ milestone · first customer").
-
-Spendable currency is **out of scope**. If it ever exists, it is not lifetime XP.
-
-### Seasons (proposal, sketch only)
-
-A season has a name, a length (30, 60, 90, or custom), a status (active, paused, completed, abandoned), and a set of goal and habit ids. Abandoning it hides it from Home and deletes nothing else. No season is required to use the app.
-
-### Copy and accessibility (constraints on the pictures)
-
-- Empty states tell the user what they can do. They do not comment on character.
-- Dates show the device timezone. The design notes that habits are date-keyed (`dateKey`), which is already a local calendar date.
-- Every new control in the wireframes gets a visible label or an explicit screen-reader label.
-- Celebration is a single burst. The layout still reads if it is removed.
-- Light and dark frames both, dark first.
-
-### Phase 1 deliverables
-
-| # | Deliverable | Where it would go |
-| --- | --- | --- |
-| 1 | Confirmed boundary diagram and the "do not reuse this table" list | Update `RUHH_ARCHITECTURE.md` or add `docs/RUHH_UX_ARCHITECTURE.md` |
-| 2 | Home wireframe, dark and light, annotated with token names | Same doc |
-| 3 | Goal create, milestone list, and today-list flows, step by step | Same doc |
-| 4 | Quest state machine and the "no double XP" table | Same doc |
-| 5 | Owner decision log filled in | Bottom of that doc |
-
-No Dart files. No SQL files. No edits to `pubspec.yaml`. No Supabase commands.
-
-### Phase 1 non-goals
-
-- Implementing goals, XP, or a new home in Flutter.
-- Merging `feature/security-session-agent`.
-- Fixing sync drift (that is Phase 2, after Gate A).
-- Deleting dead screens (a cleanup can ride along with the phase that touches those files, not before).
-- Connecting Grok.
-- Changing prayer theology, budget math, or habit streak math.
-
-### Decisions needed from the owner before Phase 1 is "approved"
-
-1. **Visual identity.** Confirm the shipped desk (radius 0/2, grid, DM Sans, dark default) and reject root `design-system.md` as the target. If the owner actually wants the soft spec, Phase 1 changes and the component audit has to be redone.
-2. **The word on the header.** Keep "Home", or use "My journey"? "My Space" and "living room" are not in the app. Say which phrase should appear.
-3. **Nav.** Confirm the six icons stay, and goals live under Home.
-4. **Domains.** Confirm the eight default names, and that they are user-editable later rather than fixed forever.
-5. **Prayer.** Confirm: no XP by default, never a negative score, and the old points code stays unused.
-6. **Island, Focus, Todos.** Confirm they stay unrouted and out of the engine.
-7. **Movies and books.** Confirm they stay shelves, outside domain percentages.
-8. **Budget objectives.** Confirm they stay money goals, linkable, not renamed into life goals.
-9. **Gate A.** Before any cloud table: stay on PIN-hash RPCs, or schedule a rebase of the session/agent branch onto current `main`? Recommendation: do not add progression tables on v1 auth. This audit did not verify production, so the owner also needs to say whether that branch was ever applied to ref `gmmfimwumtbneynsyimz`. The branch doc says it was not.
-10. **Grok timing.** Confirm Grok waits until Phase 9, and that the existing unmerged agent is the starting point rather than a new bot with its own database writes.
-11. **Currency of the product.** Budget is INR-shaped (`budget_inr.dart`). Life modules should stay currency-free. Confirm.
-12. **Phase 1 output.** Confirm docs and static frames are enough, with no Flutter prototype in the app.
-
-Until those are answered, Phase 2 should not start. If a decision above is changed later, the change gets written into the UX doc before code follows it.
+The order in section 10 still holds, with two edits from the owner: Grok's **contract** is Phase 1 (done here) and Grok's **build** stays after the domain services and Gate A. Schema work still waits on Gate A.
 
 ---
 
