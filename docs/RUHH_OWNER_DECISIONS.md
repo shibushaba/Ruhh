@@ -60,6 +60,18 @@ The Phase 0 roadmap suggested designing Grok in a later phase. Decision 10 pulls
 1. **The other title words, and whether the provisional amounts should change after reading the simulation.** Levels 7–11 are decided. The integers are still the ones to build from unless you mark different ones. The rules around them stay locked.
 2. **Todos.** Whether they later become project tasks is an evaluation, not a Phase 1 decision. Focus stays a later utility evaluation. Neither is in the frames.
 
+## Visual overhaul, 16 November 2026
+
+The owner reviewed the refined Phase 1 frames. Architecture stands. The visuals do not: too flat, too many identical outlined cards, too much text of the same weight.
+
+| # | Direction | What it changes |
+| --- | --- | --- |
+| V1 | Identity stays: palette, DM Sans, Outfit, dark-first, the grid as a motif, six destinations. The square-control and near-square-card rule is no longer binding where a different shape makes the screen clearer. | `docs/visual/RUHH_VISUAL_DIRECTION.md` |
+| V2 | Two studies before a lock. **A Ambient** is type, air, and one arc. **B My Space** is a room that changes only for real progress. | `a-*.png`, `b-*.png` |
+| V3 | Recommended direction is **The Lit Desk**: Ambient’s hierarchy, plus one pictured object, the lit path. My Space is a place you open, not the chrome of every screen. Objects that do not match a real goal are not drawn. | Unprefixed frames in `docs/visual/png/` |
+| V4 | A UI implementation branch is authorized only after these frames are approved. It starts with tokens, the dock, Home, and My Journey. It uses real data or an explicit empty state. Sample XP stays in tests. | `docs/visual/RUHH_UI_IMPLEMENTATION_PLAN.md` |
+| V5 | That UI branch does not authorize SQL, Supabase, auth, the XP backend, Grok deployment, production, Gate A, or merging the security-agent branch. | Same plan |
+
 ## Explicitly not decided, because Phase 2 is not approved
 
-Schema SQL, auth replacement, merging `feature/security-session-agent`, production reads, and any Flutter work.
+Schema SQL, auth replacement, merging `feature/security-session-agent`, production reads, and any Flutter work. The visual frames are waiting for approval before the UI branch starts.
