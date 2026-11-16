@@ -1,5 +1,7 @@
 # RUHH database design (Phase 0 audit)
 
+**Phase 1 note:** no schema was added. Recommendations for future records, the XP ledger, and Gate A are in `RUHH_DATA_BOUNDARIES.md`. They are not migrations.
+
 **Date:** 16 November 2026
 **Scope:** schema as defined in this repository. The production project ref `gmmfimwumtbneynsyimz` is named in `ruhh/README.md`, `ruhh/RUN_AND_INSTALL.md`, and `ruhh/.env.example`. **This audit did not connect to it, did not run migrations, and did not read live rows.** If production has been edited outside these files, that drift is invisible here.
 

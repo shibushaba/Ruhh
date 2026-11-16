@@ -1,5 +1,7 @@
 # RUHH design system (Phase 0 audit)
 
+**Phase 1 note:** the new frames in `docs/designs/` use this system. They add a journey card, a milestone rail, and a level moment without changing tokens in the app. Light frames draw a faint ink hairline because `borderHighlight` (white at 55%) does not separate a white card from the desk. That hairline is picture-only.
+
 **Date:** 16 November 2026
 **What this file describes:** the visual system that actually ships in `ruhh/lib`, version 1.0.34.
 **What it does not describe as current:** the root file `design-system.md`. That document specifies a different product (soft gray canvas `#F4F5F9`, 24px cards, pill radius 999, blurred shadows, "no neo-brutal hard offsets"). The running app does not use those tokens. Keep `design-system.md` as a rejected or unused exploration. Do not implement it over the shipped UI.
