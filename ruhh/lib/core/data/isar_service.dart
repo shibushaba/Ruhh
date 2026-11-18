@@ -11,6 +11,7 @@ import 'package:ruhh/core/data/models/movie_local.dart';
 import 'package:ruhh/core/data/models/prayer_local.dart';
 import 'package:ruhh/core/data/models/transaction_local.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
+import 'package:ruhh/core/data/models/v14_local.dart';
 
 class IsarService {
   IsarService._();
@@ -42,6 +43,14 @@ class IsarService {
         ObjectiveLocalSchema,
         CategoryBudgetLimitLocalSchema,
         StandingSalaryLocalSchema,
+        V14ProfileLocalSchema,
+        QuestLocalSchema,
+        GoalLocalSchema,
+        MilestoneLocalSchema,
+        PlannerStopLocalSchema,
+        LocalXpEventLocalSchema,
+        ChatTurnLocalSchema,
+        JourneyMarkLocalSchema,
       ],
       directory: dir.path,
       name: 'ruhh',

@@ -317,6 +317,9 @@ class SupabaseSyncService {
     });
   }
 
+  /// Keys sent to the existing cloud backup. v14 collections are not in this list.
+  static const cloudSyncListKeys = _syncListKeys;
+
   static const _syncListKeys = [
     'transactions',
     'objectives',
