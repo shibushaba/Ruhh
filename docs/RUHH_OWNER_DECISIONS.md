@@ -68,10 +68,19 @@ The owner reviewed the refined Phase 1 frames. Architecture stands. The visuals 
 | --- | --- | --- |
 | V1 | Identity stays: palette, DM Sans, Outfit, dark-first, the grid as a motif, six destinations. The square-control and near-square-card rule is no longer binding where a different shape makes the screen clearer. | `docs/visual/RUHH_VISUAL_DIRECTION.md` |
 | V2 | Two studies before a lock. **A Ambient** is type, air, and one arc. **B My Space** is a room that changes only for real progress. | `a-*.png`, `b-*.png` |
-| V3 | Recommended direction is **The Lit Desk**: Ambient’s hierarchy, plus one pictured object, the lit path. My Space is a place you open, not the chrome of every screen. Objects that do not match a real goal are not drawn. | Unprefixed frames in `docs/visual/png/` |
-| V4 | A UI implementation branch is authorized only after these frames are approved. It starts with tokens, the dock, Home, and My Journey. It uses real data or an explicit empty state. Sample XP stays in tests. | `docs/visual/RUHH_UI_IMPLEMENTATION_PLAN.md` |
+| V3 | Recommended direction at the time was **The Lit Desk**. Superseded by v14 below. The Lit Desk frames stay in the repo as a study. | Unprefixed frames in `docs/visual/png/` |
+| V4 | A UI implementation branch is a later plan, not this change. It uses real data or an explicit empty state. Sample XP stays in tests. | `docs/design/v14/STAGE_E_FLUTTER_PLAN.md` |
 | V5 | That UI branch does not authorize SQL, Supabase, auth, the XP backend, Grok deployment, production, Gate A, or merging the security-agent branch. | Same plan |
+
+## v14 visual, 18 November 2026
+
+Shabas approved the v14 design. It replaces The Lit Desk as the visual target. Product rules from Phase 1 stay: Prayer, Movies, Books, and Budget award no XP; INR only in Budget; the existing level curve stays pluggable; XP curve v2 and a daily cap are not approved.
+
+| # | Decision | Where |
+| --- | --- | --- |
+| V14-1 | Living-scene Home, Ruu orb ring, charcoal tokens, three pet packs. Dark only for v14. | `docs/design/v14/` |
+| V14-2 | Stage E is a plan. No Dart, Isar field, SQL, or production work in the approval commit. Pet choice is local-only until a later data decision. | `docs/design/v14/STAGE_E_FLUTTER_PLAN.md` |
 
 ## Explicitly not decided, because Phase 2 is not approved
 
-Schema SQL, auth replacement, merging `feature/security-session-agent`, production reads, and any Flutter work. The visual frames are waiting for approval before the UI branch starts.
+Schema SQL, auth replacement, merging `feature/security-session-agent`, production reads, and any Flutter work. v14 is approved as a design. Building it is a later milestone, and it still does not include those items.
