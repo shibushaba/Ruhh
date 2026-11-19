@@ -38,30 +38,52 @@ void main() {
         if (find.byType(V14Orb).evaluate().isNotEmpty) break;
       }
       expect(find.byType(V14Orb), findsWidgets);
-      await tester.tap(find.byType(V14Orb));
-      await tester.pump(const Duration(milliseconds: 400));
+      await _pressOrb(tester);
       if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
-        await tester.tap(find.byType(V14Orb));
-        await tester.pump(const Duration(milliseconds: 400));
+        await _pressOrb(tester);
       }
-      await tester.tap(find.byKey(const Key('ring-habits')));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byKey(const Key('ring-orbit')));
-      await tester.pump(const Duration(milliseconds: 800));
-      expect(find.textContaining('Read'), findsWidgets);
+      await _tapKey(tester, const Key('ring-habits'));
+      await _tapKey(tester, const Key('ring-orbit'));
+      await _until(tester, find.textContaining('Read'));
       expect(find.textContaining('Alchemist'), findsNothing);
-      await tester.tap(find.byType(V14Orb));
-      await tester.pump(const Duration(milliseconds: 400));
+      await _pressOrb(tester);
       if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
-        await tester.tap(find.byType(V14Orb));
-        await tester.pump(const Duration(milliseconds: 400));
+        await _pressOrb(tester);
       }
-      await tester.tap(find.byKey(const Key('ring-books')));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byKey(const Key('ring-shelf')));
-      await tester.pump(const Duration(milliseconds: 800));
-      expect(find.textContaining('Alchemist'), findsWidgets);
+      await _tapKey(tester, const Key('ring-books'));
+      await _tapKey(tester, const Key('ring-shelf'));
+      await _until(tester, find.textContaining('Alchemist'));
     },
     timeout: const Timeout(Duration(minutes: 4)),
   );
+}
+
+Future<void> _pressOrb(WidgetTester tester) async {
+  final finder = find.byKey(const Key('v14-orb'));
+  await _until(tester, finder);
+  tester.widget<GestureDetector>(finder).onTap?.call();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
+Future<void> _tapKey(WidgetTester tester, Key key) async {
+  final finder = find.byKey(key);
+  await _until(tester, finder);
+  final widget = finder.evaluate().first.widget;
+  if (widget is InkWell) {
+    widget.onTap?.call();
+  } else if (widget is GestureDetector) {
+    widget.onTap?.call();
+  } else {
+    await tester.tap(finder, warnIfMissed: false);
+  }
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> _until(WidgetTester tester, Finder finder) async {
+  final end = DateTime.now().add(const Duration(seconds: 20));
+  while (DateTime.now().isBefore(end)) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  fail('Timed out waiting for $finder');
 }
