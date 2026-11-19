@@ -16,20 +16,15 @@ String? ruhhParentRoute(String matchedLocation) {
   return null;
 }
 
-bool ruhhShouldShowBack(
-  BuildContext context, {
-  bool moduleTabCanBack = false,
-}) {
+bool ruhhShouldShowBack(BuildContext context, {bool moduleTabCanBack = false}) {
   if (moduleTabCanBack) return true;
   if (context.canPop()) return true;
-  final loc = GoRouterState.of(context).matchedLocation;
-  return ruhhParentRoute(loc) != null;
+  final router = GoRouter.maybeOf(context);
+  if (router == null) return false;
+  return ruhhParentRoute(router.state.matchedLocation) != null;
 }
 
-void ruhhNavigateBack(
-  BuildContext context, {
-  VoidCallback? onModuleTabBack,
-}) {
+void ruhhNavigateBack(BuildContext context, {VoidCallback? onModuleTabBack}) {
   if (context.canPop()) {
     context.pop();
     return;
@@ -38,7 +33,7 @@ void ruhhNavigateBack(
     onModuleTabBack();
     return;
   }
-  final parent = ruhhParentRoute(GoRouterState.of(context).matchedLocation);
+  final parent = ruhhParentRoute(GoRouter.of(context).state.matchedLocation);
   if (parent != null) {
     context.go(parent);
   }
@@ -50,11 +45,14 @@ Widget? ruhhBackLeading(
   VoidCallback? onPressed,
   VoidCallback? onModuleTabBack,
 }) {
-  final show = onPressed != null ||
+  final show =
+      onPressed != null ||
       ruhhShouldShowBack(context, moduleTabCanBack: onModuleTabBack != null);
   if (!show) return null;
   return IconButton(
-    onPressed: onPressed ?? () => ruhhNavigateBack(context, onModuleTabBack: onModuleTabBack),
+    onPressed:
+        onPressed ??
+        () => ruhhNavigateBack(context, onModuleTabBack: onModuleTabBack),
     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
     tooltip: 'Back',
   );
@@ -131,12 +129,10 @@ class NBModuleScaffold extends ConsumerWidget {
 
     Widget pageBody = wrapBody
         ? NBPageBody(child: body)
-        : RuhhShellScrollInsets(
-            bottom: shellScrollBottom,
-            child: body,
-          );
+        : RuhhShellScrollInsets(bottom: shellScrollBottom, child: body);
 
-    final showBack = !hideBackButton &&
+    final showBack =
+        !hideBackButton &&
         (showBackButton ||
             ruhhShouldShowBack(context, moduleTabCanBack: tabCanBack));
 
@@ -191,11 +187,7 @@ class NBModuleScaffold extends ConsumerWidget {
 }
 
 class NBStatusChip extends StatelessWidget {
-  const NBStatusChip({
-    super.key,
-    required this.label,
-    this.pastel,
-  });
+  const NBStatusChip({super.key, required this.label, this.pastel});
 
   final String label;
   final Color? pastel;
@@ -209,10 +201,7 @@ class NBStatusChip extends StatelessWidget {
         color: pastel ?? t.accentSlatePastel,
         borderRadius: BorderRadius.circular(t.radiusChip),
       ),
-      child: Text(
-        label,
-        style: t.micro(Theme.of(context).textTheme),
-      ),
+      child: Text(label, style: t.micro(Theme.of(context).textTheme)),
     );
   }
 }

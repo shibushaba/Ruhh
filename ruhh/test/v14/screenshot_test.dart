@@ -170,7 +170,7 @@ void main() {
           ],
         },
         onAddGoal: (_) {},
-        onAddMilestone: (_, __) {},
+        onAddMilestone: (_, _) {},
         onToggleMilestone: (_) {},
         onToggleGoal: (_) {},
       ),
@@ -199,8 +199,8 @@ void main() {
             kind: 'note',
           ),
         ],
-        onMove: (_, __) {},
-        onAdd: (_, __) {},
+        onMove: (_, _) {},
+        onAdd: (_, _) {},
       ),
     );
     await shot(
@@ -282,7 +282,7 @@ void main() {
         onChecked: (_) {},
         onBack: () {},
         onConfirm: () {},
-        onNames: (_, __) {},
+        onNames: (_, _) {},
       ),
     );
     await shot(

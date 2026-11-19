@@ -19,48 +19,42 @@ class NotificationOnboardingPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: ruhhAppBar(context, title: 'Reminders'),
-      body: Padding(
+      body: ListView(
         padding: EdgeInsets.all(t.spaceScreenHorizontal),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            RuhhSoftCard(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Stay on track',
-                    style: t.statMedium(theme),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'RUHH needs notification permission to remind you about '
-                    'prayers and habits at the right time.',
-                    style: theme.bodyLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'On Samsung devices, also set Battery to Unrestricted '
-                    'so reminders survive overnight.',
-                    style: t.caption(theme),
-                  ),
-                ],
-              ),
+        children: [
+          RuhhSoftCard(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Stay on track', style: t.statMedium(theme)),
+                const SizedBox(height: 8),
+                Text(
+                  'RUHH needs notification permission to remind you about '
+                  'prayers and habits at the right time.',
+                  style: theme.bodyLarge,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'On Samsung devices, also set Battery to Unrestricted '
+                  'so reminders survive overnight.',
+                  style: t.caption(theme),
+                ),
+              ],
             ),
-            const Spacer(),
-            NBButton(
-              label: 'Allow notifications',
-              onPressed: () => _continue(ref, context, request: true),
-            ),
-            const SizedBox(height: 12),
-            NBButton(
-              label: 'Not now',
-              primary: false,
-              onPressed: () => _continue(ref, context, request: false),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+          NBButton(
+            label: 'Allow notifications',
+            onPressed: () => _continue(ref, context, request: true),
+          ),
+          const SizedBox(height: 12),
+          NBButton(
+            label: 'Not now',
+            primary: false,
+            onPressed: () => _continue(ref, context, request: false),
+          ),
+        ],
       ),
     );
   }
@@ -84,7 +78,11 @@ class NotificationOnboardingPage extends ConsumerWidget {
     await ref
         .read(settingsControllerProvider.notifier)
         .setOnboardingComplete(true);
-    await rescheduleAllNotifications(ref);
+    // A stuck notification plugin must not trap the person on this page.
+    await rescheduleAllNotifications(ref).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {},
+    );
     if (context.mounted) context.go('/home');
   }
 }

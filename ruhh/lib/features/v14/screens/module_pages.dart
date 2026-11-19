@@ -1006,14 +1006,6 @@ class PetPickerPage extends ConsumerStatefulWidget {
 
 class _PetPickerPageState extends ConsumerState<PetPickerPage> {
   String _selected = 'dragon';
-  Timer? _tryTimer;
-
-  @override
-  void dispose() {
-    _tryTimer?.cancel();
-    super.dispose();
-  }
-
   var _confirm = false;
   var _checked = false;
   String _petName = '';
@@ -1047,7 +1039,7 @@ class _PetPickerPageState extends ConsumerState<PetPickerPage> {
           if (!context.mounted) return;
           if (result == PetWrite.saved) {
             ref.invalidate(v14ProfileProvider);
-            ref.read(tryPetProvider.notifier).state = null;
+            ref.read(tryPetProvider.notifier).clear();
             context.go('/home');
           }
         },
@@ -1058,13 +1050,7 @@ class _PetPickerPageState extends ConsumerState<PetPickerPage> {
       locked: locked,
       onSelect: (id) => setState(() => _selected = id),
       onTry: () {
-        ref.read(tryPetProvider.notifier).state = _selected;
-        _tryTimer?.cancel();
-        _tryTimer = Timer(const Duration(seconds: 45), () {
-          if (ref.read(tryPetProvider) == _selected) {
-            ref.read(tryPetProvider.notifier).state = null;
-          }
-        });
+        ref.read(tryPetProvider.notifier).start(_selected);
         context.go('/home');
       },
       onChoose: locked ? () {} : () => setState(() => _confirm = true),

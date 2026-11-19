@@ -50,6 +50,8 @@ class LivingHomePreview {
 }
 
 class _LivingHomePageState extends ConsumerState<LivingHomePage> {
+  var _askedForPet = false;
+
   @override
   Widget build(BuildContext context) {
     final preview = widget.preview;
@@ -71,14 +73,23 @@ class _LivingHomePageState extends ConsumerState<LivingHomePage> {
       );
     }
     final profileAsync = ref.watch(v14ProfileProvider);
+    final tryPet = ref.watch(tryPetProvider);
     return profileAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
           Center(child: Text('Could not open home', style: v14Text(14))),
       data: (profile) {
-        if (profile.petId == null && ref.read(tryPetProvider) == null) {
+        final needsPet = profile.petId == null && tryPet == null;
+        if (needsPet && !_askedForPet) {
+          _askedForPet = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) context.go('/pet');
+            if (!mounted) return;
+            _askedForPet = false;
+            final latest = ref.read(v14ProfileProvider);
+            if (latest.isLoading || latest.isRefreshing) return;
+            if (ref.read(tryPetProvider) != null) return;
+            if (latest.value?.petId != null) return;
+            context.go('/pet');
           });
         }
         return _LoadedHome(profile: profile);
@@ -168,20 +179,19 @@ class _LoadedHomeState extends ConsumerState<_LoadedHome> {
       _sub = progress.subStage;
       _banner = banner;
     });
-    if (widget.profile.lastSeenLevel == 0) {
-      await store.saveProfile(
-        widget.profile.copyWith(lastSeenLevel: progress.level),
-      );
-    } else if (progress.level > widget.profile.lastSeenLevel && mounted) {
-      await store.saveProfile(
-        widget.profile.copyWith(lastSeenLevel: progress.level),
-      );
+    // Re-read after the awaits. The profile this page was built with can be
+    // from a pet try, and writing it back would wipe a choice made since.
+    final fresh = await store.loadProfile();
+    if (fresh.lastSeenLevel == 0) {
+      await store.saveProfile(fresh.copyWith(lastSeenLevel: progress.level));
+    } else if (progress.level > fresh.lastSeenLevel && mounted) {
+      await store.saveProfile(fresh.copyWith(lastSeenLevel: progress.level));
       if (mounted) {
         showDialog<void>(
           context: context,
           builder: (context) {
             final form = artFormForLevel(
-              widget.profile.petId ?? 'dragon',
+              fresh.petId ?? 'dragon',
               progress.level,
             );
             return AlertDialog(

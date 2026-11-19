@@ -41,6 +41,7 @@ class V14ShellState extends ConsumerState<V14Shell> {
   String? _hover;
   bool _showSubs = false;
   int _demoStep = 0;
+  V14ProfileData? _profile;
 
   void openRing({bool tapMode = false}) {
     setState(() {
@@ -65,7 +66,9 @@ class V14ShellState extends ConsumerState<V14Shell> {
     final asyncProfile = widget.previewProfile != null
         ? AsyncValue.data(widget.previewProfile!)
         : ref.watch(v14ProfileProvider);
-    final profile = asyncProfile.value ?? const V14ProfileData();
+    final incoming = widget.previewProfile ?? asyncProfile.value;
+    if (incoming != null) _profile = incoming;
+    final profile = _profile ?? const V14ProfileData();
     final tryPet = ref.watch(tryPetProvider);
     final petId = widget.petIdOverride ?? tryPet ?? profile.petId ?? 'dragon';
     final pack = petPackFor(petId);

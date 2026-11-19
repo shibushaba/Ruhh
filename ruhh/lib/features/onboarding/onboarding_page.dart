@@ -20,70 +20,71 @@ class OnboardingPage extends ConsumerWidget {
     final settings = ref.watch(settingsControllerProvider);
     return Scaffold(
       appBar: ruhhAppBar(context, title: 'Welcome'),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Pick your trackers',
-                style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Habit, Prayer, and Movie are always on. Budget is optional.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 24),
-            _lockedTile(context, 'Habit', NBColors.habit),
-            const SizedBox(height: 12),
-            _lockedTile(context, 'Prayer', NBColors.prayer),
-            const SizedBox(height: 12),
-            _lockedTile(context, 'Movie', NBColors.movie),
-            const SizedBox(height: 12),
-            NBCard(
-              color: NBColors.budget,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Budget',
-                            style: Theme.of(context).textTheme.titleLarge),
-                        const Text('Track spending & budgets'),
-                      ],
-                    ),
+        children: [
+          Text(
+            'Pick your trackers',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Habit, Prayer, and Movie are always on. Budget is optional.',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 24),
+          _lockedTile(context, 'Habit', NBColors.habit),
+          const SizedBox(height: 12),
+          _lockedTile(context, 'Prayer', NBColors.prayer),
+          const SizedBox(height: 12),
+          _lockedTile(context, 'Movie', NBColors.movie),
+          const SizedBox(height: 12),
+          NBCard(
+            color: NBColors.budget,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Budget',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const Text('Track spending & budgets'),
+                    ],
                   ),
-                  Switch(
-                    value: settings.budgetEnabled,
-                    onChanged: (v) => ref
-                        .read(settingsControllerProvider.notifier)
-                        .setBudgetEnabled(v),
-                  ),
-                ],
-              ),
+                ),
+                Switch(
+                  value: settings.budgetEnabled,
+                  onChanged: (v) => ref
+                      .read(settingsControllerProvider.notifier)
+                      .setBudgetEnabled(v),
+                ),
+              ],
             ),
-            const Spacer(),
-            NBButton(
-              label: 'Continue',
-              onPressed: () async {
-                final username = ref.read(authControllerProvider).username;
-                if (username != null) {
-                  final isar = await ref.read(isarProvider.future);
-                  final user = await isar.userLocals
-                      .filter()
-                      .usernameEqualTo(username)
-                      .findFirst();
-                  if (user != null) {
-                    await performUserCloudSync(isar, user);
-                  }
+          ),
+          const SizedBox(height: 24),
+          NBButton(
+            label: 'Continue',
+            onPressed: () async {
+              final username = ref.read(authControllerProvider).username;
+              if (username != null) {
+                final isar = await ref.read(isarProvider.future);
+                final user = await isar.userLocals
+                    .filter()
+                    .usernameEqualTo(username)
+                    .findFirst();
+                if (user != null) {
+                  await performUserCloudSync(isar, user);
                 }
-                if (context.mounted) {
-                  context.go('/onboarding/notifications');
-                }
-              },
-            ),
-          ],
-        ),
+              }
+              if (context.mounted) {
+                context.go('/onboarding/notifications');
+              }
+            },
+          ),
+        ],
       ),
     );
   }
