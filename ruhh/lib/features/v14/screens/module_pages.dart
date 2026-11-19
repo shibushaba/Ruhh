@@ -159,7 +159,7 @@ class _HabitsOrbitPageState extends ConsumerState<HabitsOrbitPage> {
       onToggle: (habit) => _toggle(habit),
       onAdd: () => context.push('/habit/new'),
       onOpenQuests: () => context.go('/quests'),
-      onOpenClassic: () => context.push('/habit/board'),
+      onOpenClassic: () => context.push('/habit/board?tab=1'),
     );
   }
 }

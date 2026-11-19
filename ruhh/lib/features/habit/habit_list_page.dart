@@ -32,8 +32,10 @@ class HabitListPage extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Text('Active habits',
-                            style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          'Active habits',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.add),
@@ -92,19 +94,29 @@ class _HabitRow extends ConsumerWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: NBColors.black, width: NBMetrics.borderWidth),
+            border: Border.all(
+              color: NBColors.black,
+              width: NBMetrics.borderWidth,
+            ),
             color: NBColors.surfaceFill(Theme.of(context).brightness),
             boxShadow: const [
-              BoxShadow(color: NBColors.shadow, offset: Offset(3, 3), blurRadius: 0),
+              BoxShadow(
+                color: NBColors.shadow,
+                offset: Offset(3, 3),
+                blurRadius: 0,
+              ),
             ],
           ),
           child: ListTile(
-            leading: habitIconChip(habit.icon, Color(habit.colorValue), size: 36),
-            title: Text(habit.name),
-            subtitle: Text(
-              '${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}',
+            key: Key('habit-board-${habit.remoteId}'),
+            leading: habitIconChip(
+              habit.icon,
+              Color(habit.colorValue),
+              size: 36,
             ),
-            onTap: () => context.push('/habit/detail/${habit.remoteId}'),
+            title: Text(habit.name, key: Key('habit-board-name-${habit.name}')),
+            subtitle: Text('${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}'),
+            onTap: () => context.push('/habit/edit/${habit.remoteId}'),
             trailing: PopupMenuButton<String>(
               onSelected: (v) async {
                 if (v == 'archive') {
