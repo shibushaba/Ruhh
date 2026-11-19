@@ -188,13 +188,13 @@ void main() {
     await _until(tester, find.text('Title'));
     await tester.enterText(find.byType(TextField).first, 'Pather Panchali');
     await _tapText(tester, 'Save');
-    await tester.pump(const Duration(seconds: 1));
+    await _until(tester, find.textContaining('Pather'));
     expect(await _lifetimeXp(), xpBeforeQuiet);
 
     await _open(tester, 'habits', 'quests');
     await _field(tester, 'quest-title', 'Add quest', 'Carry water');
     await _until(tester, find.text('Carry water'));
-    await tester.tap(find.text('Done'));
+    await _tapText(tester, 'Done');
     await _until(tester, find.text('Undo'));
     await tester.tap(find.text('Undo'));
     await _until(tester, find.text('Done'));
@@ -203,12 +203,19 @@ void main() {
     await _field(tester, 'goal-title', 'Add goal', 'Finish the climb');
     await _until(tester, find.text('Finish the climb'));
     await _shot('10-goal-climb');
-    await tester.enterText(find.byType(TextField).first, 'First step');
-    await tester.tap(find.text('Add milestone'));
+    await tester.enterText(
+      find.byWidgetPredicate((widget) {
+        final key = widget.key;
+        return widget is TextField &&
+            key is ValueKey<String> &&
+            key.value.startsWith('mile-title-');
+      }),
+      'First step',
+    );
+    await _tapText(tester, 'Add milestone');
     await _until(tester, find.text('First step'));
-    await tester.tap(find.text('First step'));
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Mark goal done'));
+    await _tapText(tester, 'First step');
+    await _tapText(tester, 'Mark goal done');
     await tester.pump(const Duration(seconds: 1));
 
     await _open(tester, 'prayer', 'planner');
@@ -217,7 +224,7 @@ void main() {
     await tester.tap(find.text('Undo'));
     await _field(tester, 'stop-label', 'Add stop', 'Tea');
     await _until(tester, find.text('Move'));
-    await tester.tap(find.text('Move'));
+    await _tapText(tester, 'Move');
     await _until(tester, find.text('Undo'));
 
     await _open(tester, 'home', 'chat');
@@ -226,37 +233,37 @@ void main() {
       find.byKey(const Key('chat-input')),
       'add habit നടക്കുക',
     );
-    await tester.tap(find.text('Send'));
+    await _tapText(tester, 'Send');
     await _until(tester, find.text('Confirm'));
     await tester.enterText(find.byKey(const Key('chat-edit')), 'നടക്കുക');
-    await tester.tap(find.text('Edit'));
+    await _tapText(tester, 'Edit');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.enterText(
       find.byKey(const Key('chat-input')),
       'add habit مرحبا',
     );
-    await tester.tap(find.text('Send'));
+    await _tapText(tester, 'Send');
     await _until(tester, find.text('Cancel'));
-    await tester.tap(find.text('Cancel'));
+    await _tapText(tester, 'Cancel');
     await tester.pump(const Duration(milliseconds: 300));
     await tester.enterText(
       find.byKey(const Key('chat-input')),
       'add habit Chat walk',
     );
-    await tester.tap(find.text('Send'));
+    await _tapText(tester, 'Send');
     await _until(tester, find.text('Confirm'));
-    await tester.tap(find.text('Confirm'));
+    await _tapText(tester, 'Confirm');
     await tester.pump(const Duration(seconds: 1));
     await tester.enterText(find.byKey(const Key('chat-input')), 'prayer dhuhr');
-    await tester.tap(find.text('Send'));
+    await _tapText(tester, 'Send');
     await _until(tester, find.textContaining('no XP'));
-    await tester.tap(find.text('Confirm'));
+    await _tapText(tester, 'Confirm');
     await tester.pump(const Duration(seconds: 1));
 
     await _home(tester);
     await _until(tester, find.byKey(const Key('level-up')), seconds: 20);
     await _shot('11-level-up');
-    await tester.tap(find.text('Stay'));
+    await _tapText(tester, 'Stay');
     await tester.pump(const Duration(milliseconds: 400));
 
     await _open(tester, 'home', 'settings');

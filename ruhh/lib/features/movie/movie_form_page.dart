@@ -38,6 +38,7 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
 
   Future<void> _load() async {
     final repo = await ref.read(movieRepositoryProvider.future);
+    await repo.ensureTrackerDefaults();
     if (widget.remoteId != null) {
       final m = await repo.movieByRemoteId(widget.remoteId!);
       if (m != null) {
@@ -75,12 +76,14 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
       categoryRemoteId: _categoryId!,
       note: _noteCtrl.text,
     );
+    bumpMovieRefresh(ref);
     if (mounted) context.pop();
   }
 
   Future<void> _newCategory(List<MovieCategoryLocal> active) async {
     final nameCtrl = TextEditingController();
-    var color = movieCategoryPalette[active.length % movieCategoryPalette.length];
+    var color =
+        movieCategoryPalette[active.length % movieCategoryPalette.length];
     var emoji = '🎬';
     if (!mounted) return;
     await showNBStatefulFormDialog(
@@ -156,14 +159,20 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 20),
-                  Text('Priority', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Priority',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   NBStarRating(
                     value: _priority,
                     onChanged: (v) => setState(() => _priority = v),
                   ),
                   const SizedBox(height: 20),
-                  Text('Category', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Category',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   catsAsync.when(
                     loading: () => const LinearProgressIndicator(),
@@ -179,7 +188,8 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
                               label: c.name,
                               selected: _categoryId == c.remoteId,
                               color: Color(c.colorValue),
-                              onTap: () => setState(() => _categoryId = c.remoteId),
+                              onTap: () =>
+                                  setState(() => _categoryId = c.remoteId),
                             ),
                           NBChip(
                             label: '+ New',

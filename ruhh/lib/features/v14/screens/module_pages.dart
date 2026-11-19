@@ -633,6 +633,10 @@ class NightNookPage extends ConsumerStatefulWidget {
 class _NightNookPageState extends ConsumerState<NightNookPage> {
   List<String> _books = const [];
   List<String> _movies = const [];
+  var _bookTick = 0;
+  var _movieTick = 0;
+
+  bool get _live => widget.books == null && widget.movies == null;
 
   @override
   void initState() {
@@ -661,6 +665,17 @@ class _NightNookPageState extends ConsumerState<NightNookPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_live) {
+      final bookTick = ref.watch(bookRefreshProvider);
+      final movieTick = ref.watch(movieRefreshProvider);
+      if (bookTick != _bookTick || movieTick != _movieTick) {
+        _bookTick = bookTick;
+        _movieTick = movieTick;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _load();
+        });
+      }
+    }
     return NightNookView(
       books: _books,
       movies: _movies,

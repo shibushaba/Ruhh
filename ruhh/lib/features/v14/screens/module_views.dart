@@ -1268,18 +1268,20 @@ class _Page extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: Image.asset(backdrop, fit: BoxFit.cover),
-          ),
+          Positioned.fill(child: Image.asset(backdrop, fit: BoxFit.cover)),
           ColoredBox(color: V14Colors.base.withValues(alpha: 0.62)),
           SafeArea(
-            child: ListView(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-              children: [
-                Text(title, style: v14Text(26, family: V14Fonts.display)),
-                const SizedBox(height: 12),
-                child,
-              ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: v14Text(26, family: V14Fonts.display)),
+                  const SizedBox(height: 12),
+                  child,
+                ],
+              ),
             ),
           ),
         ],
