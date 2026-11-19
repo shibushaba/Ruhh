@@ -216,7 +216,8 @@ void main() {
       'Pather Panchali',
     );
     await _tapText(tester, 'Save');
-    await _until(tester, find.textContaining('Pather'));
+    await _until(tester, find.text('Pather Panchali'));
+    expect(find.text('Movie or show name'), findsNothing);
     expect(await _lifetimeXp(), xpBeforeQuiet);
 
     await _open(tester, 'habits', 'quests');
@@ -584,17 +585,23 @@ Future<void> _tapText(WidgetTester tester, String label) async {
   element.visitAncestorElements((ancestor) {
     final widget = ancestor.widget;
     if (widget is RuhhPrimaryButton) {
-      widget.onPressed?.call();
+      final action = widget.onPressed;
+      if (action == null) return true;
+      action();
       pressed = true;
       return false;
     }
     if (widget is V14Button) {
-      widget.onPressed?.call();
+      final action = widget.onPressed;
+      if (action == null) return true;
+      action();
       pressed = true;
       return false;
     }
     if (widget is TextButton) {
-      widget.onPressed?.call();
+      final action = widget.onPressed;
+      if (action == null) return true;
+      action();
       pressed = true;
       return false;
     }

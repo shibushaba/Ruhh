@@ -33,6 +33,9 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
   @override
   void initState() {
     super.initState();
+    _titleCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
     _load();
   }
 
@@ -61,19 +64,21 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
     super.dispose();
   }
 
-  bool get _canSave =>
-      _titleCtrl.text.trim().isNotEmpty &&
-      _categoryId != null &&
-      _categoryId!.isNotEmpty;
+  bool get _canSave => _titleCtrl.text.trim().isNotEmpty;
 
   Future<void> _save() async {
     if (!_canSave) return;
     final repo = await ref.read(movieRepositoryProvider.future);
+    await repo.ensureTrackerDefaults();
+    final catId = (_categoryId != null && _categoryId!.isNotEmpty)
+        ? _categoryId!
+        : (await repo.defaultCategory())?.remoteId ?? '';
+    if (catId.isEmpty) return;
     await repo.saveTrackerMovie(
       remoteId: widget.remoteId,
       title: _titleCtrl.text,
       priority: _priority,
-      categoryRemoteId: _categoryId!,
+      categoryRemoteId: catId,
       note: _noteCtrl.text,
     );
     bumpMovieRefresh(ref);
