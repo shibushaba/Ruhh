@@ -184,8 +184,10 @@ class _LoadedHomeState extends ConsumerState<_LoadedHome> {
     final fresh = await store.loadProfile();
     if (fresh.lastSeenLevel == 0) {
       await store.saveProfile(fresh.copyWith(lastSeenLevel: progress.level));
+      ref.invalidate(v14ProfileProvider);
     } else if (progress.level > fresh.lastSeenLevel && mounted) {
       await store.saveProfile(fresh.copyWith(lastSeenLevel: progress.level));
+      ref.invalidate(v14ProfileProvider);
       if (mounted) {
         showDialog<void>(
           context: context,
@@ -205,18 +207,20 @@ class _LoadedHomeState extends ConsumerState<_LoadedHome> {
                   color: V14Colors.gold,
                 ),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(form.sprite, height: 180, fit: BoxFit.contain),
-                  const SizedBox(height: 8),
-                  Text(form.name, style: v14Text(16, color: V14Colors.gold)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'The world follows the existing curve. Nothing here is sent to the cloud.',
-                    style: v14Text(14),
-                  ),
-                ],
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(form.sprite, height: 180, fit: BoxFit.contain),
+                    const SizedBox(height: 8),
+                    Text(form.name, style: v14Text(16, color: V14Colors.gold)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The world follows the existing curve. Nothing here is sent to the cloud.',
+                      style: v14Text(14),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(

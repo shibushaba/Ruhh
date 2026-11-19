@@ -329,8 +329,7 @@ void main() {
     }
     expect(tester.takeException(), isNull);
     if (find.byKey(const Key('ring-hint')).evaluate().isNotEmpty) {
-      await tester.tap(find.byKey(const Key('ring-dismiss')));
-      await tester.pump(const Duration(milliseconds: 300));
+      await _tapKey(tester, const Key('ring-dismiss'));
     }
 
     await _frame(tester, const Size(320, 640));
