@@ -5,6 +5,7 @@ import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
 import 'package:ruhh/features/v14/art/art_catalog.dart';
+import 'package:ruhh/features/v14/art/plate_companion.dart';
 import 'package:ruhh/features/v14/data/v14_models.dart';
 import 'package:ruhh/features/v14/data/v14_store.dart';
 import 'package:ruhh/features/v14/logic/chat_intent.dart';
@@ -46,6 +47,16 @@ void main() {
     expect(artWorldOf('panda', 3).plate, contains('river_gorge'));
     expect(artFormForLevel('dragon', 1).name, 'Ember Egg');
     expect(artFormForLevel('cat', 90).name, 'Star Warden');
+  });
+
+  test('every shipped plate already paints the companion', () {
+    for (final pet in ['dragon', 'panda', 'cat']) {
+      for (var world = 1; world <= 5; world++) {
+        expect(platePaintsCompanion(pet, world), isTrue, reason: '$pet $world');
+      }
+    }
+    expect(platePaintsCompanion('dragon', 0), isFalse);
+    expect(platePaintsCompanion('newpet', 1), isFalse);
   });
 
   test('excluded modules never receive XP', () async {

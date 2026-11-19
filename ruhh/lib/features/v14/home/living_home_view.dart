@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ruhh/features/v14/art/art_catalog.dart';
+import 'package:ruhh/features/v14/art/plate_companion.dart';
 import 'package:ruhh/features/v14/art/plate_cover.dart';
 import 'package:ruhh/features/v14/logic/pet_catalog.dart';
 import 'package:ruhh/features/v14/theme/v14_colors.dart';
@@ -49,11 +50,12 @@ class LivingHomeView extends StatelessWidget {
         builder: (context, constraints) {
           final size = Size(constraints.maxWidth, constraints.maxHeight);
           final cover = PlateCover(size);
+          final tapOrigin = cover.at(scene.tapX0, scene.tapY0);
+          final tapEnd = cover.at(scene.tapX1, scene.tapY1);
           final feet = cover.at((scene.tapX0 + scene.tapX1) / 2, scene.tapY1);
           final spriteHeight = form.heightDp * (size.width / 390);
           final spriteWidth = spriteHeight * 1.15;
-          final tapOrigin = cover.at(scene.tapX0, scene.tapY0);
-          final tapEnd = cover.at(scene.tapX1, scene.tapY1);
+          final paintSprite = !platePaintsCompanion(petId, world);
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -62,20 +64,21 @@ class LivingHomeView extends StatelessWidget {
               ),
               const _EdgeShade(top: true),
               const _EdgeShade(top: false),
-              Positioned(
-                left: feet.dx - spriteWidth / 2,
-                top: feet.dy - spriteHeight,
-                width: spriteWidth,
-                height: spriteHeight,
-                child: IgnorePointer(
-                  child: Image.asset(
-                    form.sprite,
-                    key: const Key('companion-sprite'),
-                    fit: BoxFit.contain,
-                    alignment: Alignment.bottomCenter,
+              if (paintSprite)
+                Positioned(
+                  left: feet.dx - spriteWidth / 2,
+                  top: feet.dy - spriteHeight,
+                  width: spriteWidth,
+                  height: spriteHeight,
+                  child: IgnorePointer(
+                    child: Image.asset(
+                      form.sprite,
+                      key: const Key('companion-sprite'),
+                      fit: BoxFit.contain,
+                      alignment: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
-              ),
               Positioned(
                 left: tapOrigin.dx,
                 top: tapOrigin.dy,
