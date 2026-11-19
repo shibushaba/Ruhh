@@ -245,6 +245,11 @@ void main() {
     await _tapText(tester, 'First step');
     await _tapText(tester, 'Mark goal done');
     await tester.pump(const Duration(seconds: 1));
+    await _home(tester);
+    await _until(tester, find.byKey(const Key('level-up')), seconds: 20);
+    await _shot('11-level-up');
+    await _tapText(tester, 'Stay');
+    await tester.pump(const Duration(milliseconds: 400));
 
     await _open(tester, 'prayer', 'planner');
     await _field(tester, 'stop-label', 'Add stop', 'Tea');
@@ -286,12 +291,6 @@ void main() {
     await _until(tester, find.textContaining('no XP'));
     await _tapText(tester, 'Confirm');
     await tester.pump(const Duration(seconds: 1));
-
-    await _home(tester);
-    await _until(tester, find.byKey(const Key('level-up')), seconds: 20);
-    await _shot('11-level-up');
-    await _tapText(tester, 'Stay');
-    await tester.pump(const Duration(milliseconds: 400));
 
     await _open(tester, 'home', 'settings');
     await _until(tester, find.byKey(const Key('list-mode')));
@@ -482,9 +481,6 @@ Future<void> _frame(WidgetTester tester, Size logical) async {
 }
 
 Future<void> _pressOrb(WidgetTester tester) async {
-  if (find.byKey(const Key('level-up')).evaluate().isNotEmpty) {
-    await _tapText(tester, 'Stay');
-  }
   final finder = find.byKey(const Key('v14-orb'));
   await _until(tester, finder);
   tester.widget<GestureDetector>(finder).onTap?.call();
