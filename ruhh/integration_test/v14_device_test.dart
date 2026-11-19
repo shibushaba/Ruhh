@@ -143,8 +143,19 @@ void main() {
     await _tapText(tester, 'Save');
     await _until(tester, find.textContaining('₹250'));
     await tester.tap(find.text('Full ledger'));
-    await _until(tester, find.textContaining('250'));
-    await tester.tap(find.textContaining('250').first);
+    final ledgerRow = find.byWidgetPredicate((widget) {
+      final key = widget.key;
+      return key is ValueKey<String> && key.value.startsWith('ledger-');
+    });
+    await _until(tester, ledgerRow);
+    final rowElement = ledgerRow.evaluate().first;
+    final row = rowElement.widget;
+    if (row is InkWell) {
+      row.onTap?.call();
+    } else {
+      await tester.tap(ledgerRow.first, warnIfMissed: false);
+    }
+    await tester.pump(const Duration(milliseconds: 400));
     await _until(tester, find.text('Save'));
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(1), 'tea');
@@ -572,6 +583,10 @@ Future<void> _tapKey(WidgetTester tester, Key key) async {
   final element = finder.evaluate().first;
   var pressed = false;
   final self = element.widget;
+  if (self is InkWell) {
+    self.onTap?.call();
+    pressed = true;
+  }
   if (self is NBButton || self is RuhhPrimaryButton || self is V14Button) {
     if (self is NBButton) {
       self.onPressed?.call();

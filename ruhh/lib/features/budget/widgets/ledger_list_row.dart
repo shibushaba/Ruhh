@@ -57,6 +57,7 @@ class LedgerListRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: Key('ledger-${tx.id}'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(t.radiusCardMedium),
         child: Ink(
@@ -105,9 +106,9 @@ class LedgerListRow extends StatelessWidget {
                             ),
                             TextSpan(
                               text: ' · ${ledgerRowSubtitle(tx)}',
-                              style: t.caption(theme).copyWith(
-                                    color: t.textSecondary,
-                                  ),
+                              style: t
+                                  .caption(theme)
+                                  .copyWith(color: t.textSecondary),
                             ),
                           ],
                         ),
@@ -144,10 +145,7 @@ class LedgerListRow extends StatelessWidget {
                     },
                     itemBuilder: (context) => [
                       if (onEdit != null)
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Text('Edit'),
-                        ),
+                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
                       if (onDelete != null)
                         const PopupMenuItem(
                           value: 'delete',

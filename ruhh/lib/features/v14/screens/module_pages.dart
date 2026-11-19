@@ -492,7 +492,7 @@ class _MoneyBlocksPageState extends ConsumerState<MoneyBlocksPage> {
               if (action != null) await action();
             },
       onAdd: () => context.push('/budget/add'),
-      onLedger: () => context.push('/budget/ledger'),
+      onLedger: () => context.push('/budget/ledger?tab=1'),
       onDelete: (index) async {
         if (widget.spend != null || index >= _ids.length) return;
         final repo = await ref.read(budgetRepositoryProvider.future);
