@@ -299,7 +299,8 @@ void main() {
     await _home(tester);
     await _until(tester, find.byKey(const Key('places-list')));
     await _shot('12-list-mode');
-    await _open(tester, 'home', 'settings');
+    await _tapKey(tester, const Key('place-settings'));
+    await _until(tester, find.byKey(const Key('list-mode')));
     await tester.tap(find.byKey(const Key('list-mode')));
     await tester.pump(const Duration(milliseconds: 400));
 
