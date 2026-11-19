@@ -507,10 +507,8 @@ Future<void> _open(WidgetTester tester, String group, String id) async {
     }
     await _until(tester, find.byKey(const Key('ring-hint')));
   }
-  await tester.tap(find.byKey(Key('ring-$group')));
-  await tester.pump(const Duration(milliseconds: 300));
-  await tester.tap(find.byKey(Key('ring-$id')));
-  await tester.pump(const Duration(milliseconds: 600));
+  await _tapKey(tester, Key('ring-$group'));
+  await _tapKey(tester, Key('ring-$id'));
 }
 
 Future<void> _type(WidgetTester tester, Finder finder, String value) async {

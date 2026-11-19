@@ -17,11 +17,15 @@ class RingLayout {
     required this.origin,
     required this.radius,
     required this.leftHand,
+    this.bounds,
   });
 
   final Offset origin;
   final double radius;
   final bool leftHand;
+
+  /// Keeps a node inside the screen. Null leaves the raw arc, for tests.
+  final Rect? bounds;
 
   static const hitRadius = 26.0;
 
@@ -30,7 +34,7 @@ class RingLayout {
       for (var i = 0; i < ids.length; i++)
         RingSlot(
           id: ids[i],
-          center: _at(i, ids.length, radius),
+          center: _place(_at(i, ids.length, radius)),
           parentId: null,
         ),
     ];
@@ -47,9 +51,10 @@ class RingLayout {
       for (var i = 0; i < subIds.length; i++)
         RingSlot(
           id: subIds[i],
-          center:
-              origin +
-              _vec(base + (i - (subIds.length - 1) / 2) * 0.32, radius + 78),
+          center: _place(
+            origin +
+                _vec(base + (i - (subIds.length - 1) / 2) * 0.32, radius + 78),
+          ),
           parentId: parentId,
         ),
     ];
@@ -84,4 +89,15 @@ class RingLayout {
 
   Offset _vec(double angle, double r) =>
       Offset(math.cos(angle) * r, math.sin(angle) * r);
+
+  Offset _place(Offset center) {
+    final box = bounds;
+    if (box == null) return center;
+    const pad = 34.0;
+    final minX = box.left + pad;
+    final maxX = math.max(minX, box.right - pad);
+    final minY = box.top + pad;
+    final maxY = math.max(minY, box.bottom - pad);
+    return Offset(center.dx.clamp(minX, maxX), center.dy.clamp(minY, maxY));
+  }
 }

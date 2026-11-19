@@ -203,6 +203,32 @@ void main() {
     expect(mirrored.first.center.dx, greaterThan(48));
   });
 
+  test('ring nodes stay inside the screen', () {
+    const layout = RingLayout(
+      origin: Offset(205, 818),
+      radius: 148,
+      leftHand: false,
+      bounds: Rect.fromLTWH(0, 0, 411, 866),
+    );
+    final nodes = layout.nodes([
+      'home',
+      'prayer',
+      'money',
+      'habits',
+      'books',
+      'movies',
+    ]);
+    final subs = layout.subs('movies', 5, 6, [
+      'stubs',
+      'movie-add',
+      'movie-cats',
+    ]);
+    for (final slot in [...nodes, ...subs]) {
+      expect(slot.center.dx, inInclusiveRange(34, 377));
+      expect(slot.center.dy, inInclusiveRange(34, 832));
+    }
+  });
+
   test('undo expires after five seconds', () async {
     final buffer = UndoBuffer();
     var reverted = false;

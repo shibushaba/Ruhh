@@ -194,6 +194,7 @@ class V14ShellState extends ConsumerState<V14Shell> {
       origin: origin,
       radius: _radius(size),
       leftHand: leftHand,
+      bounds: Offset.zero & size,
     );
     final nodes = layout.nodes([for (final d in v14Destinations) d.id]);
     final hit = layout.hit(local, nodes);
@@ -248,6 +249,7 @@ class V14ShellState extends ConsumerState<V14Shell> {
           origin: origin,
           radius: _radius(size),
           leftHand: profile.leftHandOrb,
+          bounds: Offset.zero & size,
         );
         final ids = [for (final d in v14Destinations) d.id];
         final nodes = layout.nodes(ids);
