@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:ruhh/core/theme/portfolio_palette.dart';
 import 'package:ruhh/core/theme/ruhh_tokens.dart';
 import 'package:ruhh/core/theme/ruhh_scroll_behavior.dart';
+
+const _bundledFamily = 'ZenMaruGothic';
+const _bundledFallback = <String>[
+  'NotoSansMalayalam',
+  'NotoNaskhArabic',
+  _bundledFamily,
+];
 
 class RuhhTheme {
   static ThemeData light() => _base(RuhhTokens.light, Brightness.light);
@@ -10,12 +16,21 @@ class RuhhTheme {
 
   static ThemeData _base(RuhhTokens t, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final dmSans = GoogleFonts.dmSansTextTheme();
-    final base = dmSans.apply(
-      bodyColor: t.textPrimary,
-      displayColor: t.textPrimary,
+    // Bundled faces only. The legacy theme must not fetch fonts at runtime,
+    // or a fresh install with no network fails before the first screen.
+    final base = ThemeData(brightness: brightness, fontFamily: _bundledFamily)
+        .textTheme
+        .apply(
+          fontFamily: _bundledFamily,
+          fontFamilyFallback: _bundledFallback,
+          bodyColor: t.textPrimary,
+          displayColor: t.textPrimary,
+        );
+    final buttonFont = TextStyle(
+      fontFamily: _bundledFamily,
+      fontFamilyFallback: _bundledFallback,
+      fontWeight: FontWeight.w600,
     );
-    final buttonFont = GoogleFonts.outfit();
 
     final colorScheme = isDark
         ? ColorScheme.dark(
@@ -80,7 +95,9 @@ class RuhhTheme {
         centerTitle: false,
         titleSpacing: t.spaceScreenHorizontal,
         toolbarHeight: 56,
-        titleTextStyle: GoogleFonts.dmSans(
+        titleTextStyle: TextStyle(
+          fontFamily: _bundledFamily,
+          fontFamilyFallback: _bundledFallback,
           fontSize: 18,
           fontWeight: FontWeight.w700,
           color: t.textPrimary,
@@ -91,8 +108,10 @@ class RuhhTheme {
         filled: true,
         fillColor: t.surfaceSecondary.withValues(alpha: isDark ? 0.9 : 1),
         hintStyle: t.caption(base),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(t.radiusInput),
           borderSide: BorderSide(color: PortfolioPalette.borderHighlight),
@@ -108,7 +127,9 @@ class RuhhTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: isDark ? PortfolioPalette.foreground : t.textPrimary,
-        foregroundColor: isDark ? PortfolioPalette.background : t.surfacePrimary,
+        foregroundColor: isDark
+            ? PortfolioPalette.background
+            : t.surfacePrimary,
         elevation: 0,
         highlightElevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -144,8 +165,9 @@ class RuhhTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: Colors.transparent,
-        selectedColor:
-            isDark ? PortfolioPalette.foreground : PortfolioPalette.inkLight,
+        selectedColor: isDark
+            ? PortfolioPalette.foreground
+            : PortfolioPalette.inkLight,
         disabledColor: t.textTertiary.withValues(alpha: 0.4),
         showCheckmark: false,
         side: BorderSide(color: PortfolioPalette.borderHighlight),

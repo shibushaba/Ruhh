@@ -1,0 +1,11 @@
+These files are subsets of SIL Open Font License 1.1 families.
+The license text is OFL.txt in this folder. The fonts are bundled so the
+app does not download them at runtime.
+
+- Mochiy Pop One (titles and numbers)
+- Zen Maru Gothic (body and labels)
+- Kiwi Maru (companion lines)
+- Noto Sans Malayalam (Malayalam, and the rupee sign U+20B9)
+- Noto Naskh Arabic (Arabic)
+
+Subsets keep Latin, punctuation, currency (including ₹), Malayalam, and Arabic.

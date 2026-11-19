@@ -63,19 +63,16 @@ class _BookSearchPageState extends ConsumerState<BookSearchPage> {
     await repo.addFromOpenLibrary(hit);
     bumpBookRefresh(ref);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Added “${hit.title}”')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Added “${hit.title}”')));
   }
 
   Future<void> _addManual() async {
     final title = _manualTitle.text.trim();
     if (title.isEmpty) return;
     final repo = await ref.read(bookRepositoryProvider.future);
-    await repo.addManual(
-      title: title,
-      author: _manualAuthor.text.trim(),
-    );
+    await repo.addManual(title: title, author: _manualAuthor.text.trim());
     bumpBookRefresh(ref);
     if (mounted) context.pop();
   }
@@ -94,14 +91,15 @@ class _BookSearchPageState extends ConsumerState<BookSearchPage> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           if (_manualMode) ...[
-            NBTextField(controller: _manualTitle, label: 'Title'),
+            NBTextField(
+              key: const Key('book-manual-title'),
+              controller: _manualTitle,
+              label: 'Title',
+            ),
             const SizedBox(height: 12),
             NBTextField(controller: _manualAuthor, label: 'Author (optional)'),
             const SizedBox(height: 16),
-            NBButton(
-              label: 'Add to shelf',
-              onPressed: _addManual,
-            ),
+            NBButton(label: 'Add to shelf', onPressed: _addManual),
           ] else ...[
             NBTextField(
               controller: _query,

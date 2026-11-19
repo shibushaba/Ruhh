@@ -1,0 +1,1513 @@
+{
+  "version": "v14",
+  "designSpace": [
+    390,
+    844
+  ],
+  "plateSize": [
+    1080,
+    2340
+  ],
+  "notes": "Hotspot x,y are normalized to the 1080x2340 plate (== 390x844 design frame). Plates have no UI text.",
+  "pets": {
+    "dragon": {
+      "worlds": [
+        {
+          "world": 1,
+          "name": "Ember Nest",
+          "levels": [
+            1,
+            24
+          ],
+          "plate": "plates/dragon/w1_ember_nest.webp",
+          "plateWide": "plates_wide/dragon/w1_ember_nest.webp",
+          "orb": "orbs/dragon/w1.webp",
+          "accent": "#F2A23A",
+          "accentLight": "#FFD08A",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "hanging lantern",
+              "opens": "goals",
+              "x": 0.2256,
+              "y": 0.1801,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "candle ledge",
+              "opens": "habits",
+              "x": 0.1436,
+              "y": 0.3815,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "quest wall notes",
+              "opens": "quests",
+              "x": 0.641,
+              "y": 0.2109,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.2,
+            "y": 0.4171,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.1538,
+            "y0": 0.2725,
+            "x1": 0.8462,
+            "y1": 0.5924,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            215,
+            425,
+            345,
+            555
+          ],
+          "motif": "icons/motifs/dragon/w1_ember.svg"
+        },
+        {
+          "world": 2,
+          "name": "Moss Ledge",
+          "levels": [
+            25,
+            44
+          ],
+          "plate": "plates/dragon/w2_moss_ledge.webp",
+          "plateWide": "plates_wide/dragon/w2_moss_ledge.webp",
+          "orb": "orbs/dragon/w2.webp",
+          "accent": "#7BD389",
+          "accentLight": "#C9F2A0",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "bridge lanterns",
+              "opens": "goals",
+              "x": 0.1077,
+              "y": 0.4953,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "leaf post",
+              "opens": "quests",
+              "x": 0.7692,
+              "y": 0.391,
+              "labelSide": "l",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "stepping stones",
+              "opens": "habits",
+              "x": 0.2821,
+              "y": 0.6161,
+              "labelSide": "r",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.359,
+            "y": 0.6635,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.5641,
+            "y0": 0.0355,
+            "x1": 1.0,
+            "y1": 0.3555,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            390,
+            80,
+            510,
+            200
+          ],
+          "motif": "icons/motifs/dragon/w2_leaf.svg"
+        },
+        {
+          "world": 3,
+          "name": "Cliff Shrine",
+          "levels": [
+            45,
+            64
+          ],
+          "plate": "plates/dragon/w3_cliff_shrine.webp",
+          "plateWide": "plates_wide/dragon/w3_cliff_shrine.webp",
+          "orb": "orbs/dragon/w3.webp",
+          "accent": "#E2A65C",
+          "accentLight": "#F2D3A2",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "bell rope",
+              "opens": "habits",
+              "x": 0.3846,
+              "y": 0.3341,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "wrapup",
+              "kind": "pin",
+              "object": "big bell",
+              "opens": "evening",
+              "x": 0.0923,
+              "y": 0.3104,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "stone lanterns",
+              "opens": "goals",
+              "x": 0.5282,
+              "y": 0.4171,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "ema rack",
+              "opens": "quests",
+              "x": 0.0923,
+              "y": 0.5355,
+              "labelSide": "r",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.441,
+            "y": 0.3697,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.5897,
+            "y0": 0.2014,
+            "x1": 1.0,
+            "y1": 0.4739,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            440,
+            280,
+            560,
+            400
+          ],
+          "motif": "icons/motifs/dragon/w3_maple.svg"
+        },
+        {
+          "world": 4,
+          "name": "Wind Temple",
+          "levels": [
+            65,
+            84
+          ],
+          "plate": "plates/dragon/w4_wind_temple.webp",
+          "plateWide": "plates_wide/dragon/w4_wind_temple.webp",
+          "orb": "orbs/dragon/w4.webp",
+          "accent": "#6CC3E8",
+          "accentLight": "#C3E9F7",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "wind chimes",
+              "opens": "habits",
+              "x": 0.1128,
+              "y": 0.1682,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "floating islands",
+              "opens": "goals",
+              "x": 0.1026,
+              "y": 0.3555,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "banners",
+              "opens": "quests",
+              "x": 0.0923,
+              "y": 0.5545,
+              "labelSide": "r",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1692,
+            "y": 0.2038,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.3846,
+            "y0": 0.1422,
+            "x1": 1.0,
+            "y1": 0.5569,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            385,
+            205,
+            505,
+            325
+          ],
+          "motif": "icons/motifs/dragon/w4_wind.svg"
+        },
+        {
+          "world": 5,
+          "name": "Star Summit",
+          "levels": [
+            85,
+            100
+          ],
+          "plate": "plates/dragon/w5_star_summit.webp",
+          "plateWide": "plates_wide/dragon/w5_star_summit.webp",
+          "orb": "orbs/dragon/w5.webp",
+          "accent": "#F0C75E",
+          "accentLight": "#F6E3A6",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "constellation",
+              "opens": "habits",
+              "x": 0.0872,
+              "y": 0.1777,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "waiting lanterns",
+              "opens": "quests",
+              "x": 0.0923,
+              "y": 0.4408,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "sky lanterns",
+              "opens": "goals",
+              "x": 0.8564,
+              "y": 0.5355,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1436,
+            "y": 0.2133,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.2564,
+            "y0": 0.3791,
+            "x1": 0.8462,
+            "y1": 0.8294,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            320,
+            495,
+            450,
+            625
+          ],
+          "motif": "icons/motifs/dragon/w5_star.svg"
+        }
+      ],
+      "forms": [
+        {
+          "index": 0,
+          "name": "Ember Egg",
+          "levels": [
+            1,
+            4
+          ],
+          "world": 1,
+          "sprite": "sprites/dragon/00_ember_egg.webp",
+          "heightDp": 80
+        },
+        {
+          "index": 1,
+          "name": "Spark",
+          "levels": [
+            5,
+            9
+          ],
+          "world": 1,
+          "sprite": "sprites/dragon/01_spark.webp",
+          "heightDp": 89
+        },
+        {
+          "index": 2,
+          "name": "Kindle",
+          "levels": [
+            10,
+            14
+          ],
+          "world": 1,
+          "sprite": "sprites/dragon/02_kindle.webp",
+          "heightDp": 98
+        },
+        {
+          "index": 3,
+          "name": "Flicker",
+          "levels": [
+            15,
+            19
+          ],
+          "world": 1,
+          "sprite": "sprites/dragon/03_flicker.webp",
+          "heightDp": 107
+        },
+        {
+          "index": 4,
+          "name": "Hearthling",
+          "levels": [
+            20,
+            24
+          ],
+          "world": 1,
+          "sprite": "sprites/dragon/04_hearthling.webp",
+          "heightDp": 116
+        },
+        {
+          "index": 5,
+          "name": "Mossback",
+          "levels": [
+            25,
+            29
+          ],
+          "world": 2,
+          "sprite": "sprites/dragon/05_mossback.webp",
+          "heightDp": 125
+        },
+        {
+          "index": 6,
+          "name": "Ledgewalker",
+          "levels": [
+            30,
+            34
+          ],
+          "world": 2,
+          "sprite": "sprites/dragon/06_ledgewalker.webp",
+          "heightDp": 134
+        },
+        {
+          "index": 7,
+          "name": "Glider",
+          "levels": [
+            35,
+            39
+          ],
+          "world": 2,
+          "sprite": "sprites/dragon/07_glider.webp",
+          "heightDp": 143
+        },
+        {
+          "index": 8,
+          "name": "Fernmane",
+          "levels": [
+            40,
+            44
+          ],
+          "world": 2,
+          "sprite": "sprites/dragon/08_fernmane.webp",
+          "heightDp": 152
+        },
+        {
+          "index": 9,
+          "name": "Runeling",
+          "levels": [
+            45,
+            49
+          ],
+          "world": 3,
+          "sprite": "sprites/dragon/09_runeling.webp",
+          "heightDp": 161
+        },
+        {
+          "index": 10,
+          "name": "Bellwing",
+          "levels": [
+            50,
+            54
+          ],
+          "world": 3,
+          "sprite": "sprites/dragon/10_bellwing.webp",
+          "heightDp": 170
+        },
+        {
+          "index": 11,
+          "name": "Twin-horn",
+          "levels": [
+            55,
+            59
+          ],
+          "world": 3,
+          "sprite": "sprites/dragon/11_twin_horn.webp",
+          "heightDp": 179
+        },
+        {
+          "index": 12,
+          "name": "Lanternheart",
+          "levels": [
+            60,
+            64
+          ],
+          "world": 3,
+          "sprite": "sprites/dragon/12_lanternheart.webp",
+          "heightDp": 188
+        },
+        {
+          "index": 13,
+          "name": "Windrider",
+          "levels": [
+            65,
+            69
+          ],
+          "world": 4,
+          "sprite": "sprites/dragon/13_windrider.webp",
+          "heightDp": 197
+        },
+        {
+          "index": 14,
+          "name": "Cloudcrest",
+          "levels": [
+            70,
+            74
+          ],
+          "world": 4,
+          "sprite": "sprites/dragon/14_cloudcrest.webp",
+          "heightDp": 206
+        },
+        {
+          "index": 15,
+          "name": "Stormhorn",
+          "levels": [
+            75,
+            79
+          ],
+          "world": 4,
+          "sprite": "sprites/dragon/15_stormhorn.webp",
+          "heightDp": 215
+        },
+        {
+          "index": 16,
+          "name": "Skyheart",
+          "levels": [
+            80,
+            84
+          ],
+          "world": 4,
+          "sprite": "sprites/dragon/16_skyheart.webp",
+          "heightDp": 224
+        },
+        {
+          "index": 17,
+          "name": "Starbreath",
+          "levels": [
+            85,
+            89
+          ],
+          "world": 5,
+          "sprite": "sprites/dragon/17_starbreath.webp",
+          "heightDp": 233
+        },
+        {
+          "index": 18,
+          "name": "Aurorawing",
+          "levels": [
+            90,
+            94
+          ],
+          "world": 5,
+          "sprite": "sprites/dragon/18_aurorawing.webp",
+          "heightDp": 242
+        },
+        {
+          "index": 19,
+          "name": "Crownhorn",
+          "levels": [
+            95,
+            99
+          ],
+          "world": 5,
+          "sprite": "sprites/dragon/19_crownhorn.webp",
+          "heightDp": 251
+        },
+        {
+          "index": 20,
+          "name": "Lanternsky",
+          "levels": [
+            100,
+            100
+          ],
+          "world": 5,
+          "sprite": "sprites/dragon/20_lanternsky.webp",
+          "heightDp": 260
+        }
+      ],
+      "defaultName": "Ruu"
+    },
+    "panda": {
+      "worlds": [
+        {
+          "world": 1,
+          "name": "Bamboo Hollow",
+          "levels": [
+            1,
+            24
+          ],
+          "plate": "plates/panda/w1_bamboo_hollow.webp",
+          "plateWide": "plates_wide/panda/w1_bamboo_hollow.webp",
+          "orb": "orbs/panda/w1.webp",
+          "accent": "#D9C08A",
+          "accentLight": "#F2E2B8",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "hanging lantern",
+              "opens": "goals",
+              "x": 0.2256,
+              "y": 0.1896,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "candle lamps ledge",
+              "opens": "habits",
+              "x": 0.1333,
+              "y": 0.4858,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "notes on stone post",
+              "opens": "quests",
+              "x": 0.7231,
+              "y": 0.2844,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1897,
+            "y": 0.5213,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.2564,
+            "y0": 0.3436,
+            "x1": 0.7179,
+            "y1": 0.5687,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            283,
+            428,
+            443,
+            588
+          ],
+          "motif": "icons/motifs/panda/w1_enso.svg"
+        },
+        {
+          "world": 2,
+          "name": "Mist Terraces",
+          "levels": [
+            25,
+            44
+          ],
+          "plate": "plates/panda/w2_mist_terraces.webp",
+          "plateWide": "plates_wide/panda/w2_mist_terraces.webp",
+          "orb": "orbs/panda/w2.webp",
+          "accent": "#A8D5A2",
+          "accentLight": "#D6EFD1",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "lantern rope",
+              "opens": "goals",
+              "x": 0.1026,
+              "y": 0.1777,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "stepping stones",
+              "opens": "habits",
+              "x": 0.2308,
+              "y": 0.5569,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "notes on post",
+              "opens": "quests",
+              "x": 0.8333,
+              "y": 0.5569,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.2872,
+            "y": 0.5924,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.5385,
+            "y0": 0.1422,
+            "x1": 0.9487,
+            "y1": 0.4384,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            432,
+            171,
+            552,
+            291
+          ],
+          "motif": "icons/motifs/panda/w2_enso.svg"
+        },
+        {
+          "world": 3,
+          "name": "River Gorge",
+          "levels": [
+            45,
+            64
+          ],
+          "plate": "plates/panda/w3_river_gorge.webp",
+          "plateWide": "plates_wide/panda/w3_river_gorge.webp",
+          "orb": "orbs/panda/w3.webp",
+          "accent": "#8FC9C2",
+          "accentLight": "#C9EAE5",
+          "hotspots": [
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "hanging plaques",
+              "opens": "quests",
+              "x": 0.1026,
+              "y": 0.4265,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "river stepping stones",
+              "opens": "habits",
+              "x": 0.1795,
+              "y": 0.5569,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "stone lanterns",
+              "opens": "goals",
+              "x": 0.8462,
+              "y": 0.5569,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1026,
+            "y": 0.6066,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.4359,
+            "y0": 0.2844,
+            "x1": 0.7949,
+            "y1": 0.5806,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            366,
+            362,
+            476,
+            472
+          ],
+          "motif": "icons/motifs/panda/w3_enso.svg"
+        },
+        {
+          "world": 4,
+          "name": "Plum Cloud",
+          "levels": [
+            65,
+            84
+          ],
+          "plate": "plates/panda/w4_plum_cloud.webp",
+          "plateWide": "plates_wide/panda/w4_plum_cloud.webp",
+          "orb": "orbs/panda/w4.webp",
+          "accent": "#E3A9C4",
+          "accentLight": "#F5D5E4",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "wind chimes",
+              "opens": "habits",
+              "x": 0.0769,
+              "y": 0.1777,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "banners",
+              "opens": "quests",
+              "x": 0.1538,
+              "y": 0.5924,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "floating islands",
+              "opens": "goals",
+              "x": 0.8718,
+              "y": 0.5569,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1333,
+            "y": 0.2133,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.3333,
+            "y0": 0.237,
+            "x1": 0.9487,
+            "y1": 0.5569,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            324,
+            297,
+            434,
+            407
+          ],
+          "motif": "icons/motifs/panda/w4_enso.svg"
+        },
+        {
+          "world": 5,
+          "name": "Moon Peak",
+          "levels": [
+            85,
+            100
+          ],
+          "plate": "plates/panda/w5_moon_peak.webp",
+          "plateWide": "plates_wide/panda/w5_moon_peak.webp",
+          "orb": "orbs/panda/w5.webp",
+          "accent": "#E8E2C8",
+          "accentLight": "#F7F3E3",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "constellation",
+              "opens": "habits",
+              "x": 0.2872,
+              "y": 0.2417,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "left lanterns",
+              "opens": "quests",
+              "x": 0.1026,
+              "y": 0.4976,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "sky lanterns",
+              "opens": "goals",
+              "x": 0.8564,
+              "y": 0.5355,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.3436,
+            "y": 0.2773,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.2282,
+            "y0": 0.2536,
+            "x1": 0.7769,
+            "y1": 0.6635,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            300,
+            315,
+            430,
+            445
+          ],
+          "motif": "icons/motifs/panda/w5_enso.svg"
+        }
+      ],
+      "defaultName": "Sumi",
+      "forms": [
+        {
+          "index": 0,
+          "name": "Cub",
+          "levels": [
+            1,
+            24
+          ],
+          "world": 1,
+          "sprite": "sprites/panda/w1_cub.webp",
+          "heightDp": 120
+        },
+        {
+          "index": 1,
+          "name": "Bamboo Scout",
+          "levels": [
+            25,
+            44
+          ],
+          "world": 2,
+          "sprite": "sprites/panda/w2_bamboo_scout.webp",
+          "heightDp": 150
+        },
+        {
+          "index": 2,
+          "name": "Mist Walker",
+          "levels": [
+            45,
+            64
+          ],
+          "world": 3,
+          "sprite": "sprites/panda/w3_mist_walker.webp",
+          "heightDp": 175
+        },
+        {
+          "index": 3,
+          "name": "Plum Guardian",
+          "levels": [
+            65,
+            84
+          ],
+          "world": 4,
+          "sprite": "sprites/panda/w4_plum_guardian.webp",
+          "heightDp": 200
+        },
+        {
+          "index": 4,
+          "name": "Moon Sage",
+          "levels": [
+            85,
+            100
+          ],
+          "world": 5,
+          "sprite": "sprites/panda/w5_moon_sage.webp",
+          "heightDp": 230
+        }
+      ]
+    },
+    "cat": {
+      "worlds": [
+        {
+          "world": 1,
+          "name": "Lantern Alley",
+          "levels": [
+            1,
+            24
+          ],
+          "plate": "plates/cat/w1_lantern_alley.webp",
+          "plateWide": "plates_wide/cat/w1_lantern_alley.webp",
+          "orb": "orbs/cat/w1.webp",
+          "accent": "#F2B35E",
+          "accentLight": "#FFD9A0",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "hanging lantern",
+              "opens": "goals",
+              "x": 0.1026,
+              "y": 0.2322,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "window candles",
+              "opens": "habits",
+              "x": 0.1795,
+              "y": 0.4171,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "notice board",
+              "opens": "quests",
+              "x": 0.8769,
+              "y": 0.3626,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.2359,
+            "y": 0.4526,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.3231,
+            "y0": 0.2784,
+            "x1": 0.8615,
+            "y1": 0.6836,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            262,
+            385,
+            392,
+            515
+          ],
+          "motif": "icons/motifs/cat/w1_slit_eye.svg"
+        },
+        {
+          "world": 2,
+          "name": "Rooftop Gardens",
+          "levels": [
+            25,
+            44
+          ],
+          "plate": "plates/cat/w2_rooftop_gardens.webp",
+          "plateWide": "plates_wide/cat/w2_rooftop_gardens.webp",
+          "orb": "orbs/cat/w2.webp",
+          "accent": "#9CCB86",
+          "accentLight": "#D3EBC6",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "lantern string",
+              "opens": "goals",
+              "x": 0.1026,
+              "y": 0.2133,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "herb pots",
+              "opens": "habits",
+              "x": 0.1538,
+              "y": 0.6339,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "clothesline notes",
+              "opens": "quests",
+              "x": 0.7692,
+              "y": 0.391,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.2103,
+            "y": 0.6694,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.2821,
+            "y0": 0.2547,
+            "x1": 0.8462,
+            "y1": 0.5924,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            260,
+            327,
+            410,
+            477
+          ],
+          "motif": "icons/motifs/cat/w2_slit_eye.svg"
+        },
+        {
+          "world": 3,
+          "name": "Old Library",
+          "levels": [
+            45,
+            64
+          ],
+          "plate": "plates/cat/w3_old_library.webp",
+          "plateWide": "plates_wide/cat/w3_old_library.webp",
+          "orb": "orbs/cat/w3.webp",
+          "accent": "#C9A27A",
+          "accentLight": "#EBD5BC",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "hanging lamps",
+              "opens": "goals",
+              "x": 0.1026,
+              "y": 0.2073,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "shelf candles",
+              "opens": "habits",
+              "x": 0.1282,
+              "y": 0.5213,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "pinboard",
+              "opens": "quests",
+              "x": 0.7692,
+              "y": 0.5095,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.1846,
+            "y": 0.5569,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.3333,
+            "y0": 0.3199,
+            "x1": 0.8205,
+            "y1": 0.6635,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            268,
+            423,
+            408,
+            563
+          ],
+          "motif": "icons/motifs/cat/w3_slit_eye.svg"
+        },
+        {
+          "world": 4,
+          "name": "Harbor Lights",
+          "levels": [
+            65,
+            84
+          ],
+          "plate": "plates/cat/w4_harbor_lights.webp",
+          "plateWide": "plates_wide/cat/w4_harbor_lights.webp",
+          "orb": "orbs/cat/w4.webp",
+          "accent": "#7FB6D9",
+          "accentLight": "#C6E2F3",
+          "hotspots": [
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "lamp posts",
+              "opens": "goals",
+              "x": 0.0769,
+              "y": 0.3555,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "pier lanterns",
+              "opens": "habits",
+              "x": 0.1026,
+              "y": 0.5391,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "mast pennants",
+              "opens": "quests",
+              "x": 0.7949,
+              "y": 0.2488,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.159,
+            "y": 0.5036,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.4103,
+            "y0": 0.3555,
+            "x1": 0.8462,
+            "y1": 0.6635,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            317,
+            464,
+            437,
+            584
+          ],
+          "motif": "icons/motifs/cat/w4_slit_eye.svg"
+        },
+        {
+          "world": 5,
+          "name": "Starlit Rooftops",
+          "levels": [
+            85,
+            100
+          ],
+          "plate": "plates/cat/w5_starlit_rooftops.webp",
+          "plateWide": "plates_wide/cat/w5_starlit_rooftops.webp",
+          "orb": "orbs/cat/w5.webp",
+          "accent": "#A9B9F2",
+          "accentLight": "#D9E0FB",
+          "hotspots": [
+            {
+              "id": "habits",
+              "kind": "pin",
+              "object": "constellation",
+              "opens": "habits",
+              "x": 0.7692,
+              "y": 0.2251,
+              "labelSide": "l",
+              "hitSize": 44
+            },
+            {
+              "id": "quests",
+              "kind": "pin",
+              "object": "left lanterns",
+              "opens": "quests",
+              "x": 0.1487,
+              "y": 0.5166,
+              "labelSide": "r",
+              "hitSize": 44
+            },
+            {
+              "id": "goals",
+              "kind": "pin",
+              "object": "sky lanterns",
+              "opens": "goals",
+              "x": 0.8769,
+              "y": 0.4147,
+              "labelSide": "l",
+              "hitSize": 44
+            }
+          ],
+          "heroPill": {
+            "x": 0.7128,
+            "y": 0.2607,
+            "anchor": "left"
+          },
+          "companionTap": {
+            "x0": 0.4179,
+            "y0": 0.3756,
+            "x1": 1.0,
+            "y1": 0.7701,
+            "opens": "chat"
+          },
+          "portraitCropRaw720x1280": [
+            318,
+            480,
+            432,
+            594
+          ],
+          "motif": "icons/motifs/cat/w5_slit_eye.svg"
+        }
+      ],
+      "defaultName": "Kage",
+      "forms": [
+        {
+          "index": 0,
+          "name": "Kitten",
+          "levels": [
+            1,
+            24
+          ],
+          "world": 1,
+          "sprite": "sprites/cat/w1_kitten.webp",
+          "heightDp": 120
+        },
+        {
+          "index": 1,
+          "name": "Alley Shade",
+          "levels": [
+            25,
+            44
+          ],
+          "world": 2,
+          "sprite": "sprites/cat/w2_alley_shade.webp",
+          "heightDp": 150
+        },
+        {
+          "index": 2,
+          "name": "Roof Runner",
+          "levels": [
+            45,
+            64
+          ],
+          "world": 3,
+          "sprite": "sprites/cat/w3_roof_runner.webp",
+          "heightDp": 175
+        },
+        {
+          "index": 3,
+          "name": "Harbor Watcher",
+          "levels": [
+            65,
+            84
+          ],
+          "world": 4,
+          "sprite": "sprites/cat/w4_harbor_watcher.webp",
+          "heightDp": 200
+        },
+        {
+          "index": 4,
+          "name": "Star Warden",
+          "levels": [
+            85,
+            100
+          ],
+          "world": 5,
+          "sprite": "sprites/cat/w5_star_warden.webp",
+          "heightDp": 230
+        }
+      ]
+    }
+  },
+  "fixedHotspots": [
+    {
+      "id": "lvring",
+      "desc": "top-left Lv ring \u2192 Settings/character",
+      "x": 0.1026,
+      "y": 0.0853
+    },
+    {
+      "id": "chapter",
+      "desc": "chapter title \u2192 Journey",
+      "x": 0.3846,
+      "y": 0.0853
+    },
+    {
+      "id": "prayer",
+      "desc": "moon chip \u2192 Prayer",
+      "x": 0.8846,
+      "y": 0.0853
+    },
+    {
+      "id": "bubble",
+      "desc": "companion speech bubble \u2192 Chat",
+      "x": 0.5,
+      "y": 0.7701
+    },
+    {
+      "id": "streak",
+      "desc": "streak chip",
+      "x": 0.1026,
+      "y": 0.9147
+    },
+    {
+      "id": "orb",
+      "desc": "companion orb (hold = ring, tap = ring)",
+      "x": 0.5,
+      "y": 0.9147
+    },
+    {
+      "id": "labels",
+      "desc": "Labels chip",
+      "x": 0.8846,
+      "y": 0.9147
+    }
+  ],
+  "backdrops": {
+    "dragon": {
+      "habits": "backdrops/dragon/habits.webp",
+      "quests": "backdrops/dragon/quests.webp",
+      "goals": "backdrops/dragon/goals.webp",
+      "relics": "backdrops/dragon/relics.webp",
+      "chat_campfire": "backdrops/dragon/chat_campfire.webp",
+      "levelup": "backdrops/dragon/levelup.webp",
+      "morning": "backdrops/dragon/morning.webp",
+      "evening": "backdrops/dragon/evening.webp",
+      "journey": "backdrops/dragon/journey.webp",
+      "planner": "backdrops/dragon/planner.webp",
+      "world_map": "backdrops/dragon/world_map.webp",
+      "money_ledger": "backdrops/dragon/money_ledger.webp"
+    },
+    "panda": {
+      "w1_inner": "backdrops/panda/w1_inner.webp",
+      "w2_inner": "backdrops/panda/w2_inner.webp",
+      "w3_inner": "backdrops/panda/w3_inner.webp",
+      "w4_inner": "backdrops/panda/w4_inner.webp",
+      "w5_inner": "backdrops/panda/w5_inner.webp"
+    },
+    "cat": {
+      "w1_inner": "backdrops/cat/w1_inner.webp",
+      "w2_inner": "backdrops/cat/w2_inner.webp",
+      "w3_inner": "backdrops/cat/w3_inner.webp",
+      "w4_inner": "backdrops/cat/w4_inner.webp",
+      "w5_inner": "backdrops/cat/w5_inner.webp"
+    }
+  },
+  "backdropsNote": "dragon: painted inner-screen art (contains Ruu in some: chat_campfire, levelup, morning, evening). panda/cat: blurred+dimmed world plate, use for every inner screen of that pet/world; overlay #0E0F10 at 0-35% for text legibility.",
+  "icons": {
+    "motifsTint": {
+      "ember": "icons/motifs/ember.svg",
+      "leaf": "icons/motifs/leaf.svg",
+      "maple": "icons/motifs/maple.svg",
+      "wind": "icons/motifs/wind.svg",
+      "star": "icons/motifs/star.svg",
+      "enso": "icons/motifs/enso.svg",
+      "slit_eye": "icons/motifs/slit_eye.svg"
+    },
+    "motifsByWorld": {
+      "dragon": {
+        "w1": "icons/motifs/dragon/w1_ember.svg",
+        "w2": "icons/motifs/dragon/w2_leaf.svg",
+        "w3": "icons/motifs/dragon/w3_maple.svg",
+        "w4": "icons/motifs/dragon/w4_wind.svg",
+        "w5": "icons/motifs/dragon/w5_star.svg"
+      },
+      "panda": {
+        "w1": "icons/motifs/panda/w1_enso.svg",
+        "w2": "icons/motifs/panda/w2_enso.svg",
+        "w3": "icons/motifs/panda/w3_enso.svg",
+        "w4": "icons/motifs/panda/w4_enso.svg",
+        "w5": "icons/motifs/panda/w5_enso.svg"
+      },
+      "cat": {
+        "w1": "icons/motifs/cat/w1_slit_eye.svg",
+        "w2": "icons/motifs/cat/w2_slit_eye.svg",
+        "w3": "icons/motifs/cat/w3_slit_eye.svg",
+        "w4": "icons/motifs/cat/w4_slit_eye.svg",
+        "w5": "icons/motifs/cat/w5_slit_eye.svg"
+      }
+    },
+    "ui": {
+      "habits": "icons/ui/habits.svg",
+      "quests": "icons/ui/quests.svg",
+      "goals": "icons/ui/goals.svg",
+      "prayer": "icons/ui/prayer.svg",
+      "money": "icons/ui/money.svg",
+      "books": "icons/ui/books.svg",
+      "movies": "icons/ui/movies.svg",
+      "planner": "icons/ui/planner.svg",
+      "journey": "icons/ui/journey.svg",
+      "chat": "icons/ui/chat.svg",
+      "settings": "icons/ui/settings.svg",
+      "home": "icons/ui/home.svg",
+      "labels": "icons/ui/labels.svg",
+      "streak": "icons/ui/streak.svg",
+      "lock": "icons/ui/lock.svg",
+      "undo": "icons/ui/undo.svg",
+      "back": "icons/ui/back.svg",
+      "close": "icons/ui/close.svg",
+      "add": "icons/ui/add.svg",
+      "check": "icons/ui/check.svg",
+      "rupee": "icons/ui/rupee.svg"
+    },
+    "uiNote": "24x24, 1.75 stroke, currentColor. Tint with chrome text #F4EEDC / muted #B3B0A9 / pet accent. rupee only in Budget."
+  },
+  "levelBands": [
+    [
+      1,
+      24
+    ],
+    [
+      25,
+      44
+    ],
+    [
+      45,
+      64
+    ],
+    [
+      65,
+      84
+    ],
+    [
+      85,
+      100
+    ]
+  ],
+  "palette": {
+    "base": "#0E0F10",
+    "surface": "#16181A",
+    "raised": "#1F2225",
+    "hairline": "#2A2E32",
+    "text": "#F4EEDC",
+    "muted": "#B3B0A9",
+    "dim": "#8F9194",
+    "jade": "#3FC08A",
+    "amber": "#F2A93B",
+    "lavender": "#B9A6F2"
+  }
+}

@@ -14,12 +14,14 @@ class HabitListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final refresh = ref.watch(habitRefreshProvider);
     final repoAsync = ref.watch(habitRepositoryProvider);
 
     return repoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (repo) => StreamBuilder(
+        key: ValueKey(refresh),
         stream: repo.watchActiveHabits(),
         builder: (context, activeSnap) {
           final active = activeSnap.data ?? [];
@@ -32,8 +34,10 @@ class HabitListPage extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Text('Active habits',
-                            style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          'Active habits',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.add),
@@ -92,32 +96,50 @@ class _HabitRow extends ConsumerWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: NBColors.black, width: NBMetrics.borderWidth),
+            border: Border.all(
+              color: NBColors.black,
+              width: NBMetrics.borderWidth,
+            ),
             color: NBColors.surfaceFill(Theme.of(context).brightness),
             boxShadow: const [
-              BoxShadow(color: NBColors.shadow, offset: Offset(3, 3), blurRadius: 0),
+              BoxShadow(
+                color: NBColors.shadow,
+                offset: Offset(3, 3),
+                blurRadius: 0,
+              ),
             ],
           ),
-          child: ListTile(
-            leading: habitIconChip(habit.icon, Color(habit.colorValue), size: 36),
-            title: Text(habit.name),
-            subtitle: Text(
-              '${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}',
-            ),
-            onTap: () => context.push('/habit/detail/${habit.remoteId}'),
-            trailing: PopupMenuButton<String>(
-              onSelected: (v) async {
-                if (v == 'archive') {
-                  await repo.archiveHabit(habit);
-                  bumpHabitRefresh(ref);
-                } else if (v == 'edit') {
-                  context.push('/habit/edit/${habit.remoteId}');
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'archive', child: Text('Archive')),
-              ],
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              key: Key('habit-board-${habit.remoteId}'),
+              leading: habitIconChip(
+                habit.icon,
+                Color(habit.colorValue),
+                size: 36,
+              ),
+              title: Text(
+                habit.name,
+                key: Key('habit-board-name-${habit.name}'),
+              ),
+              subtitle: Text(
+                '${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}',
+              ),
+              onTap: () => context.push('/habit/edit/${habit.remoteId}'),
+              trailing: PopupMenuButton<String>(
+                onSelected: (v) async {
+                  if (v == 'archive') {
+                    await repo.archiveHabit(habit);
+                    bumpHabitRefresh(ref);
+                  } else if (v == 'edit') {
+                    context.push('/habit/edit/${habit.remoteId}');
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(value: 'archive', child: Text('Archive')),
+                ],
+              ),
             ),
           ),
         );

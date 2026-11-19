@@ -1,7 +1,7 @@
 name: ruhh
 description: RUHH — unified life tracker (budget, habit, prayer, movie).
 publish_to: 'none'
-version: 1.0.34+35
+version: 1.1.0+36
 
 environment:
   sdk: ^3.12.2
@@ -41,6 +41,7 @@ dependencies:
   flutter_slidable: ^3.1.2
   table_calendar: ^3.2.0
   flutter_animate: ^4.5.2
+  flutter_svg: ^2.2.0
   flutter_staggered_animations: ^1.1.1
   shimmer: ^3.0.0
   confetti: ^0.8.0
@@ -50,6 +51,8 @@ dependencies:
     path: ../UI
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -69,6 +72,27 @@ flutter:
   assets:
     - .env
     - assets/icon/app_icon.png
+    - assets/ruhh/manifest.json
+    - assets/ruhh/plates/dragon/
+    - assets/ruhh/plates/panda/
+    - assets/ruhh/plates/cat/
+    - assets/ruhh/plates_wide/dragon/
+    - assets/ruhh/plates_wide/panda/
+    - assets/ruhh/plates_wide/cat/
+    - assets/ruhh/sprites/dragon/
+    - assets/ruhh/sprites/panda/
+    - assets/ruhh/sprites/cat/
+    - assets/ruhh/orbs/dragon/
+    - assets/ruhh/orbs/panda/
+    - assets/ruhh/orbs/cat/
+    - assets/ruhh/backdrops/dragon/
+    - assets/ruhh/backdrops/panda/
+    - assets/ruhh/backdrops/cat/
+    - assets/ruhh/icons/ui/
+    - assets/ruhh/icons/motifs/
+    - assets/ruhh/icons/motifs/dragon/
+    - assets/ruhh/icons/motifs/panda/
+    - assets/ruhh/icons/motifs/cat/
   fonts:
     - family: PhosphorRegular
       fonts:
@@ -79,3 +103,24 @@ flutter:
     - family: PhosphorDuotone
       fonts:
         - asset: assets/fonts/Phosphor-Duotone.ttf
+    - family: MochiyPopOne
+      fonts:
+        - asset: assets/fonts/v14/MochiyPopOne-Regular.ttf
+    - family: ZenMaruGothic
+      fonts:
+        - asset: assets/fonts/v14/ZenMaruGothic-Regular.ttf
+        - asset: assets/fonts/v14/ZenMaruGothic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/v14/ZenMaruGothic-Bold.ttf
+          weight: 700
+    - family: KiwiMaru
+      fonts:
+        - asset: assets/fonts/v14/KiwiMaru-Regular.ttf
+        - asset: assets/fonts/v14/KiwiMaru-Medium.ttf
+          weight: 500
+    - family: NotoSansMalayalam
+      fonts:
+        - asset: assets/fonts/v14/NotoSansMalayalam-Regular.ttf
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/v14/NotoNaskhArabic-Regular.ttf

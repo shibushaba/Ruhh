@@ -33,11 +33,15 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
   @override
   void initState() {
     super.initState();
+    _titleCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
     _load();
   }
 
   Future<void> _load() async {
     final repo = await ref.read(movieRepositoryProvider.future);
+    await repo.ensureTrackerDefaults();
     if (widget.remoteId != null) {
       final m = await repo.movieByRemoteId(widget.remoteId!);
       if (m != null) {
@@ -60,27 +64,31 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
     super.dispose();
   }
 
-  bool get _canSave =>
-      _titleCtrl.text.trim().isNotEmpty &&
-      _categoryId != null &&
-      _categoryId!.isNotEmpty;
+  bool get _canSave => _titleCtrl.text.trim().isNotEmpty;
 
   Future<void> _save() async {
     if (!_canSave) return;
     final repo = await ref.read(movieRepositoryProvider.future);
+    await repo.ensureTrackerDefaults();
+    final catId = (_categoryId != null && _categoryId!.isNotEmpty)
+        ? _categoryId!
+        : (await repo.defaultCategory())?.remoteId ?? '';
+    if (catId.isEmpty) return;
     await repo.saveTrackerMovie(
       remoteId: widget.remoteId,
       title: _titleCtrl.text,
       priority: _priority,
-      categoryRemoteId: _categoryId!,
+      categoryRemoteId: catId,
       note: _noteCtrl.text,
     );
+    bumpMovieRefresh(ref);
     if (mounted) context.pop();
   }
 
   Future<void> _newCategory(List<MovieCategoryLocal> active) async {
     final nameCtrl = TextEditingController();
-    var color = movieCategoryPalette[active.length % movieCategoryPalette.length];
+    var color =
+        movieCategoryPalette[active.length % movieCategoryPalette.length];
     var emoji = '🎬';
     if (!mounted) return;
     await showNBStatefulFormDialog(
@@ -150,20 +158,27 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   NBTextField(
+                    key: const Key('movie-title'),
                     controller: _titleCtrl,
                     label: 'Title',
                     hint: 'Movie or show name',
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 20),
-                  Text('Priority', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Priority',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   NBStarRating(
                     value: _priority,
                     onChanged: (v) => setState(() => _priority = v),
                   ),
                   const SizedBox(height: 20),
-                  Text('Category', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Category',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   catsAsync.when(
                     loading: () => const LinearProgressIndicator(),
@@ -179,7 +194,8 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
                               label: c.name,
                               selected: _categoryId == c.remoteId,
                               color: Color(c.colorValue),
-                              onTap: () => setState(() => _categoryId = c.remoteId),
+                              onTap: () =>
+                                  setState(() => _categoryId = c.remoteId),
                             ),
                           NBChip(
                             label: '+ New',
