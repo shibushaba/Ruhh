@@ -554,28 +554,19 @@ Future<void> _tapText(WidgetTester tester, String label) async {
 
 Future<void> _tapKey(WidgetTester tester, Key key) async {
   final finder = find.byKey(key);
-  final vertical = find.byWidgetPredicate(
-    (widget) =>
-        widget is Scrollable &&
-        (widget.axisDirection == AxisDirection.down ||
-            widget.axisDirection == AxisDirection.up),
-  );
-  for (var n = 0; n < 24 && finder.evaluate().isEmpty; n++) {
-    var moved = false;
-    for (final state in tester.stateList<ScrollableState>(vertical)) {
-      final position = state.position;
-      if (!position.hasContentDimensions) continue;
-      if (position.pixels >= position.maxScrollExtent - 1) continue;
-      position.jumpTo(
-        (position.pixels + 480).clamp(
-          position.minScrollExtent,
-          position.maxScrollExtent,
-        ),
+  if (finder.evaluate().isEmpty && find.text('Name').evaluate().isNotEmpty) {
+    final scrollable = find.ancestor(
+      of: find.text('Name'),
+      matching: find.byType(Scrollable),
+    );
+    if (scrollable.evaluate().isNotEmpty) {
+      await tester.scrollUntilVisible(
+        find.byKey(key, skipOffstage: false),
+        500,
+        scrollable: scrollable.first,
+        maxScrolls: 40,
       );
-      moved = true;
     }
-    await tester.pump(const Duration(milliseconds: 120));
-    if (!moved && n > 2) break;
   }
   await _until(tester, finder);
   final element = finder.evaluate().first;
