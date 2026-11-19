@@ -250,6 +250,27 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
             NBTextField(controller: _unit, label: 'Unit (optional)'),
           ],
           const SizedBox(height: 12),
+          NBButton(
+            key: const Key('habit-save'),
+            label: editing ? 'Save changes' : 'Create habit',
+            color: NBColors.habit,
+            onPressed: _save,
+          ),
+          if (editing) ...[
+            const SizedBox(height: 12),
+            NBButton(
+              key: const Key('habit-archive'),
+              label: 'Archive habit',
+              color: Colors.grey.shade400,
+              onPressed: () async {
+                final repo = await ref.read(habitRepositoryProvider.future);
+                await repo.archiveHabit(_existing!);
+                bumpHabitRefresh(ref);
+                if (context.mounted) context.pop();
+              },
+            ),
+          ],
+          const SizedBox(height: 12),
           RuhhSoftCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -271,13 +292,6 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          NBButton(
-            key: const Key('habit-save'),
-            label: editing ? 'Save changes' : 'Create habit',
-            color: NBColors.habit,
-            onPressed: _save,
-          ),
           if (editing) ...[
             const SizedBox(height: 12),
             NBButton(
@@ -290,18 +304,6 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
               label: 'Vacation & rest days',
               color: NBColors.offWhite,
               onPressed: () => showVacationSheet(context, ref, _existing!),
-            ),
-            const SizedBox(height: 12),
-            NBButton(
-              key: const Key('habit-archive'),
-              label: 'Archive habit',
-              color: Colors.grey.shade400,
-              onPressed: () async {
-                final repo = await ref.read(habitRepositoryProvider.future);
-                await repo.archiveHabit(_existing!);
-                bumpHabitRefresh(ref);
-                if (context.mounted) context.pop();
-              },
             ),
           ],
         ],
