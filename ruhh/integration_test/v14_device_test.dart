@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:isar/isar.dart';
+import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/v14_local.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/features/v14/logic/level_curve.dart';
+import 'package:ruhh/features/v14/logic/pet_catalog.dart';
 import 'package:ruhh/features/v14/shell/v14_shell.dart';
 import 'package:ruhh/features/v14/v14_providers.dart';
 import 'package:ruhh/features/v14/widgets/v14_chrome.dart';
@@ -105,14 +107,17 @@ void main() {
     await tester.tap(find.text('Undo'));
     await _until(tester, find.textContaining('Walk'));
     await tester.tap(find.text('Classic list'));
-    await _until(tester, find.text('Walk'));
-    await tester.tap(find.text('Walk').first);
-    await _until(tester, find.text('Name'));
+    await _until(tester, find.byKey(const Key('habit-board-name-Walk')));
+    await _tapKey(tester, const Key('habit-board-name-Walk'));
+    await _until(tester, find.text('Edit habit'));
     await tester.enterText(find.byType(TextField).first, 'Walk evening');
     await _tapText(tester, 'Save changes');
-    await _until(tester, find.textContaining('Walk evening'));
-    await tester.tap(find.textContaining('Walk evening').first);
-    await _until(tester, find.text('Name'));
+    await _until(
+      tester,
+      find.byKey(const Key('habit-board-name-Walk evening')),
+    );
+    await _tapKey(tester, const Key('habit-board-name-Walk evening'));
+    await _until(tester, find.text('Edit habit'));
     await _tapText(tester, 'Archive habit');
     await tester.pump(const Duration(seconds: 1));
     await _back(tester);
@@ -157,8 +162,9 @@ void main() {
     await tester.tap(find.byKey(const Key('prayer-fajr')));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('prayer-no-xp')), findsOneWidget);
+    final xpBeforeQuiet = await _lifetimeXp();
     await _open(tester, 'books', 'shelf');
-    await _until(tester, find.text('Add book'));
+    await _until(tester, find.byKey(const Key('nook-no-xp')));
     await tester.tap(find.text('Add book'));
     await _until(tester, find.text('Manual'));
     await tester.tap(find.text('Manual'));
@@ -171,6 +177,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Pather Panchali');
     await _tapText(tester, 'Save');
     await tester.pump(const Duration(seconds: 1));
+    expect(await _lifetimeXp(), xpBeforeQuiet);
 
     await _open(tester, 'habits', 'quests');
     await _field(tester, 'quest-title', 'Add quest', 'Carry water');
@@ -264,29 +271,66 @@ void main() {
         const FakeAccessibilityFeatures();
     await tester.pump(const Duration(milliseconds: 300));
 
-    await _showWorld(tester, binding, 25, '14-home-w2');
-    await _showWorld(tester, binding, 45, '15-home-w3');
-    await _showWorld(tester, binding, 65, '16-home-w4');
-    await _showWorld(tester, binding, 85, '17-home-w5');
+    await _open(tester, 'home', 'journey');
+    await _until(tester, find.byKey(const Key('relics-empty')));
+    await _field(tester, 'relic-title', 'Keep relic', 'നക്ഷത്ര · نجمة');
+    await _until(tester, find.textContaining('നക്ഷത്ര'));
+    await _until(tester, find.textContaining('نجمة'));
+
+    for (var i = 0; i < 8; i++) {
+      await tester.tap(find.byType(V14Orb), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+    expect(tester.takeException(), isNull);
+    if (find.byKey(const Key('ring-hint')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('ring-dismiss')));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await _frame(tester, const Size(320, 640));
+    await _shot('18-small');
+    await _frame(tester, const Size(800, 1280));
+    await _shot('19-large');
+    await _frame(tester, const Size(800, 360));
+    await _shot('20-rotated');
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.takeException(), isNull);
+
+    await _seedHugeHabits();
+    await _open(tester, 'habits', 'orbit');
+    await _until(tester, find.textContaining('Huge 3'));
+    expect(tester.takeException(), isNull);
+    await _clearHugeHabits();
+
+    await _tour(tester, 'dragon', '21-home-dragon');
+    await _tour(tester, 'panda', '22-home-panda');
+    await _tour(tester, 'cat', '23-home-cat');
+    expect(find.byKey(const Key('companion-sprite')), findsNothing);
     expect(find.textContaining('Could not open home'), findsNothing);
-  }, timeout: const Timeout(Duration(minutes: 12)));
+  }, timeout: const Timeout(Duration(minutes: 25)));
 }
 
-Future<void> _showWorld(
-  WidgetTester tester,
-  IntegrationTestWidgetsFlutterBinding binding,
-  int level,
-  String name,
-) async {
+const _worldLevels = [8, 25, 45, 65, 90];
+
+/// Test hook. Writes lifetime XP and the pet on the device store.
+/// There is no shipped control for this.
+Future<void> _seedWorld(WidgetTester tester, String petId, int level) async {
   final isar = Isar.getInstance();
   expect(isar, isNotNull);
-  final profile = await isar!.v14ProfileLocals.where().findFirst();
-  expect(profile, isNotNull);
+  final found = await isar!.v14ProfileLocals.where().findFirst();
+  expect(found, isNotNull);
+  final profile = found!;
   final xp = const Phase1LevelCurve().threshold(level);
-  profile!.lastSeenLevel = level;
+  profile
+    ..petId = petId
+    ..petName = petPackFor(petId).defaultName
+    ..lastSeenLevel = level
+    ..firstRunDone = true;
   final previous = await isar.localXpEventLocals
       .filter()
-      .sourceRefStartsWith('device-world')
+      .userIdEqualTo(profile.userId)
       .findAll();
   await isar.writeTxn(() async {
     await isar.localXpEventLocals.deleteAll([
@@ -297,18 +341,98 @@ Future<void> _showWorld(
       LocalXpEventLocal()
         ..userId = profile.userId
         ..source = 'quest'
-        ..sourceRef = 'device-world-$level'
+        ..sourceRef = 'device-world-$petId-$level'
         ..amount = xp
         ..createdAt = DateTime.now(),
     );
   });
   final context = tester.element(find.byType(V14Shell));
   ProviderScope.containerOf(context).invalidate(v14ProfileProvider);
-  await _open(tester, 'home', 'settings');
-  await tester.pump(const Duration(milliseconds: 400));
-  await _home(tester);
-  await tester.pump(const Duration(seconds: 1));
-  await _shot(name);
+  ProviderScope.containerOf(context).invalidate(v14StoreProvider);
+}
+
+Future<void> _tour(WidgetTester tester, String petId, String shot) async {
+  final pack = petPackFor(petId);
+  for (var i = 0; i < _worldLevels.length; i++) {
+    final level = _worldLevels[i];
+    await _seedWorld(tester, petId, level);
+    await _open(tester, 'home', 'settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await _home(tester);
+    await _until(tester, find.textContaining(pack.worldName(i + 1)));
+    expect(find.byKey(const Key('companion-sprite')), findsNothing);
+    if (find.text('Stay').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Stay'));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    if (i == 0 || i == _worldLevels.length - 1) {
+      await _shot(i == 0 ? shot : '$shot-w5');
+    }
+  }
+}
+
+Future<int> _lifetimeXp() async {
+  final isar = Isar.getInstance();
+  expect(isar, isNotNull);
+  final rows = await isar!.localXpEventLocals.where().findAll();
+  return rows
+      .where((row) => !row.reversed)
+      .fold<int>(0, (sum, row) => sum + row.amount);
+}
+
+Future<void> _seedHugeHabits() async {
+  final isar = Isar.getInstance();
+  expect(isar, isNotNull);
+  final profile = await isar!.v14ProfileLocals.where().findFirst();
+  expect(profile, isNotNull);
+  await isar.writeTxn(() async {
+    for (var i = 0; i < 24; i++) {
+      await isar.habitLocals.put(
+        HabitLocal()
+          ..remoteId = 'huge-$i'
+          ..userId = profile!.userId
+          ..name = 'Huge $i'
+          ..colorValue = 0xFF3FC08A
+          ..icon = 'walk'
+          ..kind = HabitKind.positive
+          ..interval = HabitInterval.daily
+          ..targetFrequency = 1
+          ..scheduleWeekdays = []
+          ..scheduleEvery = 1
+          ..scheduleUnit = ScheduleUnit.days
+          ..targetPerDay = 1
+          ..incrementAmount = 1
+          ..unitLabel = ''
+          ..description = ''
+          ..frequency = 'daily'
+          ..restDays = []
+          ..vacationsJson = '[]'
+          ..remindersJson = '[]'
+          ..archived = false
+          ..sortOrder = 100 + i
+          ..createdAt = DateTime.now(),
+      );
+    }
+  });
+}
+
+Future<void> _clearHugeHabits() async {
+  final isar = Isar.getInstance();
+  if (isar == null) return;
+  final rows = await isar.habitLocals
+      .filter()
+      .remoteIdStartsWith('huge-')
+      .findAll();
+  await isar.writeTxn(() async {
+    await isar.habitLocals.deleteAll([for (final row in rows) row.id]);
+  });
+}
+
+Future<void> _frame(WidgetTester tester, Size logical) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = logical;
+  await tester.pump(const Duration(milliseconds: 500));
+  expect(tester.takeException(), isNull);
 }
 
 Future<void> _home(WidgetTester tester) async {
@@ -348,10 +472,11 @@ Future<void> _field(
   String button,
   String value,
 ) async {
-  await tester.enterText(find.byKey(Key(key)), value);
+  final field = find.byKey(Key(key));
+  await _until(tester, field);
+  await tester.enterText(field, value);
   await tester.pump(const Duration(milliseconds: 200));
-  await tester.tap(find.text(button));
-  await tester.pump(const Duration(milliseconds: 500));
+  await _tapText(tester, button);
 }
 
 Future<void> _pinIn(WidgetTester tester, String pin) async {
@@ -415,6 +540,31 @@ Future<void> _tapText(WidgetTester tester, String label) async {
     }
     if (widget is TextButton) {
       widget.onPressed?.call();
+      pressed = true;
+      return false;
+    }
+    return true;
+  });
+  if (!pressed) {
+    await tester.tap(finder, warnIfMissed: false);
+  }
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> _tapKey(WidgetTester tester, Key key) async {
+  final finder = find.byKey(key);
+  await _until(tester, finder);
+  final element = finder.evaluate().first;
+  var pressed = false;
+  element.visitAncestorElements((ancestor) {
+    final widget = ancestor.widget;
+    if (widget is ListTile) {
+      widget.onTap?.call();
+      pressed = true;
+      return false;
+    }
+    if (widget is InkWell) {
+      widget.onTap?.call();
       pressed = true;
       return false;
     }
