@@ -136,11 +136,11 @@ void main() {
     await _until(tester, find.byKey(const Key('money-total')));
     await _shot('09-money');
     await tester.tap(find.text('Add spend'));
-    await _until(tester, find.text('Save'));
+    await _until(tester, find.byKey(const Key('budget-save')));
     await tester.enterText(find.byType(TextField).first, '250');
     await tester.tap(find.byTooltip('Food'));
     await tester.pump(const Duration(milliseconds: 300));
-    await _tapText(tester, 'Save');
+    await _tapKey(tester, const Key('budget-save'));
     await _until(tester, find.textContaining('₹250'));
     await tester.tap(find.text('Full ledger'));
     final ledgerRow = find.byWidgetPredicate((widget) {
@@ -156,10 +156,10 @@ void main() {
       await tester.tap(ledgerRow.first, warnIfMissed: false);
     }
     await tester.pump(const Duration(milliseconds: 400));
-    await _until(tester, find.text('Save'));
+    await _until(tester, find.byKey(const Key('budget-save')));
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(1), 'tea');
-    await _tapText(tester, 'Save');
+    await _tapKey(tester, const Key('budget-save'));
     await tester.pump(const Duration(seconds: 1));
     await _back(tester);
     await _open(tester, 'money', 'money-month');

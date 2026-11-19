@@ -108,10 +108,11 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
     if (_type == BudgetLedgerType.expense && _category != null) {
       final n = await ref.read(notificationServiceProvider.future);
       final settings = ref.read(settingsControllerProvider);
-      await BudgetNotificationAlerts(n, settings, repo).evaluateAfterExpense(
-        categoryName: _category!.name,
-        month: _date,
-      );
+      await BudgetNotificationAlerts(
+        n,
+        settings,
+        repo,
+      ).evaluateAfterExpense(categoryName: _category!.name, month: _date);
     }
     if (mounted) context.pop();
   }
@@ -119,8 +120,8 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
   @override
   Widget build(BuildContext context) {
     final repoAsync = ref.watch(budgetRepositoryProvider);
-    final incomeMode = _type == BudgetLedgerType.credit ||
-        _type == BudgetLedgerType.salary;
+    final incomeMode =
+        _type == BudgetLedgerType.credit || _type == BudgetLedgerType.salary;
     return repoAsync.when(
       data: (repo) => FutureBuilder(
         future: repo.activeCategories(income: incomeMode),
@@ -171,12 +172,22 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
                   NBTextField(
                     controller: _amountCtrl,
                     label: 'Amount (₹)',
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  Text('Category',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  NBButton(
+                    key: const Key('budget-save'),
+                    label: 'Save',
+                    color: NBMetrics.incomeGreen,
+                    onPressed: cats.isEmpty ? null : () => _save(repo),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Category',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   CategoryEmojiChipRow(
                     categories: cats,
@@ -203,12 +214,6 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
                       if (picked != null) setState(() => _date = picked);
                     },
                   ),
-                  const SizedBox(height: 16),
-                  NBButton(
-                    label: 'Save',
-                    color: NBMetrics.incomeGreen,
-                    onPressed: cats.isEmpty ? null : () => _save(repo),
-                  ),
                   if (_existing != null) ...[
                     const SizedBox(height: 8),
                     NBButton(
@@ -218,7 +223,8 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
                         final ok = await showNBConfirmDialog(
                           context: context,
                           title: 'Delete transaction?',
-                          message: 'This will be removed on all synced devices.',
+                          message:
+                              'This will be removed on all synced devices.',
                           confirmLabel: 'Delete',
                         );
                         if (ok != true || !context.mounted) return;
@@ -238,8 +244,7 @@ class _AddTransactionPageState extends ConsumerState<AddTransactionPage> {
         title: 'Transaction',
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) =>
-          NBModuleScaffold(title: 'Transaction', body: Text('$e')),
+      error: (e, _) => NBModuleScaffold(title: 'Transaction', body: Text('$e')),
     );
   }
 }
