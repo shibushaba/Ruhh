@@ -505,6 +505,8 @@ class _MoneyBlocksPageState extends ConsumerState<MoneyBlocksPage> {
             amount: tx.amount,
             isIncome: tx.isIncome,
             category: tx.category,
+            categoryRemoteId: tx.categoryRemoteId,
+            ledgerType: tx.ledgerType,
             account: tx.account,
             title: tx.title,
             note: tx.note,

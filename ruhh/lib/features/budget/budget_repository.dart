@@ -51,8 +51,10 @@ class BudgetRepository {
   String newRemoteId() => _uuid.v4();
 
   Future<void> ensureDefaults() async {
-    final walletCount =
-        await _isar.walletLocals.filter().userIdEqualTo(_userId).count();
+    final walletCount = await _isar.walletLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .count();
     if (walletCount == 0) {
       await _isar.writeTxn(() async {
         await _isar.walletLocals.put(
@@ -67,8 +69,10 @@ class BudgetRepository {
         );
       });
     }
-    final catCount =
-        await _isar.categoryLocals.filter().userIdEqualTo(_userId).count();
+    final catCount = await _isar.categoryLocals
+        .filter()
+        .userIdEqualTo(_userId)
+        .count();
     if (catCount == 0) {
       await _isar.writeTxn(() async {
         for (final c in indianDefaultCategories) {
@@ -119,9 +123,11 @@ class BudgetRepository {
     final range = monthRange(month);
     final all = await _rangeTransactions(range.start, range.end);
     return all
-        .where((t) =>
-            t.scheduleType == BudgetScheduleType.normal ||
-            (t.paid && t.scheduleType != BudgetScheduleType.normal))
+        .where(
+          (t) =>
+              t.scheduleType == BudgetScheduleType.normal ||
+              (t.paid && t.scheduleType != BudgetScheduleType.normal),
+        )
         .toList()
       ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
   }
@@ -129,8 +135,7 @@ class BudgetRepository {
   Future<List<TransactionLocal>> scheduledUnpaid() async {
     final all = await getAll();
     return all
-        .where((t) =>
-            t.scheduleType != BudgetScheduleType.normal && !t.paid)
+        .where((t) => t.scheduleType != BudgetScheduleType.normal && !t.paid)
         .toList()
       ..sort((a, b) => a.occurredAt.compareTo(b.occurredAt));
   }
@@ -182,9 +187,14 @@ class BudgetRepository {
     int periodLength = 1,
     DateTime? recurrenceEnd,
     String? objectiveRemoteId,
+    String? categoryRemoteId,
+    BudgetLedgerType? ledgerType,
   }) async {
     final when = occurredAt ?? DateTime.now();
     final isScheduled = scheduleType != BudgetScheduleType.normal;
+    final type =
+        ledgerType ??
+        (isIncome ? BudgetLedgerType.credit : BudgetLedgerType.expense);
     final tx = TransactionLocal()
       ..remoteId = _uuid.v4()
       ..userId = _userId
@@ -192,12 +202,17 @@ class BudgetRepository {
       ..isIncome = isIncome
       ..title = title
       ..category = category
+      ..categoryRemoteId = categoryRemoteId ?? category
       ..account = account
       ..note = note
       ..occurredAt = when
+      ..ledgerType = type
+      ..monthKey = budgetMonthKey(when)
       ..scheduleType = scheduleType
       ..paid = paid ?? (!isScheduled)
-      ..recurrence = isScheduled && recurrence == 'none' ? 'monthly' : recurrence
+      ..recurrence = isScheduled && recurrence == 'none'
+          ? 'monthly'
+          : recurrence
       ..periodLength = periodLength
       ..recurrenceEnd = recurrenceEnd
       ..objectiveRemoteId = objectiveRemoteId;
@@ -237,8 +252,11 @@ class BudgetRepository {
   }
 
   Future<void> _spawnNextOccurrence(TransactionLocal paid) async {
-    var nextDate =
-        addRecurrence(paid.occurredAt, paid.recurrence, paid.periodLength);
+    var nextDate = addRecurrence(
+      paid.occurredAt,
+      paid.recurrence,
+      paid.periodLength,
+    );
     if (paid.recurrenceEnd != null && nextDate.isAfter(paid.recurrenceEnd!)) {
       return;
     }
@@ -321,13 +339,17 @@ class BudgetRepository {
   ) async {
     final txs = await _rangeTransactions(start, end);
     final map = <String, double>{};
-    for (final t in txs.where((x) => !x.isIncome && transactionCountsInLedger(x))) {
+    for (final t in txs.where(
+      (x) => !x.isIncome && transactionCountsInLedger(x),
+    )) {
       map[t.category] = (map[t.category] ?? 0) + t.amount;
     }
     return map;
   }
 
-  Future<Map<String, double>> spendByCategoryThisMonth([DateTime? month]) async {
+  Future<Map<String, double>> spendByCategoryThisMonth([
+    DateTime? month,
+  ]) async {
     final m = month ?? DateTime.now();
     final range = monthRange(m);
     return spendByCategoryInRange(range.start, range.end);
@@ -343,11 +365,13 @@ class BudgetRepository {
     if (q.isEmpty) return getAll();
     final all = await getAll();
     return all
-        .where((t) =>
-            t.title.toLowerCase().contains(q) ||
-            t.note.toLowerCase().contains(q) ||
-            t.category.toLowerCase().contains(q) ||
-            t.account.toLowerCase().contains(q))
+        .where(
+          (t) =>
+              t.title.toLowerCase().contains(q) ||
+              t.note.toLowerCase().contains(q) ||
+              t.category.toLowerCase().contains(q) ||
+              t.account.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -367,8 +391,10 @@ class BudgetRepository {
         w.openingBalance = openingBalance;
         if (colorValue != null) w.colorValue = colorValue;
       } else {
-        final count =
-            await _isar.walletLocals.filter().userIdEqualTo(_userId).count();
+        final count = await _isar.walletLocals
+            .filter()
+            .userIdEqualTo(_userId)
+            .count();
         w = WalletLocal()
           ..remoteId = _uuid.v4()
           ..userId = _userId
@@ -405,8 +431,10 @@ class BudgetRepository {
         if (colorValue != null) c.colorValue = colorValue;
         if (emoji != null) c.emoji = emoji;
       } else {
-        final count =
-            await _isar.categoryLocals.filter().userIdEqualTo(_userId).count();
+        final count = await _isar.categoryLocals
+            .filter()
+            .userIdEqualTo(_userId)
+            .count();
         c = CategoryLocal()
           ..remoteId = newRemoteId()
           ..userId = _userId
@@ -461,7 +489,8 @@ class BudgetRepository {
           ..name = name
           ..limitAmount = limitAmount
           ..period = period
-          ..startsAt = startsAt ?? DateTime(DateTime.now().year, DateTime.now().month)
+          ..startsAt =
+              startsAt ?? DateTime(DateTime.now().year, DateTime.now().month)
           ..colorValue = colorValue ?? NBColors.budget.toARGB32()
           ..archived = archived;
       }
@@ -503,9 +532,11 @@ class BudgetRepository {
   Future<double> objectiveContributed(ObjectiveLocal objective) async {
     final txs = await getAll();
     return txs
-        .where((t) =>
-            t.objectiveRemoteId == objective.remoteId &&
-            transactionCountsInLedger(t))
+        .where(
+          (t) =>
+              t.objectiveRemoteId == objective.remoteId &&
+              transactionCountsInLedger(t),
+        )
         .fold<double>(0, (s, t) => s + t.amount);
   }
 
@@ -533,8 +564,10 @@ class BudgetRepository {
         o.endDate = endDate;
         if (colorValue != null) o.colorValue = colorValue;
       } else {
-        final count =
-            await _isar.objectiveLocals.filter().userIdEqualTo(_userId).count();
+        final count = await _isar.objectiveLocals
+            .filter()
+            .userIdEqualTo(_userId)
+            .count();
         o = ObjectiveLocal()
           ..remoteId = _uuid.v4()
           ..userId = _userId
@@ -562,12 +595,11 @@ class BudgetRepository {
 
   Future<List<CategoryBudgetLimitLocal>> categoryLimitsForBudget(
     String budgetRemoteId,
-  ) =>
-      _isar.categoryBudgetLimitLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .budgetRemoteIdEqualTo(budgetRemoteId)
-          .findAll();
+  ) => _isar.categoryBudgetLimitLocals
+      .filter()
+      .userIdEqualTo(_userId)
+      .budgetRemoteIdEqualTo(budgetRemoteId)
+      .findAll();
 
   Future<double> categorySpentInRange(
     String categoryName,
@@ -576,10 +608,12 @@ class BudgetRepository {
   ) async {
     final txs = await _rangeTransactions(start, end);
     return txs
-        .where((t) =>
-            t.category == categoryName &&
-            !t.isIncome &&
-            transactionCountsInLedger(t))
+        .where(
+          (t) =>
+              t.category == categoryName &&
+              !t.isIncome &&
+              transactionCountsInLedger(t),
+        )
         .fold<double>(0, (s, t) => s + t.amount);
   }
 
@@ -616,13 +650,12 @@ class BudgetRepository {
   Future<List<TransactionLocal>> _rangeTransactions(
     DateTime start,
     DateTime end,
-  ) =>
-      _isar.transactionLocals
-          .filter()
-          .userIdEqualTo(_userId)
-          .occurredAtGreaterThan(start, include: true)
-          .occurredAtLessThan(end, include: false)
-          .findAll();
+  ) => _isar.transactionLocals
+      .filter()
+      .userIdEqualTo(_userId)
+      .occurredAtGreaterThan(start, include: true)
+      .occurredAtLessThan(end, include: false)
+      .findAll();
 }
 
 final budgetRepositoryProvider = FutureProvider<BudgetRepository>((ref) async {
@@ -638,10 +671,10 @@ final budgetRepositoryProvider = FutureProvider<BudgetRepository>((ref) async {
 /// Month totals for a calendar month (`YYYY-MM`). Re-fetches when [budgetRefreshProvider] bumps.
 final budgetMonthTotalsProvider =
     FutureProvider.family<BudgetMonthTotals, String>((ref, monthKey) async {
-  ref.watch(budgetRefreshProvider);
-  final repo = await ref.watch(budgetRepositoryProvider.future);
-  return repo.monthTotals(budgetMonthStart(monthKey));
-});
+      ref.watch(budgetRefreshProvider);
+      final repo = await ref.watch(budgetRepositoryProvider.future);
+      return repo.monthTotals(budgetMonthStart(monthKey));
+    });
 
 /// Bump to refresh lists after mutations.
 final budgetRefreshProvider = StateProvider<int>((ref) => 0);
