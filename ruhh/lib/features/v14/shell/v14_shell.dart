@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 import 'package:ruhh/features/v14/data/v14_models.dart';
+import 'package:ruhh/features/v14/logic/world_map.dart';
 import 'package:ruhh/features/v14/logic/pet_catalog.dart';
 import 'package:ruhh/features/v14/logic/ring_layout.dart';
 import 'package:ruhh/features/v14/shell/v14_destinations.dart';
@@ -72,26 +75,42 @@ class V14ShellState extends ConsumerState<V14Shell> {
     final media = MediaQuery.of(context);
     final reduced = media.disableAnimations;
     final listMode = profile.listMode || media.accessibleNavigation;
-    final accent = pack.accent(1);
+    final world = worldForLevel(
+      profile.lastSeenLevel == 0 ? 1 : profile.lastSeenLevel,
+    );
+    final scene = artWorldOf(petId, world);
+    final accent = Color(scene.accent);
 
-    return Theme(
-      data: V14Theme.dark(),
-      child: Scaffold(
-        backgroundColor: V14Colors.base,
-        body: SizedBox.expand(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (listMode && isHome)
-                _PlacesList(onOpen: (route) => _go(route))
-              else
-                widget.child,
-              if (!listMode || !isHome)
-                _orb(context, profile, name, accent, isHome, reduced),
-              if (_open) _ring(context, profile, name, accent, reduced),
-              if (isHome && profile.petId != null && !profile.firstRunDone)
-                _demo(context, profile, name),
-            ],
+    return V14ArtScope(
+      petId: petId,
+      world: world,
+      child: Theme(
+        data: V14Theme.dark(),
+        child: Scaffold(
+          backgroundColor: V14Colors.base,
+          body: SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (listMode && isHome)
+                  _PlacesList(onOpen: (route) => _go(route))
+                else
+                  widget.child,
+                if (!listMode || !isHome)
+                  _orb(
+                    context,
+                    profile,
+                    name,
+                    accent,
+                    isHome,
+                    reduced,
+                    scene.orb,
+                  ),
+                if (_open) _ring(context, profile, name, accent, reduced),
+                if (isHome && profile.petId != null && !profile.firstRunDone)
+                  _demo(context, profile, name),
+              ],
+            ),
           ),
         ),
       ),
@@ -126,6 +145,7 @@ class V14ShellState extends ConsumerState<V14Shell> {
     Color accent,
     bool isHome,
     bool reduced,
+    String portrait,
   ) {
     final diameter = isHome ? 64.0 : 48.0;
     final hand = profile.leftHandOrb;
@@ -139,6 +159,7 @@ class V14ShellState extends ConsumerState<V14Shell> {
           label: name,
           accent: accent,
           diameter: diameter,
+          portrait: portrait,
           onTap: () {
             if (!isHome && !_open) {
               _go('/home');
@@ -288,6 +309,24 @@ class V14ShellState extends ConsumerState<V14Shell> {
                   style: v14Text(14, color: V14Colors.text),
                 ),
               ),
+            Positioned(
+              top: 64 + MediaQuery.paddingOf(context).top,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SvgPicture.asset(
+                  artWorldOf(
+                    profile.petId ?? 'dragon',
+                    worldForLevel(
+                      profile.lastSeenLevel == 0 ? 1 : profile.lastSeenLevel,
+                    ),
+                  ).motif,
+                  width: 42,
+                  height: 42,
+                  colorFilter: ColorFilter.mode(accent, BlendMode.srcIn),
+                ),
+              ),
+            ),
             Positioned(
               left: 16,
               top: 16 + MediaQuery.paddingOf(context).top,

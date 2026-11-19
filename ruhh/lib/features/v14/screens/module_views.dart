@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:ruhh/features/budget/ledger/budget_inr.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 import 'package:ruhh/features/v14/data/v14_models.dart';
 import 'package:ruhh/features/v14/logic/chat_intent.dart';
 import 'package:ruhh/features/v14/logic/pet_catalog.dart';
@@ -61,11 +62,38 @@ class HabitsOrbitView extends StatelessWidget {
                 builder: (context, c) {
                   final center = Offset(c.maxWidth / 2, c.maxHeight / 2);
                   final radius = math.min(c.maxWidth, c.maxHeight) * 0.34;
+                  final scope = V14ArtScope.maybeOf(context);
+                  final scene = artWorldOf(
+                    scope?.petId ?? 'dragon',
+                    scope?.world ?? 1,
+                  );
                   return Stack(
                     children: [
                       CustomPaint(
                         size: Size(c.maxWidth, c.maxHeight),
-                        painter: _OrbitPainter(center, radius),
+                        painter: _OrbitPainter(
+                          center,
+                          radius,
+                          Color(scene.accent),
+                        ),
+                      ),
+                      Positioned(
+                        left: center.dx - 56,
+                        top: center.dy - 56,
+                        width: 112,
+                        height: 112,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(scene.accent),
+                              width: 3,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(scene.orb, fit: BoxFit.cover),
+                          ),
+                        ),
                       ),
                       for (var i = 0; i < habits.length && i < 8; i++)
                         _orbit(
@@ -783,6 +811,27 @@ class _CompanionChatViewState extends State<CompanionChatView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Builder(
+            builder: (context) {
+              final scope = V14ArtScope.maybeOf(context);
+              final scene = artWorldOf(
+                scope?.petId ?? 'dragon',
+                scope?.world ?? 1,
+              );
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: ClipOval(
+                  child: Image.asset(
+                    scene.orb,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           for (final line in widget.lines)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -944,22 +993,17 @@ class PetPickerView extends StatelessWidget {
         children: [
           for (final id in const ['dragon', 'panda', 'cat'])
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: V14Button(
-                label: '${petPackFor(id).kind} · ${petPackFor(id).defaultName}',
-                primary: selected == id,
-                onPressed: () => onSelect(id),
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _PetCard(
+                petId: id,
+                selected: selected == id,
+                onTap: () => onSelect(id),
               ),
             ),
           Text(
-            petPackFor(selected).worlds.first,
+            '${petPackFor(selected).worlds.first} → ${petPackFor(selected).worlds.last}',
             style: v14Text(14, color: V14Colors.muted),
           ),
-          if (petPackFor(selected).missingWorlds.isNotEmpty)
-            Text(
-              'Worlds 2–4 are not drawn yet.',
-              style: v14Text(12, color: V14Colors.dim),
-            ),
           const SizedBox(height: 12),
           if (!locked) ...[
             V14Button(label: 'Try', primary: false, onPressed: onTry),
@@ -972,6 +1016,72 @@ class PetPickerView extends StatelessWidget {
               style: v14Text(14),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _PetCard extends StatelessWidget {
+  const _PetCard({
+    required this.petId,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String petId;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pack = petPackFor(petId);
+    final scene = artWorldOf(petId, 1);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: Key('pet-card-$petId'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          height: selected ? 220 : 96,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? Color(scene.accent) : V14Colors.hairline,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned.fill(
+                  child: Image.asset(scene.plate, fit: BoxFit.cover),
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x000E0F10), Color(0xCC0E0F10)],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      '${pack.kind} · ${pack.defaultName}',
+                      style: v14Text(18, family: V14Fonts.display),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1121,14 +1231,15 @@ class _V14FieldState extends State<V14Field> {
 }
 
 class _OrbitPainter extends CustomPainter {
-  _OrbitPainter(this.center, this.radius);
+  _OrbitPainter(this.center, this.radius, this.color);
   final Offset center;
   final double radius;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = V14Colors.lineStrong
+      ..color = color.withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawCircle(center, radius, paint);
@@ -1136,7 +1247,7 @@ class _OrbitPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OrbitPainter old) =>
-      old.center != center || old.radius != radius;
+      old.center != center || old.radius != radius || old.color != color;
 }
 
 class _Page extends StatelessWidget {
@@ -1146,18 +1257,49 @@ class _Page extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scope = V14ArtScope.maybeOf(context);
+    final backdrop = artBackdrop(
+      scope?.petId ?? 'dragon',
+      scope?.world ?? 1,
+      _screenForTitle(title),
+    );
     return Scaffold(
       backgroundColor: V14Colors.base,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-          children: [
-            Text(title, style: v14Text(26, family: V14Fonts.display)),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.asset(backdrop, fit: BoxFit.cover),
+          ),
+          ColoredBox(color: V14Colors.base.withValues(alpha: 0.62)),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+              children: [
+                Text(title, style: v14Text(26, family: V14Fonts.display)),
+                const SizedBox(height: 12),
+                child,
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _screenForTitle(String title) {
+    return switch (title) {
+      'Habits' => 'habits',
+      'Quests' => 'quests',
+      'Goal climb' => 'goals',
+      'Money' => 'money',
+      'Prayer' => 'prayer',
+      'Night nook' => 'books',
+      'Planner' => 'planner',
+      'Journey' => 'journey',
+      'Settings' => 'settings',
+      'Choose a companion' || 'Permanent' => 'pet',
+      _ => 'chat',
+    };
   }
 }

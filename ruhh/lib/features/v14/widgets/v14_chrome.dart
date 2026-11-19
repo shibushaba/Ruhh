@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ruhh/features/v14/logic/pet_catalog.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 import 'package:ruhh/features/v14/theme/v14_colors.dart';
 
 class V14Panel extends StatelessWidget {
@@ -105,6 +105,27 @@ class V14UndoBar extends StatelessWidget {
   }
 }
 
+class V14ArtScope extends InheritedWidget {
+  const V14ArtScope({
+    super.key,
+    required this.petId,
+    required this.world,
+    required super.child,
+  });
+
+  final String petId;
+  final int world;
+
+  static V14ArtScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<V14ArtScope>();
+  }
+
+  @override
+  bool updateShouldNotify(V14ArtScope oldWidget) {
+    return oldWidget.petId != petId || oldWidget.world != world;
+  }
+}
+
 class V14Scene extends StatelessWidget {
   const V14Scene({
     super.key,
@@ -119,90 +140,15 @@ class V14Scene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pack = petPackFor(petId);
-    final accent = pack.accent(world);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(V14Colors.base, accent, 0.22)!, V14Colors.base],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(painter: _MotifPainter(pack.id, accent)),
-          if (pack.artMissing(world))
-            Positioned(
-              top: 64,
-              left: 16,
-              right: 16,
-              child: Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: V14Colors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: V14Colors.hairline),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      'Scene art for this world is not drawn yet',
-                      key: const Key('art-missing'),
-                      textAlign: TextAlign.center,
-                      style: v14Text(12, color: V14Colors.muted),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          child,
-        ],
-      ),
+    final scene = artWorldOf(petId, world);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(scene.plate, fit: BoxFit.cover),
+        child,
+      ],
     );
   }
-}
-
-class _MotifPainter extends CustomPainter {
-  _MotifPainter(this.petId, this.accent);
-  final String petId;
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = accent.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    final c = Offset(size.width * 0.72, size.height * 0.28);
-    if (petId == 'panda') {
-      canvas.drawArc(
-        Rect.fromCircle(center: c, radius: 28),
-        -0.8,
-        4.2,
-        false,
-        paint,
-      );
-    } else if (petId == 'cat') {
-      final path = Path()
-        ..moveTo(c.dx - 16, c.dy)
-        ..lineTo(c.dx, c.dy - 10)
-        ..lineTo(c.dx + 16, c.dy)
-        ..lineTo(c.dx, c.dy + 10)
-        ..close();
-      canvas.drawPath(path, paint);
-    } else {
-      canvas.drawCircle(c, 18, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MotifPainter old) =>
-      old.petId != petId || old.accent != accent;
 }
 
 class V14Orb extends StatelessWidget {
@@ -212,6 +158,7 @@ class V14Orb extends StatelessWidget {
     required this.accent,
     required this.diameter,
     required this.onTap,
+    this.portrait,
     this.onLongPressStart,
     this.onLongPressMove,
     this.onLongPressEnd,
@@ -220,6 +167,7 @@ class V14Orb extends StatelessWidget {
   final String label;
   final Color accent;
   final double diameter;
+  final String? portrait;
   final VoidCallback onTap;
   final GestureLongPressStartCallback? onLongPressStart;
   final GestureLongPressMoveUpdateCallback? onLongPressMove;
@@ -249,15 +197,23 @@ class V14Orb extends StatelessWidget {
                 color: V14Colors.base,
                 border: Border.all(color: accent, width: 2),
               ),
+              clipBehavior: Clip.antiAlias,
               alignment: Alignment.center,
-              child: Text(
-                label.characters.first,
-                style: v14Text(
-                  diameter * 0.36,
-                  family: V14Fonts.display,
-                  color: accent,
-                ),
-              ),
+              child: portrait == null
+                  ? Text(
+                      label.isEmpty ? '?' : label.characters.first,
+                      style: v14Text(
+                        diameter * 0.36,
+                        family: V14Fonts.display,
+                        color: accent,
+                      ),
+                    )
+                  : Image.asset(
+                      portrait!,
+                      width: diameter,
+                      height: diameter,
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
         ),

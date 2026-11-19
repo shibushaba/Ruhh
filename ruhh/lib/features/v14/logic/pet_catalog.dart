@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 
 class PetFormName {
   const PetFormName(this.early, this.late);
@@ -33,8 +34,14 @@ class PetPack {
 
   String worldName(int world) => worlds[(world - 1).clamp(0, 4)];
 
-  String formName(int world, int subStage) =>
-      forms[(world - 1).clamp(0, 4)].at(subStage);
+  String formName(int world, int subStage) {
+    final inWorld = (artForms[id] ?? artForms['dragon']!)
+        .where((form) => form.world == world)
+        .toList();
+    if (inWorld.isEmpty) return worlds[(world - 1).clamp(0, 4)];
+    final index = (subStage.clamp(0, 3) * (inWorld.length - 1) / 3).round();
+    return inWorld[index].name;
+  }
 
   Color accent(int world) => accents[(world - 1).clamp(0, 4)];
   Color accent2(int world) => accents2[(world - 1).clamp(0, 4)];
@@ -107,7 +114,7 @@ const petPacks = <String, PetPack>{
       Color(0xFFF5D5E4),
       Color(0xFFF7F3E3),
     ],
-    missingWorlds: {2, 3, 4},
+    missingWorlds: {},
   ),
   'cat': PetPack(
     id: 'cat',
@@ -141,7 +148,7 @@ const petPacks = <String, PetPack>{
       Color(0xFFC6E2F3),
       Color(0xFFD9E0FB),
     ],
-    missingWorlds: {2, 3, 4},
+    missingWorlds: {},
   ),
 };
 
@@ -154,65 +161,27 @@ class HotspotSpec {
     required this.route,
     required this.x,
     required this.y,
+    this.labelSide = 'r',
   });
   final String id;
   final String label;
   final String route;
   final double x;
   final double y;
+  final String labelSide;
 }
 
 List<HotspotSpec> hotspotsFor({required String petId, required int world}) {
-  final habits = switch (petId) {
-    'panda' => world == 5 ? 'Constellation' : 'Stone lamps',
-    'cat' => world == 5 ? 'Constellation' : 'Window candles',
-    _ => switch (world) {
-      1 => 'Candle ledge',
-      2 => 'Stones',
-      3 => 'Bell rope',
-      4 => 'Chimes',
-      _ => 'Constellation',
-    },
-  };
-  final quests = switch (petId) {
-    'panda' => world == 5 ? 'Lanterns' : 'Bamboo post',
-    'cat' => world == 5 ? 'Lanterns' : 'Notice board',
-    _ => switch (world) {
-      1 => 'Quest wall',
-      2 => 'Leaf post',
-      3 => 'Ema rack',
-      4 => 'Banners',
-      _ => 'Waiting lanterns',
-    },
-  };
-  final goals = switch (petId) {
-    'panda' => world == 1 ? 'Lantern' : 'Sky lanterns',
-    'cat' => world == 1 ? 'Lantern' : 'Sky lanterns',
-    _ => switch (world) {
-      1 => 'Lantern',
-      2 => 'Bridge lanterns',
-      4 => 'Islands',
-      5 => 'Sky lanterns',
-      _ => 'Stone lanterns',
-    },
-  };
+  final scene = artWorldOf(petId, world);
   return [
-    HotspotSpec(id: 'habits', label: habits, route: '/habit', x: 0.22, y: 0.58),
-    HotspotSpec(
-      id: 'quests',
-      label: quests,
-      route: '/quests',
-      x: 0.78,
-      y: 0.46,
-    ),
-    HotspotSpec(id: 'goals', label: goals, route: '/goals', x: 0.62, y: 0.70),
-    if (world == 3)
-      const HotspotSpec(
-        id: 'bell',
-        label: 'Big bell',
-        route: '/wrap',
-        x: 0.50,
-        y: 0.34,
+    for (final pin in scene.pins)
+      HotspotSpec(
+        id: pin.id,
+        label: pin.objectName,
+        route: pin.route,
+        x: pin.x,
+        y: pin.y,
+        labelSide: pin.labelSide,
       ),
   ];
 }

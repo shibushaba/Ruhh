@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ruhh/core/data/models/user_local.dart';
 import 'package:ruhh/core/services/supabase_sync_service.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 import 'package:ruhh/features/v14/data/v14_models.dart';
 import 'package:ruhh/features/v14/data/v14_store.dart';
 import 'package:ruhh/features/v14/logic/chat_intent.dart';
@@ -40,8 +41,11 @@ void main() {
     expect(map.progress(500).world, 5);
     expect(petPackFor('dragon').formName(1, 0), 'Ember Egg');
     expect(petPackFor('dragon').formName(1, 3), 'Hearthling');
-    expect(petPackFor('panda').artMissing(3), isTrue);
-    expect(petPackFor('dragon').artMissing(3), isFalse);
+    expect(petPackFor('panda').artMissing(3), isFalse);
+    expect(petPackFor('cat').artMissing(4), isFalse);
+    expect(artWorldOf('panda', 3).plate, contains('river_gorge'));
+    expect(artFormForLevel('dragon', 1).name, 'Ember Egg');
+    expect(artFormForLevel('cat', 90).name, 'Star Warden');
   });
 
   test('excluded modules never receive XP', () async {

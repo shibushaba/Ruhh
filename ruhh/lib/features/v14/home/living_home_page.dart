@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ruhh/features/habit/habit_repository.dart';
 import 'package:ruhh/features/prayer/prayer_repository.dart';
 import 'package:ruhh/features/prayer/tracker/prayer_domain.dart';
+import 'package:ruhh/features/v14/art/art_catalog.dart';
 import 'package:ruhh/features/v14/data/v14_models.dart';
 import 'package:ruhh/features/v14/home/living_home_view.dart';
 import 'package:ruhh/features/v14/logic/pet_catalog.dart';
@@ -178,28 +179,46 @@ class _LoadedHomeState extends ConsumerState<_LoadedHome> {
       if (mounted) {
         showDialog<void>(
           context: context,
-          builder: (context) => AlertDialog(
-            key: const Key('level-up'),
-            backgroundColor: V14Colors.surface,
-            title: Text(
-              'Level ${progress.level}',
-              style: v14Text(
-                22,
-                family: V14Fonts.display,
-                color: V14Colors.gold,
+          builder: (context) {
+            final form = artFormForLevel(
+              widget.profile.petId ?? 'dragon',
+              progress.level,
+            );
+            return AlertDialog(
+              key: const Key('level-up'),
+              backgroundColor: V14Colors.surface,
+              title: Text(
+                'Level ${progress.level}',
+                style: v14Text(
+                  22,
+                  family: V14Fonts.display,
+                  color: V14Colors.gold,
+                ),
               ),
-            ),
-            content: Text(
-              'The world follows the existing curve. Nothing here is sent to the cloud.',
-              style: v14Text(14),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Stay', style: v14Text(14, color: V14Colors.jade)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(form.sprite, height: 180, fit: BoxFit.contain),
+                  const SizedBox(height: 8),
+                  Text(form.name, style: v14Text(16, color: V14Colors.gold)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'The world follows the existing curve. Nothing here is sent to the cloud.',
+                    style: v14Text(14),
+                  ),
+                ],
               ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Stay',
+                    style: v14Text(14, color: V14Colors.jade),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       }
     }

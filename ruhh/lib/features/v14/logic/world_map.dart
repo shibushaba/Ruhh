@@ -32,6 +32,14 @@ class WorldProgress {
   final int xpToNext;
 }
 
+int worldForLevel(int level) {
+  final lv = level.clamp(1, 100);
+  for (final band in v14WorldBands) {
+    if (lv <= band.endLevel) return band.world;
+  }
+  return 5;
+}
+
 class WorldMap {
   const WorldMap({
     this.curve = const Phase1LevelCurve(),

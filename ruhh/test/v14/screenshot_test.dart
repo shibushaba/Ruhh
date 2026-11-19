@@ -53,6 +53,12 @@ void main() {
         ),
       );
       await tester.pump();
+      // WebP plates decode off the fake async clock. Give the codec a
+      // bounded real-time window, then paint the completed frames.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 400)),
+      );
+      await tester.pump();
       if (settle != null) await settle();
       await expectLater(
         find.byType(MaterialApp),
@@ -101,7 +107,7 @@ void main() {
       ),
     );
     await shot(
-      'home-panda-missing',
+      'home-panda-w3',
       LivingHomeView(
         petId: 'panda',
         world: 3,
