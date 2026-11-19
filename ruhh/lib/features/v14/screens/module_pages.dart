@@ -67,9 +67,7 @@ class _HabitsOrbitPageState extends ConsumerState<HabitsOrbitPage> {
         );
       }
       if (mounted) setState(() => _habits = rows);
-    } catch (_) {
-      if (mounted) setState(() => _habits = const []);
-    }
+    } catch (_) {}
   }
 
   Future<void> _toggle(OrbitHabit habit) async {
@@ -141,6 +139,9 @@ class _HabitsOrbitPageState extends ConsumerState<HabitsOrbitPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(habitRefreshProvider, (previous, next) {
+      _load();
+    });
     return HabitsOrbitView(
       habits: _habits,
       undoLabel: _undoLabel,
@@ -474,6 +475,9 @@ class _MoneyBlocksPageState extends ConsumerState<MoneyBlocksPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(budgetRefreshProvider, (previous, next) {
+      _load();
+    });
     final spent = _spend.values.fold<double>(0, (s, v) => s + v);
     return MoneyBlocksView(
       spend: _spend,

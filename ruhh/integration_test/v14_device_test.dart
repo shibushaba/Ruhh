@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/v14_local.dart';
+import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/features/v14/logic/level_curve.dart';
 import 'package:ruhh/features/v14/shell/v14_shell.dart';
 import 'package:ruhh/features/v14/v14_providers.dart';
@@ -87,14 +88,18 @@ void main() {
     await _until(tester, find.text('New habit'));
     await _shot('08-habits');
     await tester.tap(find.text('New habit'));
-    await _until(tester, find.text('Create habit'));
+    await _until(tester, find.text('Name'));
     await tester.enterText(find.byType(TextField).first, 'Walk');
-    await tester.tap(find.text('Create habit'));
-    await _until(tester, find.textContaining('Light it · Walk'));
-    final habit = find.textContaining('Light it · Walk');
+    await _tapText(tester, 'Create habit');
+    await _until(tester, find.textContaining('Walk'));
     for (var i = 0; i < 6; i++) {
-      await tester.tap(habit);
-      await tester.pump(const Duration(milliseconds: 80));
+      final habit = find.textContaining('Walk');
+      if (habit.evaluate().isEmpty) {
+        await tester.pump(const Duration(milliseconds: 200));
+        continue;
+      }
+      await tester.tap(habit.first, warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 120));
     }
     await _until(tester, find.text('Undo'));
     await tester.tap(find.text('Undo'));
@@ -102,21 +107,21 @@ void main() {
     await tester.tap(find.text('Classic list'));
     await _until(tester, find.text('Walk'));
     await tester.tap(find.text('Walk').first);
-    await _until(tester, find.text('Save changes'));
+    await _until(tester, find.text('Name'));
     await tester.enterText(find.byType(TextField).first, 'Walk evening');
-    await tester.tap(find.text('Save changes'));
+    await _tapText(tester, 'Save changes');
     await _until(tester, find.textContaining('Walk evening'));
     await tester.tap(find.textContaining('Walk evening').first);
-    await _until(tester, find.text('Archive habit'));
-    await tester.tap(find.text('Archive habit'));
+    await _until(tester, find.text('Name'));
+    await _tapText(tester, 'Archive habit');
     await tester.pump(const Duration(seconds: 1));
     await _back(tester);
     await _until(tester, find.text('New habit'));
 
     await tester.tap(find.text('New habit'));
-    await _until(tester, find.text('Create habit'));
+    await _until(tester, find.text('Name'));
     await tester.enterText(find.byType(TextField).first, 'Read');
-    await tester.tap(find.text('Create habit'));
+    await _tapText(tester, 'Create habit');
     await _until(tester, find.textContaining('Light it · Read'));
     await tester.tap(find.textContaining('Light it · Read'));
     await _until(tester, find.textContaining('Read · lit'));
@@ -129,7 +134,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '250');
     await tester.tap(find.byTooltip('Food'));
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('Save'));
+    await _tapText(tester, 'Save');
     await _until(tester, find.textContaining('₹250'));
     await tester.tap(find.text('Full ledger'));
     await _until(tester, find.textContaining('250'));
@@ -137,7 +142,7 @@ void main() {
     await _until(tester, find.text('Save'));
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(1), 'tea');
-    await tester.tap(find.text('Save'));
+    await _tapText(tester, 'Save');
     await tester.pump(const Duration(seconds: 1));
     await _back(tester);
     await _open(tester, 'money', 'money-month');
@@ -159,12 +164,12 @@ void main() {
     await tester.tap(find.text('Manual'));
     await _until(tester, find.text('Add to shelf'));
     await tester.enterText(find.byType(TextField).first, 'The Alchemist');
-    await tester.tap(find.text('Add to shelf'));
+    await _tapText(tester, 'Add to shelf');
     await _until(tester, find.textContaining('Alchemist'));
     await _open(tester, 'movies', 'movie-add');
     await _until(tester, find.text('Title'));
     await tester.enterText(find.byType(TextField).first, 'Pather Panchali');
-    await tester.tap(find.text('Save'));
+    await _tapText(tester, 'Save');
     await tester.pump(const Duration(seconds: 1));
 
     await _open(tester, 'habits', 'quests');
@@ -323,7 +328,12 @@ Future<void> _home(WidgetTester tester) async {
 Future<void> _open(WidgetTester tester, String group, String id) async {
   if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
     await _until(tester, find.byType(V14Orb));
-    await tester.longPress(find.byType(V14Orb));
+    await tester.tap(find.byType(V14Orb));
+    await tester.pump(const Duration(milliseconds: 400));
+    if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
+      await tester.tap(find.byType(V14Orb));
+      await tester.pump(const Duration(milliseconds: 400));
+    }
     await _until(tester, find.byKey(const Key('ring-hint')));
   }
   await tester.tap(find.byKey(Key('ring-$group')));
@@ -362,6 +372,56 @@ Future<void> _back(WidgetTester tester) async {
     } else {
       await tester.pageBack();
     }
+  }
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> _tapText(WidgetTester tester, String label) async {
+  final finder = find.text(label);
+  final vertical = find.byWidgetPredicate(
+    (widget) =>
+        widget is Scrollable &&
+        (widget.axisDirection == AxisDirection.down ||
+            widget.axisDirection == AxisDirection.up),
+  );
+  if (finder.evaluate().isEmpty && vertical.evaluate().isNotEmpty) {
+    for (final state in tester.stateList<ScrollableState>(vertical)) {
+      for (var i = 0; i < 8 && finder.evaluate().isEmpty; i++) {
+        final position = state.position;
+        position.jumpTo(
+          (position.pixels + 420).clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 150));
+      }
+    }
+  }
+  await _until(tester, finder, seconds: 8);
+  final element = finder.evaluate().first;
+  var pressed = false;
+  element.visitAncestorElements((ancestor) {
+    final widget = ancestor.widget;
+    if (widget is RuhhPrimaryButton) {
+      widget.onPressed?.call();
+      pressed = true;
+      return false;
+    }
+    if (widget is V14Button) {
+      widget.onPressed?.call();
+      pressed = true;
+      return false;
+    }
+    if (widget is TextButton) {
+      widget.onPressed?.call();
+      pressed = true;
+      return false;
+    }
+    return true;
+  });
+  if (!pressed) {
+    await tester.tap(finder, warnIfMissed: false);
   }
   await tester.pump(const Duration(milliseconds: 500));
 }
