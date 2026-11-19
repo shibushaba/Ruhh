@@ -5,6 +5,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:isar/isar.dart';
 import 'package:ruhh/core/data/models/habit_local.dart';
 import 'package:ruhh/core/data/models/v14_local.dart';
+import 'package:ruhh/core/widgets/nb_button.dart';
 import 'package:ruhh/core/widgets/ruhh_components.dart';
 import 'package:ruhh/features/v14/logic/level_curve.dart';
 import 'package:ruhh/features/v14/logic/pet_catalog.dart';
@@ -111,14 +112,14 @@ void main() {
     await _tapKey(tester, const Key('habit-board-name-Walk'));
     await _until(tester, find.text('Edit habit'));
     await tester.enterText(find.byType(TextField).first, 'Walk evening');
-    await _tapText(tester, 'Save changes');
+    await _tapKey(tester, const Key('habit-save'));
     await _until(
       tester,
       find.byKey(const Key('habit-board-name-Walk evening')),
     );
     await _tapKey(tester, const Key('habit-board-name-Walk evening'));
     await _until(tester, find.text('Edit habit'));
-    await _tapText(tester, 'Archive habit');
+    await _tapKey(tester, const Key('habit-archive'));
     await tester.pump(const Duration(seconds: 1));
     await _back(tester);
     await _until(tester, find.text('New habit'));
@@ -126,7 +127,7 @@ void main() {
     await tester.tap(find.text('New habit'));
     await _until(tester, find.text('Name'));
     await tester.enterText(find.byType(TextField).first, 'Read');
-    await _tapText(tester, 'Create habit');
+    await _tapKey(tester, const Key('habit-save'));
     await _until(tester, find.textContaining('Light it · Read'));
     await tester.tap(find.textContaining('Light it · Read'));
     await _until(tester, find.textContaining('Read · lit'));
@@ -553,10 +554,45 @@ Future<void> _tapText(WidgetTester tester, String label) async {
 
 Future<void> _tapKey(WidgetTester tester, Key key) async {
   final finder = find.byKey(key);
+  final vertical = find.byWidgetPredicate(
+    (widget) =>
+        widget is Scrollable &&
+        (widget.axisDirection == AxisDirection.down ||
+            widget.axisDirection == AxisDirection.up),
+  );
+  for (var n = 0; n < 24 && finder.evaluate().isEmpty; n++) {
+    var moved = false;
+    for (final state in tester.stateList<ScrollableState>(vertical)) {
+      final position = state.position;
+      if (!position.hasContentDimensions) continue;
+      if (position.pixels >= position.maxScrollExtent - 1) continue;
+      position.jumpTo(
+        (position.pixels + 480).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        ),
+      );
+      moved = true;
+    }
+    await tester.pump(const Duration(milliseconds: 120));
+    if (!moved && n > 2) break;
+  }
   await _until(tester, finder);
   final element = finder.evaluate().first;
   var pressed = false;
+  final self = element.widget;
+  if (self is NBButton || self is RuhhPrimaryButton || self is V14Button) {
+    if (self is NBButton) {
+      self.onPressed?.call();
+    } else if (self is RuhhPrimaryButton) {
+      self.onPressed?.call();
+    } else if (self is V14Button) {
+      self.onPressed?.call();
+    }
+    pressed = true;
+  }
   element.visitAncestorElements((ancestor) {
+    if (pressed) return false;
     final widget = ancestor.widget;
     if (widget is ListTile) {
       widget.onTap?.call();

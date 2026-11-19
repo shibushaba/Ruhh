@@ -107,29 +107,37 @@ class _HabitRow extends ConsumerWidget {
               ),
             ],
           ),
-          child: ListTile(
-            key: Key('habit-board-${habit.remoteId}'),
-            leading: habitIconChip(
-              habit.icon,
-              Color(habit.colorValue),
-              size: 36,
-            ),
-            title: Text(habit.name, key: Key('habit-board-name-${habit.name}')),
-            subtitle: Text('${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}'),
-            onTap: () => context.push('/habit/edit/${habit.remoteId}'),
-            trailing: PopupMenuButton<String>(
-              onSelected: (v) async {
-                if (v == 'archive') {
-                  await repo.archiveHabit(habit);
-                  bumpHabitRefresh(ref);
-                } else if (v == 'edit') {
-                  context.push('/habit/edit/${habit.remoteId}');
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'archive', child: Text('Archive')),
-              ],
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              key: Key('habit-board-${habit.remoteId}'),
+              leading: habitIconChip(
+                habit.icon,
+                Color(habit.colorValue),
+                size: 36,
+              ),
+              title: Text(
+                habit.name,
+                key: Key('habit-board-name-${habit.name}'),
+              ),
+              subtitle: Text(
+                '${scheduleSummary(habit)} · 🔥 ${snap.data ?? 0}',
+              ),
+              onTap: () => context.push('/habit/edit/${habit.remoteId}'),
+              trailing: PopupMenuButton<String>(
+                onSelected: (v) async {
+                  if (v == 'archive') {
+                    await repo.archiveHabit(habit);
+                    bumpHabitRefresh(ref);
+                  } else if (v == 'edit') {
+                    context.push('/habit/edit/${habit.remoteId}');
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(value: 'archive', child: Text('Archive')),
+                ],
+              ),
             ),
           ),
         );

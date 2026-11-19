@@ -62,7 +62,9 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
       _increment.text = '${h.incrementAmount}';
       _weekdays
         ..clear()
-        ..addAll(h.scheduleWeekdays.isEmpty ? [1, 2, 3, 4, 5] : h.scheduleWeekdays);
+        ..addAll(
+          h.scheduleWeekdays.isEmpty ? [1, 2, 3, 4, 5] : h.scheduleWeekdays,
+        );
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -116,8 +118,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
         scheduleWeekdays: _interval == HabitInterval.weekdays
             ? _weekdays.toList()
             : [],
-        scheduleEvery:
-            _interval == HabitInterval.everyXDays ? _customEvery : 2,
+        scheduleEvery: _interval == HabitInterval.everyXDays ? _customEvery : 2,
       );
     }
     bumpHabitRefresh(ref);
@@ -157,11 +158,17 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
                 SegmentedButton<HabitKind>(
                   segments: const [
                     ButtonSegment(
-                        value: HabitKind.positive, label: Text('Build')),
+                      value: HabitKind.positive,
+                      label: Text('Build'),
+                    ),
                     ButtonSegment(
-                        value: HabitKind.negative, label: Text('Break')),
+                      value: HabitKind.negative,
+                      label: Text('Break'),
+                    ),
                     ButtonSegment(
-                        value: HabitKind.quantitative, label: Text('Amount')),
+                      value: HabitKind.quantitative,
+                      label: Text('Amount'),
+                    ),
                   ],
                   selected: {_kind},
                   onSelectionChanged: (s) => setState(() => _kind = s.first),
@@ -179,19 +186,20 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
-                    HabitInterval.daily,
-                    HabitInterval.weekdays,
-                    HabitInterval.monthly,
-                    HabitInterval.everyXDays,
-                  ].map((i) {
-                    return ChoiceChip(
-                      label: Text(HabitRepository.intervalLabel(i)),
-                      selected: _interval == i,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(() => _interval = i),
-                    );
-                  }).toList(),
+                  children:
+                      [
+                        HabitInterval.daily,
+                        HabitInterval.weekdays,
+                        HabitInterval.monthly,
+                        HabitInterval.everyXDays,
+                      ].map((i) {
+                        return ChoiceChip(
+                          label: Text(HabitRepository.intervalLabel(i)),
+                          selected: _interval == i,
+                          showCheckmark: false,
+                          onSelected: (_) => setState(() => _interval = i),
+                        );
+                      }).toList(),
                 ),
                 if (_interval == HabitInterval.weekdays) ...[
                   const SizedBox(height: 12),
@@ -265,6 +273,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
           ),
           const SizedBox(height: 24),
           NBButton(
+            key: const Key('habit-save'),
             label: editing ? 'Save changes' : 'Create habit',
             color: NBColors.habit,
             onPressed: _save,
@@ -284,6 +293,7 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
             ),
             const SizedBox(height: 12),
             NBButton(
+              key: const Key('habit-archive'),
               label: 'Archive habit',
               color: Colors.grey.shade400,
               onPressed: () async {
