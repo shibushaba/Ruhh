@@ -329,7 +329,7 @@ const _worldLevels = [8, 25, 45, 65, 90];
 /// Test hook. Writes lifetime XP and the pet on the device store.
 /// There is no shipped control for this.
 Future<void> _seedWorld(WidgetTester tester, String petId, int level) async {
-  final isar = Isar.getInstance();
+  final isar = Isar.getInstance('ruhh');
   expect(isar, isNotNull);
   final found = await isar!.v14ProfileLocals.where().findFirst();
   expect(found, isNotNull);
@@ -384,7 +384,7 @@ Future<void> _tour(WidgetTester tester, String petId, String shot) async {
 }
 
 Future<int> _lifetimeXp() async {
-  final isar = Isar.getInstance();
+  final isar = Isar.getInstance('ruhh');
   expect(isar, isNotNull);
   final rows = await isar!.localXpEventLocals.where().findAll();
   return rows
@@ -393,7 +393,7 @@ Future<int> _lifetimeXp() async {
 }
 
 Future<void> _seedHugeHabits() async {
-  final isar = Isar.getInstance();
+  final isar = Isar.getInstance('ruhh');
   expect(isar, isNotNull);
   final profile = await isar!.v14ProfileLocals.where().findFirst();
   expect(profile, isNotNull);
@@ -429,7 +429,7 @@ Future<void> _seedHugeHabits() async {
 }
 
 Future<void> _clearHugeHabits() async {
-  final isar = Isar.getInstance();
+  final isar = Isar.getInstance('ruhh');
   if (isar == null) return;
   final rows = await isar.habitLocals
       .filter()
