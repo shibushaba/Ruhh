@@ -75,12 +75,10 @@ void main() {
     }
     expect(find.text('Skip'), findsNothing);
 
-    await _until(tester, find.byType(V14Orb));
-    await tester.tap(find.byType(V14Orb));
+    await _pressOrb(tester);
     await _until(tester, find.byKey(const Key('ring-hint')));
     await _shot('07-ring');
-    await tester.tap(find.byKey(const Key('ring-dismiss')));
-    await tester.pump(const Duration(milliseconds: 400));
+    await _tapKey(tester, const Key('ring-dismiss'));
 
     await _open(tester, 'habits', 'quests');
     await _until(tester, find.byKey(const Key('quests-empty')));
@@ -326,7 +324,7 @@ void main() {
     await _until(tester, find.textContaining('نجمة'));
 
     for (var i = 0; i < 8; i++) {
-      await tester.tap(find.byType(V14Orb), warnIfMissed: false);
+      await _pressOrb(tester);
       await tester.pump(const Duration(milliseconds: 40));
     }
     expect(tester.takeException(), isNull);
@@ -483,28 +481,31 @@ Future<void> _frame(WidgetTester tester, Size logical) async {
   expect(tester.takeException(), isNull);
 }
 
+Future<void> _pressOrb(WidgetTester tester) async {
+  if (find.byKey(const Key('level-up')).evaluate().isNotEmpty) {
+    await _tapText(tester, 'Stay');
+  }
+  final finder = find.byKey(const Key('v14-orb'));
+  await _until(tester, finder);
+  tester.widget<GestureDetector>(finder).onTap?.call();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
 Future<void> _home(WidgetTester tester) async {
   if (find.byKey(const Key('ring-hint')).evaluate().isNotEmpty) {
-    await tester.tap(find.byKey(const Key('ring-dismiss')));
-    await tester.pump(const Duration(milliseconds: 300));
+    await _tapKey(tester, const Key('ring-dismiss'));
   }
-  await _until(tester, find.byType(V14Orb));
-  await tester.tap(find.byType(V14Orb));
-  await tester.pump(const Duration(milliseconds: 400));
+  await _pressOrb(tester);
   if (find.byKey(const Key('ring-hint')).evaluate().isNotEmpty) {
-    await tester.tap(find.byKey(const Key('ring-dismiss')));
-    await tester.pump(const Duration(milliseconds: 300));
+    await _tapKey(tester, const Key('ring-dismiss'));
   }
 }
 
 Future<void> _open(WidgetTester tester, String group, String id) async {
   if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
-    await _until(tester, find.byType(V14Orb));
-    await tester.tap(find.byType(V14Orb));
-    await tester.pump(const Duration(milliseconds: 400));
+    await _pressOrb(tester);
     if (find.byKey(const Key('ring-hint')).evaluate().isEmpty) {
-      await tester.tap(find.byType(V14Orb));
-      await tester.pump(const Duration(milliseconds: 400));
+      await _pressOrb(tester);
     }
     await _until(tester, find.byKey(const Key('ring-hint')));
   }
@@ -634,6 +635,10 @@ Future<void> _tapKey(WidgetTester tester, Key key) async {
   var pressed = false;
   final self = element.widget;
   if (self is InkWell) {
+    self.onTap?.call();
+    pressed = true;
+  }
+  if (self is GestureDetector) {
     self.onTap?.call();
     pressed = true;
   }
