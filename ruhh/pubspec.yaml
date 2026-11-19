@@ -69,6 +69,27 @@ flutter:
   assets:
     - .env
     - assets/icon/app_icon.png
+    - assets/ruhh/manifest.json
+    - assets/ruhh/plates/dragon/
+    - assets/ruhh/plates/panda/
+    - assets/ruhh/plates/cat/
+    - assets/ruhh/plates_wide/dragon/
+    - assets/ruhh/plates_wide/panda/
+    - assets/ruhh/plates_wide/cat/
+    - assets/ruhh/sprites/dragon/
+    - assets/ruhh/sprites/panda/
+    - assets/ruhh/sprites/cat/
+    - assets/ruhh/orbs/dragon/
+    - assets/ruhh/orbs/panda/
+    - assets/ruhh/orbs/cat/
+    - assets/ruhh/backdrops/dragon/
+    - assets/ruhh/backdrops/panda/
+    - assets/ruhh/backdrops/cat/
+    - assets/ruhh/icons/ui/
+    - assets/ruhh/icons/motifs/
+    - assets/ruhh/icons/motifs/dragon/
+    - assets/ruhh/icons/motifs/panda/
+    - assets/ruhh/icons/motifs/cat/
   fonts:
     - family: PhosphorRegular
       fonts:
