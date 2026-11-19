@@ -14,12 +14,14 @@ class HabitListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final refresh = ref.watch(habitRefreshProvider);
     final repoAsync = ref.watch(habitRepositoryProvider);
 
     return repoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (repo) => StreamBuilder(
+        key: ValueKey(refresh),
         stream: repo.watchActiveHabits(),
         builder: (context, activeSnap) {
           final active = activeSnap.data ?? [];

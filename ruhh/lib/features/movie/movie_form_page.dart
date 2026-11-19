@@ -153,6 +153,7 @@ class _MovieFormPageState extends ConsumerState<MovieFormPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   NBTextField(
+                    key: const Key('movie-title'),
                     controller: _titleCtrl,
                     label: 'Title',
                     hint: 'Movie or show name',

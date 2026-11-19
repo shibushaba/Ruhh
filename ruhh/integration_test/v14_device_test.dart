@@ -111,7 +111,14 @@ void main() {
     await _until(tester, find.byKey(const Key('habit-board-name-Walk')));
     await _tapKey(tester, const Key('habit-board-name-Walk'));
     await _until(tester, find.text('Edit habit'));
-    await tester.enterText(find.byType(TextField).first, 'Walk evening');
+    await _type(
+      tester,
+      find.descendant(
+        of: find.byKey(const Key('habit-name-field')),
+        matching: find.byType(TextField),
+      ),
+      'Walk evening',
+    );
     await _tapKey(tester, const Key('habit-save'));
     await _until(
       tester,
@@ -126,7 +133,14 @@ void main() {
 
     await tester.tap(find.text('New habit'));
     await _until(tester, find.text('Name'));
-    await tester.enterText(find.byType(TextField).first, 'Read');
+    await _type(
+      tester,
+      find.descendant(
+        of: find.byKey(const Key('habit-name-field')),
+        matching: find.byType(TextField),
+      ),
+      'Read',
+    );
     await _tapKey(tester, const Key('habit-save'));
     await _until(tester, find.textContaining('Light it · Read'));
     await tester.tap(find.textContaining('Light it · Read'));
@@ -181,12 +195,26 @@ void main() {
     await _until(tester, find.text('Manual'));
     await tester.tap(find.text('Manual'));
     await _until(tester, find.text('Add to shelf'));
-    await tester.enterText(find.byType(TextField).first, 'The Alchemist');
+    await _type(
+      tester,
+      find.descendant(
+        of: find.byKey(const Key('book-manual-title')),
+        matching: find.byType(TextField),
+      ),
+      'The Alchemist',
+    );
     await _tapText(tester, 'Add to shelf');
     await _until(tester, find.textContaining('Alchemist'));
     await _open(tester, 'movies', 'movie-add');
     await _until(tester, find.text('Title'));
-    await tester.enterText(find.byType(TextField).first, 'Pather Panchali');
+    await _type(
+      tester,
+      find.descendant(
+        of: find.byKey(const Key('movie-title')),
+        matching: find.byType(TextField),
+      ),
+      'Pather Panchali',
+    );
     await _tapText(tester, 'Save');
     await _until(tester, find.textContaining('Pather'));
     expect(await _lifetimeXp(), xpBeforeQuiet);
@@ -203,7 +231,8 @@ void main() {
     await _field(tester, 'goal-title', 'Add goal', 'Finish the climb');
     await _until(tester, find.text('Finish the climb'));
     await _shot('10-goal-climb');
-    await tester.enterText(
+    await _type(
+      tester,
       find.byWidgetPredicate((widget) {
         final key = widget.key;
         return widget is TextField &&
@@ -229,24 +258,23 @@ void main() {
 
     await _open(tester, 'home', 'chat');
     await _until(tester, find.byKey(const Key('chat-input')));
-    await tester.enterText(
+    await _type(
+      tester,
       find.byKey(const Key('chat-input')),
       'add habit നടക്കുക',
     );
     await _tapText(tester, 'Send');
     await _until(tester, find.text('Confirm'));
-    await tester.enterText(find.byKey(const Key('chat-edit')), 'നടക്കുക');
+    await _type(tester, find.byKey(const Key('chat-edit')), 'നടക്കുക');
     await _tapText(tester, 'Edit');
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.enterText(
-      find.byKey(const Key('chat-input')),
-      'add habit مرحبا',
-    );
+    await _type(tester, find.byKey(const Key('chat-input')), 'add habit مرحبا');
     await _tapText(tester, 'Send');
     await _until(tester, find.text('Cancel'));
     await _tapText(tester, 'Cancel');
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.enterText(
+    await _type(
+      tester,
       find.byKey(const Key('chat-input')),
       'add habit Chat walk',
     );
@@ -254,7 +282,7 @@ void main() {
     await _until(tester, find.text('Confirm'));
     await _tapText(tester, 'Confirm');
     await tester.pump(const Duration(seconds: 1));
-    await tester.enterText(find.byKey(const Key('chat-input')), 'prayer dhuhr');
+    await _type(tester, find.byKey(const Key('chat-input')), 'prayer dhuhr');
     await _tapText(tester, 'Send');
     await _until(tester, find.textContaining('no XP'));
     await _tapText(tester, 'Confirm');
@@ -485,16 +513,26 @@ Future<void> _open(WidgetTester tester, String group, String id) async {
   await tester.pump(const Duration(milliseconds: 600));
 }
 
+Future<void> _type(WidgetTester tester, Finder finder, String value) async {
+  await _until(tester, finder);
+  final field = tester.widget<TextField>(finder);
+  final controller = field.controller;
+  expect(controller, isNotNull);
+  controller!.value = TextEditingValue(
+    text: value,
+    selection: TextSelection.collapsed(offset: value.length),
+  );
+  await tester.pump(const Duration(milliseconds: 200));
+  expect(controller.text, value);
+}
+
 Future<void> _field(
   WidgetTester tester,
   String key,
   String button,
   String value,
 ) async {
-  final field = find.byKey(Key(key));
-  await _until(tester, field);
-  await tester.enterText(field, value);
-  await tester.pump(const Duration(milliseconds: 200));
+  await _type(tester, find.byKey(Key(key)), value);
   await _tapText(tester, button);
 }
 

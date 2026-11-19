@@ -151,7 +151,11 @@ class _HabitFormPageState extends ConsumerState<HabitFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                NBTextField(controller: _name, label: 'Name'),
+                NBTextField(
+                  key: const Key('habit-name-field'),
+                  controller: _name,
+                  label: 'Name',
+                ),
                 const SizedBox(height: 16),
                 Text('Type', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
